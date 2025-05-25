@@ -1,0 +1,19 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace PerHue.Domain.Entities;
+
+public partial class ServicePackage
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public string? Description { get; set; }
+
+    public int Price { get; set; }
+
+    public short? Duration { get; set; }
+
+    public virtual ICollection<UserAccount> UserAccounts { get; set; } = new List<UserAccount>();
+}

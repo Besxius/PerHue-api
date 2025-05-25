@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35913.81
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerHue.Infrastructure", "PerHue.Infrastructure\PerHue.Infrastructure.csproj", "{E67BA73D-451E-41AB-A4F9-AFA16069123A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerHue.Application", "PerHue.Application\PerHue.Application.csproj", "{DC4D329F-C2B8-4471-BF9E-737B97095CAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerHue.Domain", "PerHue.Domain\PerHue.Domain.csproj", "{65E55E28-1465-4EA5-8442-57003094DECC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerHue.Api", "PerHue.Api\PerHue.Api.csproj", "{DA460FD6-8243-4BB1-848F-3DEAD2DDB428}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E67BA73D-451E-41AB-A4F9-AFA16069123A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E67BA73D-451E-41AB-A4F9-AFA16069123A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E67BA73D-451E-41AB-A4F9-AFA16069123A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E67BA73D-451E-41AB-A4F9-AFA16069123A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC4D329F-C2B8-4471-BF9E-737B97095CAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC4D329F-C2B8-4471-BF9E-737B97095CAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC4D329F-C2B8-4471-BF9E-737B97095CAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC4D329F-C2B8-4471-BF9E-737B97095CAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65E55E28-1465-4EA5-8442-57003094DECC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65E55E28-1465-4EA5-8442-57003094DECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65E55E28-1465-4EA5-8442-57003094DECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65E55E28-1465-4EA5-8442-57003094DECC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA460FD6-8243-4BB1-848F-3DEAD2DDB428}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA460FD6-8243-4BB1-848F-3DEAD2DDB428}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA460FD6-8243-4BB1-848F-3DEAD2DDB428}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA460FD6-8243-4BB1-848F-3DEAD2DDB428}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B4DFA23D-2DC9-4159-88D7-10BDFAA693DC}
+	EndGlobalSection
+EndGlobal
