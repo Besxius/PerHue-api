@@ -3,7 +3,7 @@
     image: postgres:15-alpine
     container_name: postgres
     environment:
-      - POSTGRES_DB=MyStore
+      - POSTGRES_DB=PerHueDb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=12345@abc!
     ports:
@@ -15,7 +15,7 @@
     build:
       context: .
       dockerfile: PerHue.Api/Dockerfile
-    container_name: lab1-api
+    container_name: perhue-api
     depends_on:
       - postgres
     ports:
@@ -23,7 +23,7 @@
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=MyStore;Username=postgres;Password=12345@abc!;Pooling=true;
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=PerHueDb;Username=postgres;Password=12345@abc!;Pooling=true;
 
 volumes:
   pgdata:
