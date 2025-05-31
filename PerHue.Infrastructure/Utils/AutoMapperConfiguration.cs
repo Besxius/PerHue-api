@@ -15,6 +15,10 @@ namespace PerHue.Infrastructure.Utils
 				.ReverseMap()
 				.ForMember(dest => dest.Password, opt => opt.MapFrom(src => src.NewPassword));
 
+			CreateMap<Payment, PaymentModel>().ReverseMap();
+			CreateMap<ServicePackage, ServicePackageModel>().ReverseMap();
+			CreateMap<UserSubscription, UserSubscriptionModel>().ReverseMap();
+			CreateMap<UserSubscription, CreateUserSubscriptionModel>().ReverseMap();
 			//CreateMap<User, User>()
 			//	.ForMember(dest => dest.Id, opt => opt.Ignore())
 			//	.ForMember(dest => dest.CreatedAt, opt => opt.Ignore())

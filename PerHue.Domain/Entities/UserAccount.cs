@@ -25,10 +25,6 @@ public partial class UserAccount
 
     public string? ProfilePicture { get; set; }
 
-    public int ServicePackageId { get; set; }
-
-    public DateOnly? StartTime { get; set; }
-
     public bool IsAiTested { get; set; }
 
     public int RoleId { get; set; }
@@ -53,7 +49,7 @@ public partial class UserAccount
 
     public virtual Role Role { get; set; } = null!;
 
-    public virtual ServicePackage ServicePackage { get; set; } = null!;
+    public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 
     public virtual VerifyInformation? VerifyInformation { get; set; }
 }
