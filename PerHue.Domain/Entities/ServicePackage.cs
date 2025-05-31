@@ -15,5 +15,5 @@ public partial class ServicePackage
 
     public short? Duration { get; set; }
 
-    public virtual ICollection<UserAccount> UserAccounts { get; set; } = new List<UserAccount>();
+    public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 }

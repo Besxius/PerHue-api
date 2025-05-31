@@ -1,0 +1,32 @@
+﻿namespace PerHue.Infrastructure.Utils
+{
+	public enum EventTypeEnum
+	{
+		Created,            // Giao dịch mới được tạo
+		StatusChanged,      // Trạng thái thanh toán thay đổi
+		WebhookReceived,    // Nhận callback/webhook từ cổng thanh toán
+		Error,              // Lỗi xảy ra trong quá trình thanh toán hoặc xử lý
+		Info,               // Thông tin bổ sung khác (ví dụ log hệ thống)
+		Cancelled,          // Giao dịch bị hủy
+		Refunded            // Giao dịch đã được hoàn tiền
+	}
+	public enum PaymentStatusEnum
+	{
+		Pending,        // Đang chờ xử lý
+		Processing,     // Đang xử lý thanh toán
+		Success,        // Thanh toán thành công
+		Failed,         // Thanh toán thất bại
+		Cancelled,      // Giao dịch bị hủy
+		Refunded,       // Giao dịch đã được hoàn tiền
+		Expired         // Giao dịch hết hạn
+	}
+	public enum UserSubscriptionStatusEnum
+	{
+		Active,         // Đang hoạt động
+		Inactive,       // Không hoạt động
+		Pending,        // Chờ xử lý (ví dụ mới đăng ký, chưa thanh toán)
+		Cancelled,      // Đã hủy đăng ký
+		Expired,        // Đã hết hạn đăng ký
+		Suspended       // Bị tạm khóa (do vi phạm hoặc lỗi thanh toán)
+	}
+}

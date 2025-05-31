@@ -5,5 +5,8 @@ namespace PerHue.Application.IServicesProvider
 	public interface IServicesProvider
 	{
 		IUserService UserService { get; }
+		IPaymentService PaymentService { get; }
+		IServicePackageService ServicePackageService { get; }
+		IUserSubscriptionService UserSubscriptionService { get; }
 	}
 }

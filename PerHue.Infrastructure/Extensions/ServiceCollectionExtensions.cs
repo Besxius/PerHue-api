@@ -28,17 +28,24 @@ namespace PerHue.Infrastructure.Extensions
 			#region Repositories
 			services.AddScoped<IUnitOfWork, UnitOfWork>();
 			services.AddScoped<IUserRepository, UserRepository>();
+			services.AddScoped<IUserSubscriptionRepository, UserSubscriptionRepository>();
+			services.AddScoped<IPaymentRepository, PaymentRepository>();
+			services.AddScoped<IServicePackageRepository, ServicePackageRepository>();
 			#endregion
 
 			#region Services
 			services.AddScoped<IServicesProvider, ServicesProvider>();
 			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
+			services.AddScoped<IPaymentService, PaymentService>();
+			services.AddScoped<IServicePackageService, ServicePackageService>();
 			#endregion
 
 			#region Other Services
 			services.AddAutoMapper(typeof(ServiceCollectionExtensions).Assembly);
 			services.AddScoped<Seeder>();
 			services.AddScoped<JwtProvider>();
+			services.AddScoped<PayOSPaymentService>();
 			#endregion
 
 			#region Authentication	

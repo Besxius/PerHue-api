@@ -9,11 +9,23 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		private readonly PerHueDbContext _context;
 
 		public IUserRepository UserRepository { get; private set; }
+		public IServicePackageRepository ServicePackageRepository { get; private set; }
+		public IPaymentRepository PaymentRepository { get; private set; }
+		public IUserSubscriptionRepository UserSubscriptionRepository { get; private set; }
 
-		public UnitOfWork(PerHueDbContext context, IUserRepository userRepository)
+		public UnitOfWork(
+			PerHueDbContext context, 
+			IUserRepository userRepository, 
+			IServicePackageRepository servicePackageRepository, 
+			IPaymentRepository paymentRepository, 
+			IUserSubscriptionRepository userSubscriptionRepository
+			)
 		{
 			_context = context;
 			UserRepository = userRepository;
+			ServicePackageRepository = servicePackageRepository;
+			PaymentRepository = paymentRepository;
+			UserSubscriptionRepository = userSubscriptionRepository;
 		}
 
 		public int SaveChangesWithTransaction()

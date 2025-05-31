@@ -18,10 +18,6 @@
 
 		public string? Profilepicture { get; set; }
 
-		public int Servicepackageid { get; set; }
-
-		public DateOnly? Starttime { get; set; }
-
 		public bool Isaitested { get; set; }
 	}
 }

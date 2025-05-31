@@ -1,4 +1,5 @@
 using Microsoft.OpenApi.Models;
+using PerHue.Api.Utils;
 using PerHue.Application.Extensions;
 using PerHue.Infrastructure.Extensions;
 using PerHue.Infrastructure.Utils;
@@ -45,6 +46,9 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
 
+//builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+//builder.Services.AddProblemDetails();
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -62,6 +66,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+//app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

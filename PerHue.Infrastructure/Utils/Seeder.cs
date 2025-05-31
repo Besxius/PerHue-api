@@ -59,10 +59,10 @@ namespace PerHue.Infrastructure.Utils
 			return new List<ServicePackage>
 			{
 				new() { Name = "Free", Price = 0, Description = "Free service package", Duration = 0 },
-				new() { Name = "OneTime", Price = 99000, Description = "One time AI test service package", Duration = 30 },
-				new() { Name = "Premium", Price = 299000, Description = "Premium month version service package", Duration = 30 },
-				new() { Name = "Premium", Price = 1999000, Description = "Premium year version service package", Duration = 365 },
-				new() { Name = "Partnership", Price = 10000000, Description = "Partnership version service package", Duration = 30 }
+				new() { Name = "OneTime", Price = 2000, Description = "One time AI test service package", Duration = 30 },
+				new() { Name = "Premium", Price = 4000, Description = "Premium month version service package", Duration = 30 },
+				new() { Name = "Premium", Price = 10000, Description = "Premium year version service package", Duration = 365 },
+				new() { Name = "Partnership", Price = 150000, Description = "Partnership version service package", Duration = 30 }
 			};
 		}
 
@@ -78,7 +78,6 @@ namespace PerHue.Infrastructure.Utils
 					Gender = false,
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
-					ServicePackageId = 1,
 					IsActive = true,
 					IsAiTested = false,
 					RoleId = 1,
@@ -93,7 +92,6 @@ namespace PerHue.Infrastructure.Utils
 					Gender = true,
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
-					ServicePackageId = 1,
 					IsActive = true,
 					IsAiTested = false,
 					RoleId = 2,
@@ -108,7 +106,6 @@ namespace PerHue.Infrastructure.Utils
 					Gender = true,
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
-					ServicePackageId = 1,
 					IsActive = true,
 					IsAiTested = false,
 					RoleId = 2,
@@ -123,7 +120,6 @@ namespace PerHue.Infrastructure.Utils
 					Gender = false,
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
-					ServicePackageId = 1,
 					IsActive = true,
 					IsAiTested = false,
 					RoleId = 2,

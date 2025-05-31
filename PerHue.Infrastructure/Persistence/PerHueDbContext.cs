@@ -44,6 +44,8 @@ public partial class PerHueDbContext : DbContext
 
     public virtual DbSet<Payment> Payments { get; set; }
 
+    public virtual DbSet<PaymentLog> PaymentLogs { get; set; }
+
     public virtual DbSet<Post> Posts { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
@@ -61,6 +63,8 @@ public partial class PerHueDbContext : DbContext
     public virtual DbSet<Topic> Topics { get; set; }
 
     public virtual DbSet<UserAccount> UserAccounts { get; set; }
+
+    public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
 
     public virtual DbSet<VerifyInformation> VerifyInformations { get; set; }
 
@@ -242,7 +246,7 @@ public partial class PerHueDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("hex_code");
             entity.Property(e => e.Name)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .HasColumnName("name");
 
             entity.HasMany(d => d.Avoids).WithMany(p => p.Colors)
@@ -344,7 +348,7 @@ public partial class PerHueDbContext : DbContext
                 .HasColumnName("content");
             entity.Property(e => e.Sender).HasColumnName("sender");
             entity.Property(e => e.Status)
-                .HasMaxLength(10)
+                .HasMaxLength(20)
                 .HasColumnName("status");
             entity.Property(e => e.Time)
                 .HasColumnType("timestamp without time zone")
@@ -429,24 +433,66 @@ public partial class PerHueDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Amount).HasColumnName("amount");
-            entity.Property(e => e.Message)
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description)
                 .HasMaxLength(50)
-                .HasColumnName("message");
+                .HasColumnName("description");
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .HasColumnName("status");
-            entity.Property(e => e.Time)
+            entity.Property(e => e.TransactionId)
+                .HasMaxLength(255)
+                .HasColumnName("transaction_id");
+            entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp without time zone")
-                .HasColumnName("time");
-            entity.Property(e => e.Type)
-                .HasMaxLength(50)
-                .HasColumnName("type");
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UserSubscriptionId).HasColumnName("user_subscription_id");
 
             entity.HasOne(d => d.User).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fkpayment832702");
+
+            entity.HasOne(d => d.UserSubscription).WithMany(p => p.Payments)
+                .HasForeignKey(d => d.UserSubscriptionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fkpayment69402");
+        });
+
+        modelBuilder.Entity<PaymentLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("payment_log_pkey");
+
+            entity.ToTable("payment_log");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.EventType)
+                .HasMaxLength(255)
+                .HasColumnName("event_type");
+            entity.Property(e => e.Mesage)
+                .HasMaxLength(255)
+                .HasColumnName("mesage");
+            entity.Property(e => e.Metadata)
+                .HasMaxLength(255)
+                .HasColumnName("metadata");
+            entity.Property(e => e.NewStatus)
+                .HasMaxLength(20)
+                .HasColumnName("new_status");
+            entity.Property(e => e.OldStatus)
+                .HasMaxLength(20)
+                .HasColumnName("old_status");
+            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+
+            entity.HasOne(d => d.Payment).WithMany(p => p.PaymentLogs)
+                .HasForeignKey(d => d.PaymentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fkpayment_lo138909");
         });
 
         modelBuilder.Entity<Post>(entity =>
@@ -644,21 +690,50 @@ public partial class PerHueDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("profile_picture");
             entity.Property(e => e.RoleId).HasColumnName("role_id");
-            entity.Property(e => e.ServicePackageId).HasColumnName("service_package_id");
-            entity.Property(e => e.StartTime).HasColumnName("start_time");
             entity.Property(e => e.Username)
-                .HasMaxLength(10)
+                .HasMaxLength(50)
                 .HasColumnName("username");
 
             entity.HasOne(d => d.Role).WithMany(p => p.UserAccounts)
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fkuser_accou431404");
+        });
 
-            entity.HasOne(d => d.ServicePackage).WithMany(p => p.UserAccounts)
+        modelBuilder.Entity<UserSubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_subscription_pkey");
+
+            entity.ToTable("user_subscription");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreateAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("create_at");
+            entity.Property(e => e.EndDate)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("end_date");
+            entity.Property(e => e.ServicePackageId).HasColumnName("service_package_id");
+            entity.Property(e => e.StartDate)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("start_date");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasColumnName("status");
+            entity.Property(e => e.UpdateAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("update_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.ServicePackage).WithMany(p => p.UserSubscriptions)
                 .HasForeignKey(d => d.ServicePackageId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkuser_accou392006");
+                .HasConstraintName("fkuser_subsc787567");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fkuser_subsc11473");
         });
 
         modelBuilder.Entity<VerifyInformation>(entity =>

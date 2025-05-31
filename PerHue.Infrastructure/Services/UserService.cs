@@ -48,7 +48,6 @@ namespace PerHue.Infrastructure.Services
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
 			entity.IsActive = true;
-			entity.ServicePackageId = 1;
 			entity.IsAiTested = false;
 			entity.RoleId = 3;
 
