@@ -9,11 +9,24 @@ namespace PerHue.Infrastructure.ServicesProviders
 		private readonly IUnitOfWork _unitOfWork;
 
 		public IUserService UserService { get; private set; }
+		public IPaymentService PaymentService { get; private set; }
+		public IServicePackageService ServicePackageService { get; private set; }
+		public IUserSubscriptionService UserSubscriptionService { get; private set; }
 
-		public ServicesProvider(IUnitOfWork unitOfWork, IUserService userService)
+
+		public ServicesProvider(
+			IUnitOfWork unitOfWork, 
+			IUserService userService, 
+			IPaymentService paymentService, 
+			IServicePackageService servicePackageService, 
+			IUserSubscriptionService userSubscriptionService
+			)
 		{
 			_unitOfWork = unitOfWork;
 			UserService = userService;
+			PaymentService = paymentService;
+			ServicePackageService = servicePackageService;
+			UserSubscriptionService = userSubscriptionService;
 		}
 
 	}

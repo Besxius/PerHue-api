@@ -11,7 +11,6 @@ namespace PerHue.Infrastructure.Repositories
 	{
 		public UserRepository(PerHueDbContext context) : base(context)
 		{
-			
 		}
 
 		public async Task<UserAccount> GetByEmailAsync(string email)
