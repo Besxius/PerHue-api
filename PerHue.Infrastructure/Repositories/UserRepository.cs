@@ -15,7 +15,7 @@ namespace PerHue.Infrastructure.Repositories
 
 		public async Task<UserAccount> GetByEmailAsync(string email)
 		{
-			return await _context.UserAccounts.FirstOrDefaultAsync(u => u.Email == email);
+			return await _context.UserAccounts.Include(p => p.Role).FirstOrDefaultAsync(u => u.Email == email);
 		}
 
 		public async Task<bool> DeleteByEmailAsync(string email)
