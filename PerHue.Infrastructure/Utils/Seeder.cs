@@ -59,10 +59,10 @@ namespace PerHue.Infrastructure.Utils
 			return new List<ServicePackage>
 			{
 				new() { Name = "Free", Price = 0, Description = "Free service package", Duration = 0 },
-				new() { Name = "OneTime", Price = 2000, Description = "One time AI test service package", Duration = 30 },
-				new() { Name = "Premium", Price = 4000, Description = "Premium month version service package", Duration = 30 },
-				new() { Name = "Premium", Price = 10000, Description = "Premium year version service package", Duration = 365 },
-				new() { Name = "Partnership", Price = 150000, Description = "Partnership version service package", Duration = 30 }
+				new() { Name = "OneTime", Price = 2000, Description = "AI-powered detailed color analysis\r\n\r\nOne-time AR try-on (makeup/outfits)\r\n\r\nEnhanced styling recommendations", Duration = 30 },
+				new() { Name = "Premium", Price = 4000, Description = "Unlimited AI color analysis & AR/VR try-ons\r\n\r\nPersonalized styling for seasons & events\r\n\r\nAd-free & exclusive brand offers\r\n\r\nMonthly 1-on-1 session with a top stylist or beauty expert", Duration = 30 },
+				new() { Name = "Premium", Price = 10000, Description = "Unlimited AI color analysis & AR/VR try-ons\r\n\r\nPersonalized styling for seasons & events\r\n\r\nAd-free & exclusive brand offers\r\n\r\nMonthly 1-on-1 session with a top stylist or beauty expert", Duration = 365 },
+				new() { Name = "Partnership", Price = 150000, Description = "AI-Powered Matching\r\n\r\nSmart Filtering\r\n\r\nReal-Time Updates\r\n\r\nReal-Time Metrics\r\n\r\nCustomer Insights", Duration = 30 }
 			};
 		}
 
@@ -79,7 +79,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAiTested = false,
+					IsAitested = false,
 					RoleId = 1,
 				},
 				new()
@@ -93,7 +93,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAiTested = false,
+					IsAitested = false,
 					RoleId = 2,
 				},
 				new()
@@ -107,7 +107,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAiTested = false,
+					IsAitested = false,
 					RoleId = 2,
 				},
 				new()
@@ -121,7 +121,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAiTested = false,
+					IsAitested = false,
 					RoleId = 2,
 				},
 

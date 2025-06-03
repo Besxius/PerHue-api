@@ -48,7 +48,7 @@ namespace PerHue.Infrastructure.Services
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
 			entity.IsActive = true;
-			entity.IsAiTested = false;
+			entity.IsAitested = false;
 			entity.RoleId = 3;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
