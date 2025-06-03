@@ -78,7 +78,7 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string orderCode
 			)
 		{
-			await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Active.ToString());
+			//await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Active.ToString());
 
 			return Ok(new
 			{
@@ -95,7 +95,7 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string orderCode
 			)
 		{
-			await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Cancelled.ToString());
+			//await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Cancelled.ToString());
 
 			return Ok(new
 			{
