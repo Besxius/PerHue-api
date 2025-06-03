@@ -23,7 +23,7 @@ namespace PerHue.Infrastructure.Utils
 			var payOs = new PayOS(clientId, apiKey, checksumKey);
 
 			var paymentLinkRequest = new PaymentData(
-				orderCode: subscriptionId,
+				orderCode: int.Parse(DateTimeOffset.Now.ToString("ffffff")),
 				amount: amount,
 				items: null!, 
 				description: description,
