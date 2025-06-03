@@ -72,91 +72,74 @@ public partial class PerHueDbContext : DbContext
     {
         modelBuilder.Entity<AiTestResult>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("ai_test_result_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__AiTestRe__3214EC07E008096E");
 
-            entity.ToTable("ai_test_result");
+            entity.ToTable("AiTestResult");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.EyesColor)
                 .HasMaxLength(20)
-                .HasColumnName("eyes_color");
+                .IsUnicode(false);
             entity.Property(e => e.HairColor)
                 .HasMaxLength(20)
-                .HasColumnName("hair_color");
+                .IsUnicode(false);
             entity.Property(e => e.LipsColor)
                 .HasMaxLength(20)
-                .HasColumnName("lips_color");
-            entity.Property(e => e.Picture)
-                .HasMaxLength(255)
-                .HasColumnName("picture");
+                .IsUnicode(false);
+            entity.Property(e => e.Picture).IsUnicode(false);
             entity.Property(e => e.SkinColor)
                 .HasMaxLength(20)
-                .HasColumnName("skin_color");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                .IsUnicode(false);
 
             entity.HasOne(d => d.User).WithMany(p => p.AiTestResults)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkai_test_re190647");
+                .HasConstraintName("FKAiTestResu563974");
         });
 
         modelBuilder.Entity<Avoid>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("avoid_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Avoid__3214EC077AB9F648");
 
-            entity.ToTable("avoid");
+            entity.ToTable("Avoid");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
+            entity.Property(e => e.Id).ValueGeneratedNever();
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.Avoid)
                 .HasForeignKey<Avoid>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkavoid989782");
+                .HasConstraintName("FKAvoid425219");
         });
 
         modelBuilder.Entity<Brand>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("brand_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Brand__3214EC07A9A160CB");
 
-            entity.ToTable("brand");
+            entity.ToTable("Brand");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Link)
-                .HasMaxLength(100)
-                .HasColumnName("link");
-            entity.Property(e => e.Logo)
                 .HasMaxLength(255)
-                .HasColumnName("logo");
-            entity.Property(e => e.Name)
-                .HasMaxLength(20)
-                .HasColumnName("name");
-            entity.Property(e => e.Slogan)
-                .HasMaxLength(100)
-                .HasColumnName("slogan");
+                .IsUnicode(false);
+            entity.Property(e => e.Logo).IsUnicode(false);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.Slogan).HasMaxLength(255);
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.Brand)
                 .HasForeignKey<Brand>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkbrand213295");
+                .HasConstraintName("FKBrand133468");
         });
 
         modelBuilder.Entity<CapsulePalette>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("capsule_palette_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__CapsuleP__3214EC07C549DF41");
 
-            entity.ToTable("capsule_palette");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ColorTypeId).HasColumnName("color_type_id");
+            entity.ToTable("CapsulePalette");
 
             entity.HasOne(d => d.ColorType).WithMany(p => p.CapsulePalettes)
                 .HasForeignKey(d => d.ColorTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkcapsule_pa2677");
+                .HasConstraintName("FKCapsulePal268315");
 
             entity.HasMany(d => d.Colors).WithMany(p => p.CapsulePalettes)
                 .UsingEntity<Dictionary<string, object>>(
@@ -164,90 +147,76 @@ public partial class PerHueDbContext : DbContext
                     r => r.HasOne<Color>().WithMany()
                         .HasForeignKey("ColorId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcapsule_pa182676"),
+                        .HasConstraintName("FKCapsulePal75933"),
                     l => l.HasOne<CapsulePalette>().WithMany()
                         .HasForeignKey("CapsulePaletteId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcapsule_pa163002"),
+                        .HasConstraintName("FKCapsulePal722223"),
                     j =>
                     {
-                        j.HasKey("CapsulePaletteId", "ColorId").HasName("capsule_palette_color_pkey");
-                        j.ToTable("capsule_palette_color");
-                        j.IndexerProperty<int>("CapsulePaletteId").HasColumnName("capsule_palette_id");
-                        j.IndexerProperty<int>("ColorId").HasColumnName("color_id");
+                        j.HasKey("CapsulePaletteId", "ColorId").HasName("PK__CapsuleP__797C1045418EBF84");
+                        j.ToTable("CapsulePalette_Color");
                     });
         });
 
         modelBuilder.Entity<Carousel>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("carousel_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Carousel__3214EC073250DB39");
 
-            entity.ToTable("carousel");
+            entity.ToTable("Carousel");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.BrandId).HasColumnName("brand_id");
             entity.Property(e => e.Color)
                 .HasMaxLength(10)
-                .HasColumnName("color");
-            entity.Property(e => e.Picture)
-                .HasMaxLength(255)
-                .HasColumnName("picture");
-            entity.Property(e => e.Title)
-                .HasMaxLength(50)
-                .HasColumnName("title");
+                .IsUnicode(false);
+            entity.Property(e => e.Picture).IsUnicode(false);
+            entity.Property(e => e.Title).HasMaxLength(50);
 
             entity.HasOne(d => d.Brand).WithMany(p => p.Carousels)
                 .HasForeignKey(d => d.BrandId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkcarousel257824");
+                .HasConstraintName("FKCarousel383250");
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("category_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC07E7CB51FE");
 
-            entity.ToTable("category");
+            entity.ToTable("Category");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(20)
-                .HasColumnName("name");
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<ChatRoom>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("chat_room_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__ChatRoom__3214EC07C65AEC62");
 
-            entity.ToTable("chat_room");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Person1).HasColumnName("person1");
-            entity.Property(e => e.Person2).HasColumnName("person2");
+            entity.ToTable("ChatRoom");
 
             entity.HasOne(d => d.Person1Navigation).WithMany(p => p.ChatRoomPerson1Navigations)
                 .HasForeignKey(d => d.Person1)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkchat_room351897");
+                .HasConstraintName("FKChatRoom84230");
 
             entity.HasOne(d => d.Person2Navigation).WithMany(p => p.ChatRoomPerson2Navigations)
                 .HasForeignKey(d => d.Person2)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkchat_room351896");
+                .HasConstraintName("FKChatRoom84229");
         });
 
         modelBuilder.Entity<Color>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("color_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Color__3214EC07D5033BC7");
 
-            entity.ToTable("color");
+            entity.ToTable("Color");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.HexCode)
                 .HasMaxLength(20)
-                .HasColumnName("hex_code");
+                .IsUnicode(false);
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
-                .HasColumnName("name");
+                .IsUnicode(false);
 
             entity.HasMany(d => d.Avoids).WithMany(p => p.Colors)
                 .UsingEntity<Dictionary<string, object>>(
@@ -255,17 +224,15 @@ public partial class PerHueDbContext : DbContext
                     r => r.HasOne<Avoid>().WithMany()
                         .HasForeignKey("AvoidId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcolor_avoi983755"),
+                        .HasConstraintName("FKColor_Avoi495417"),
                     l => l.HasOne<Color>().WithMany()
                         .HasForeignKey("ColorId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcolor_avoi217577"),
+                        .HasConstraintName("FKColor_Avoi166920"),
                     j =>
                     {
-                        j.HasKey("ColorId", "AvoidId").HasName("color_avoid_pkey");
-                        j.ToTable("color_avoid");
-                        j.IndexerProperty<int>("ColorId").HasColumnName("color_id");
-                        j.IndexerProperty<int>("AvoidId").HasColumnName("avoid_id");
+                        j.HasKey("ColorId", "AvoidId").HasName("PK__Color_Av__5AF28142100F8742");
+                        j.ToTable("Color_Avoid");
                     });
 
             entity.HasMany(d => d.Suggesteds).WithMany(p => p.Colors)
@@ -274,136 +241,104 @@ public partial class PerHueDbContext : DbContext
                     r => r.HasOne<Suggested>().WithMany()
                         .HasForeignKey("SuggestedId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcolor_sugg317685"),
+                        .HasConstraintName("FKColor_Sugg730898"),
                     l => l.HasOne<Color>().WithMany()
                         .HasForeignKey("ColorId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkcolor_sugg280581"),
+                        .HasConstraintName("FKColor_Sugg867674"),
                     j =>
                     {
-                        j.HasKey("ColorId", "SuggestedId").HasName("color_suggested_pkey");
-                        j.ToTable("color_suggested");
-                        j.IndexerProperty<int>("ColorId").HasColumnName("color_id");
-                        j.IndexerProperty<int>("SuggestedId").HasColumnName("suggested_id");
+                        j.HasKey("ColorId", "SuggestedId").HasName("PK__Color_Su__745BF8CCA8991C59");
+                        j.ToTable("Color_Suggested");
                     });
         });
 
         modelBuilder.Entity<ColorType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("color_type_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__ColorTyp__3214EC0795440294");
 
-            entity.ToTable("color_type");
+            entity.ToTable("ColorType");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(20)
-                .HasColumnName("name");
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<Expert>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("expert_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Expert__3214EC07D707CEEA");
 
-            entity.ToTable("expert");
+            entity.ToTable("Expert");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
-            entity.Property(e => e.Bio)
-                .HasMaxLength(255)
-                .HasColumnName("bio");
-            entity.Property(e => e.Certification)
-                .HasMaxLength(255)
-                .HasColumnName("certification");
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Bio).IsUnicode(false);
+            entity.Property(e => e.Certification).IsUnicode(false);
             entity.Property(e => e.Languages)
                 .HasMaxLength(50)
-                .HasColumnName("languages");
+                .IsUnicode(false);
             entity.Property(e => e.Nickname)
                 .HasMaxLength(50)
-                .HasColumnName("nickname");
-            entity.Property(e => e.Rating)
-                .HasPrecision(10, 3)
-                .HasColumnName("rating");
-            entity.Property(e => e.Specialization)
-                .HasMaxLength(255)
-                .HasColumnName("specialization");
-            entity.Property(e => e.YearsOfExperience).HasColumnName("years_of_experience");
+                .IsUnicode(false);
+            entity.Property(e => e.Rating).HasColumnType("decimal(10, 3)");
+            entity.Property(e => e.Specialization).IsUnicode(false);
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.Expert)
                 .HasForeignKey<Expert>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkexpert985314");
+                .HasConstraintName("FKExpert610142");
         });
 
         modelBuilder.Entity<Message>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("message_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Message__3214EC07C5B46DE3");
 
-            entity.ToTable("message");
+            entity.ToTable("Message");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ChatRoomId).HasColumnName("chat_room_id");
-            entity.Property(e => e.Content)
-                .HasMaxLength(255)
-                .HasColumnName("content");
-            entity.Property(e => e.Sender).HasColumnName("sender");
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.Time)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("time");
+                .IsUnicode(false);
+            entity.Property(e => e.Time).HasColumnType("datetime");
 
             entity.HasOne(d => d.ChatRoom).WithMany(p => p.Messages)
                 .HasForeignKey(d => d.ChatRoomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkmessage521334");
+                .HasConstraintName("FKMessage32066");
 
             entity.HasOne(d => d.SenderNavigation).WithMany(p => p.Messages)
                 .HasForeignKey(d => d.Sender)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkmessage177656");
+                .HasConstraintName("FKMessage169107");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("notification_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC07AF3F413B");
 
-            entity.ToTable("notification");
+            entity.ToTable("Notification");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Content)
-                .HasMaxLength(255)
-                .HasColumnName("content");
-            entity.Property(e => e.IsRead).HasColumnName("is_read");
-            entity.Property(e => e.Receiver).HasColumnName("receiver");
-            entity.Property(e => e.Time)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("time");
-            entity.Property(e => e.Title)
-                .HasMaxLength(50)
-                .HasColumnName("title");
+            entity.Property(e => e.Content).HasMaxLength(255);
+            entity.Property(e => e.IsRead).HasColumnName("Is_Read");
+            entity.Property(e => e.Time).HasColumnType("datetime");
+            entity.Property(e => e.Title).HasMaxLength(50);
 
             entity.HasOne(d => d.ReceiverNavigation).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.Receiver)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fknotificati183464");
+                .HasConstraintName("FKNotificati163299");
         });
 
         modelBuilder.Entity<Palette>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("palette_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Palette__3214EC07F7B51414");
 
-            entity.ToTable("palette");
+            entity.ToTable("Palette");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
+            entity.Property(e => e.Id).ValueGeneratedNever();
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.Palette)
                 .HasForeignKey<Palette>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpalette892807");
+                .HasConstraintName("FKPalette663780");
 
             entity.HasMany(d => d.CapsulePalettes).WithMany(p => p.Palettes)
                 .UsingEntity<Dictionary<string, object>>(
@@ -411,137 +346,102 @@ public partial class PerHueDbContext : DbContext
                     r => r.HasOne<CapsulePalette>().WithMany()
                         .HasForeignKey("CapsulePaletteId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkpalette_ca603434"),
+                        .HasConstraintName("FKPalette_Ca168791"),
                     l => l.HasOne<Palette>().WithMany()
                         .HasForeignKey("PaletteId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkpalette_ca371988"),
+                        .HasConstraintName("FKPalette_Ca115545"),
                     j =>
                     {
-                        j.HasKey("PaletteId", "CapsulePaletteId").HasName("palette_capsule_palette_pkey");
-                        j.ToTable("palette_capsule_palette");
-                        j.IndexerProperty<int>("PaletteId").HasColumnName("palette_id");
-                        j.IndexerProperty<int>("CapsulePaletteId").HasColumnName("capsule_palette_id");
+                        j.HasKey("PaletteId", "CapsulePaletteId").HasName("PK__Palette___B98889A7657197EE");
+                        j.ToTable("Palette_CapsulePalette");
                     });
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("payment_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Payment__3214EC07E677A25F");
 
-            entity.ToTable("payment");
+            entity.ToTable("Payment");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Amount).HasColumnName("amount");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Description)
                 .HasMaxLength(50)
-                .HasColumnName("description");
+                .IsUnicode(false);
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.TransactionId)
-                .HasMaxLength(255)
-                .HasColumnName("transaction_id");
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updated_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.UserSubscriptionId).HasColumnName("user_subscription_id");
+                .IsUnicode(false);
+            entity.Property(e => e.TransactionId).IsUnicode(false);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.User).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpayment832702");
+                .HasConstraintName("FKPayment506916");
 
             entity.HasOne(d => d.UserSubscription).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.UserSubscriptionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpayment69402");
+                .HasConstraintName("FKPayment766453");
         });
 
         modelBuilder.Entity<PaymentLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("payment_log_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__PaymentL__3214EC0710C02682");
 
-            entity.ToTable("payment_log");
+            entity.ToTable("PaymentLog");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
-            entity.Property(e => e.EventType)
-                .HasMaxLength(255)
-                .HasColumnName("event_type");
-            entity.Property(e => e.Mesage)
-                .HasMaxLength(255)
-                .HasColumnName("mesage");
-            entity.Property(e => e.Metadata)
-                .HasMaxLength(255)
-                .HasColumnName("metadata");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.EventType).IsUnicode(false);
+            entity.Property(e => e.Mesage).IsUnicode(false);
+            entity.Property(e => e.Metadata).IsUnicode(false);
             entity.Property(e => e.NewStatus)
                 .HasMaxLength(20)
-                .HasColumnName("new_status");
+                .IsUnicode(false);
             entity.Property(e => e.OldStatus)
                 .HasMaxLength(20)
-                .HasColumnName("old_status");
-            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+                .IsUnicode(false);
 
             entity.HasOne(d => d.Payment).WithMany(p => p.PaymentLogs)
                 .HasForeignKey(d => d.PaymentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpayment_lo138909");
+                .HasConstraintName("FKPaymentLog793082");
         });
 
         modelBuilder.Entity<Post>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("post_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Post__3214EC0734FCDE48");
 
-            entity.ToTable("post");
+            entity.ToTable("Post");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Content)
-                .HasMaxLength(255)
-                .HasColumnName("content");
-            entity.Property(e => e.Reaction).HasColumnName("reaction");
-            entity.Property(e => e.Time)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("time");
-            entity.Property(e => e.TopicId).HasColumnName("topic_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Time).HasColumnType("datetime");
 
             entity.HasOne(d => d.Topic).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.TopicId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpost160116");
+                .HasConstraintName("FKPost883700");
 
             entity.HasOne(d => d.User).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkpost646482");
+                .HasConstraintName("FKPost986101");
         });
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("product_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Product__3214EC07E0A91D8E");
 
-            entity.ToTable("product");
+            entity.ToTable("Product");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
-                .HasColumnName("name");
-            entity.Property(e => e.Sale)
-                .HasPrecision(1, 3)
-                .HasColumnName("sale");
+                .IsUnicode(false);
+            entity.Property(e => e.Sale).HasColumnType("decimal(1, 1)");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkproduct18273");
+                .HasConstraintName("FKProduct365970");
 
             entity.HasMany(d => d.Colors).WithMany(p => p.Products)
                 .UsingEntity<Dictionary<string, object>>(
@@ -549,226 +449,174 @@ public partial class PerHueDbContext : DbContext
                     r => r.HasOne<Color>().WithMany()
                         .HasForeignKey("ColorId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkproduct_co644657"),
+                        .HasConstraintName("FKProduct_Co57564"),
                     l => l.HasOne<Product>().WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fkproduct_co749051"),
+                        .HasConstraintName("FKProduct_Co884415"),
                     j =>
                     {
-                        j.HasKey("ProductId", "ColorId").HasName("product_color_pkey");
-                        j.ToTable("product_color");
-                        j.IndexerProperty<int>("ProductId").HasColumnName("product_id");
-                        j.IndexerProperty<int>("ColorId").HasColumnName("color_id");
+                        j.HasKey("ProductId", "ColorId").HasName("PK__Product___7CD6B0B9A4D7BE4B");
+                        j.ToTable("Product_Color");
                     });
         });
 
         modelBuilder.Entity<ProductPicture>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("product_picture_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__ProductP__3214EC07A42C2F30");
 
-            entity.ToTable("product_picture");
+            entity.ToTable("ProductPicture");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Picture)
-                .HasMaxLength(255)
-                .HasColumnName("picture");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Picture).IsUnicode(false);
 
             entity.HasOne(d => d.Product).WithMany(p => p.ProductPictures)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkproduct_pi17947");
+                .HasConstraintName("FKProductPic772500");
         });
 
         modelBuilder.Entity<Reply>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("reply_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Reply__3214EC0775A1219D");
 
-            entity.ToTable("reply");
+            entity.ToTable("Reply");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Content)
-                .HasMaxLength(255)
-                .HasColumnName("content");
-            entity.Property(e => e.PostId).HasColumnName("post_id");
-            entity.Property(e => e.Reaction).HasColumnName("reaction");
-            entity.Property(e => e.ReplyId).HasColumnName("reply_id");
+            entity.Property(e => e.Content).IsUnicode(false);
 
             entity.HasOne(d => d.Post).WithMany(p => p.Replies)
                 .HasForeignKey(d => d.PostId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkreply786601");
+                .HasConstraintName("FKReply241689");
 
             entity.HasOne(d => d.ReplyNavigation).WithMany(p => p.InverseReplyNavigation)
                 .HasForeignKey(d => d.ReplyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkreply278896");
+                .HasConstraintName("FKReply96398");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("role_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Role__3214EC07F7E3AC50");
 
-            entity.ToTable("role");
+            entity.ToTable("Role");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
-                .HasColumnName("name");
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<ServicePackage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("service_package_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__ServiceP__3214EC0745CFD2B0");
 
-            entity.ToTable("service_package");
+            entity.ToTable("ServicePackage");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Description)
-                .HasMaxLength(255)
-                .HasColumnName("description");
-            entity.Property(e => e.Duration).HasColumnName("duration");
+            entity.Property(e => e.Description).IsUnicode(false);
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
-                .HasColumnName("name");
-            entity.Property(e => e.Price).HasColumnName("price");
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<Suggested>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("suggested_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Suggeste__3214EC070F3CC9D8");
 
-            entity.ToTable("suggested");
+            entity.ToTable("Suggested");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
+            entity.Property(e => e.Id).ValueGeneratedNever();
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.Suggested)
                 .HasForeignKey<Suggested>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fksuggested935089");
+                .HasConstraintName("FKSuggested621498");
         });
 
         modelBuilder.Entity<Topic>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("topic_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__Topic__3214EC0768BDE62C");
 
-            entity.ToTable("topic");
+            entity.ToTable("Topic");
 
-            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(20)
-                .HasColumnName("name");
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<UserAccount>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("user_account_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__UserAcco__3214EC07BCBB2C86");
 
-            entity.ToTable("user_account");
+            entity.ToTable("UserAccount");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Dob).HasColumnName("dob");
             entity.Property(e => e.Email)
-                .HasMaxLength(50)
-                .HasColumnName("email");
-            entity.Property(e => e.Fullname)
-                .HasMaxLength(50)
-                .HasColumnName("fullname");
-            entity.Property(e => e.Gender).HasColumnName("gender");
-            entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.IsAiTested).HasColumnName("is_ai_tested");
-            entity.Property(e => e.Password)
                 .HasMaxLength(255)
-                .HasColumnName("password");
+                .IsUnicode(false);
+            entity.Property(e => e.Fullname).HasMaxLength(255);
+            entity.Property(e => e.IsAitested).HasColumnName("IsAITested");
+            entity.Property(e => e.Password).IsUnicode(false);
             entity.Property(e => e.Phone)
                 .HasMaxLength(10)
-                .HasColumnName("phone");
-            entity.Property(e => e.ProfilePicture)
-                .HasMaxLength(255)
-                .HasColumnName("profile_picture");
-            entity.Property(e => e.RoleId).HasColumnName("role_id");
+                .IsUnicode(false);
+            entity.Property(e => e.ProfilePicture).IsUnicode(false);
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
-                .HasColumnName("username");
+                .IsUnicode(false);
 
             entity.HasOne(d => d.Role).WithMany(p => p.UserAccounts)
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkuser_accou431404");
+                .HasConstraintName("FKUserAccoun312334");
         });
 
         modelBuilder.Entity<UserSubscription>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("user_subscription_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__UserSubs__3214EC072FCA375E");
 
-            entity.ToTable("user_subscription");
+            entity.ToTable("UserSubscription");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreateAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("create_at");
-            entity.Property(e => e.EndDate)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("end_date");
-            entity.Property(e => e.ServicePackageId).HasColumnName("service_package_id");
-            entity.Property(e => e.StartDate)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("start_date");
+            entity.Property(e => e.CreateAt).HasColumnType("datetime");
+            entity.Property(e => e.EndDate).HasColumnType("datetime");
+            entity.Property(e => e.StartDate).HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.UpdateAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("update_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                .IsUnicode(false);
+            entity.Property(e => e.UpdateAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.ServicePackage).WithMany(p => p.UserSubscriptions)
                 .HasForeignKey(d => d.ServicePackageId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkuser_subsc787567");
+                .HasConstraintName("FKUserSubscr443828");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserSubscriptions)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkuser_subsc11473");
+                .HasConstraintName("FKUserSubscr62907");
         });
 
         modelBuilder.Entity<VerifyInformation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("verify_information_pkey");
+            entity.HasKey(e => e.Id).HasName("PK__VerifyIn__3214EC07F85BA787");
 
-            entity.ToTable("verify_information");
+            entity.ToTable("VerifyInformation");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
-            entity.Property(e => e.Bio)
-                .HasMaxLength(255)
-                .HasColumnName("bio");
-            entity.Property(e => e.Certification)
-                .HasMaxLength(255)
-                .HasColumnName("certification");
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Bio).IsUnicode(false);
+            entity.Property(e => e.Certification).IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
-                .HasColumnName("email");
+                .IsUnicode(false);
             entity.Property(e => e.Languages)
                 .HasMaxLength(50)
-                .HasColumnName("languages");
+                .IsUnicode(false);
             entity.Property(e => e.Nickname)
                 .HasMaxLength(50)
-                .HasColumnName("nickname");
-            entity.Property(e => e.Specialization)
-                .HasMaxLength(255)
-                .HasColumnName("specialization");
-            entity.Property(e => e.YearsOfExperience).HasColumnName("years_of_experience");
+                .IsUnicode(false);
+            entity.Property(e => e.Specialization).IsUnicode(false);
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.VerifyInformation)
                 .HasForeignKey<VerifyInformation>(d => d.Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fkverify_inf617092");
+                .HasConstraintName("FKVerifyInfo301359");
         });
 
         OnModelCreatingPartial(modelBuilder);
