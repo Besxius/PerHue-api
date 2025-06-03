@@ -25,7 +25,7 @@ public partial class UserAccount
 
     public string? ProfilePicture { get; set; }
 
-    public bool IsAiTested { get; set; }
+    public bool IsAitested { get; set; }
 
     public int RoleId { get; set; }
 
