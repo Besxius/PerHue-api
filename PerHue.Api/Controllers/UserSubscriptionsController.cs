@@ -46,7 +46,7 @@ namespace PerHue.Api.Controllers
 		}
 		[HttpPost]
 		[Route("subscription/{packageId}")]
-		public async Task<string> Post([FromRoute] int packageId)
+		public async Task<string> Post([FromRoute] int packageId, string returnUrl, string cancelUrl)
 		{
 			var model = new CreateUserSubscriptionModel
 			{
@@ -63,7 +63,9 @@ namespace PerHue.Api.Controllers
 			{
 				Amount = package.Price,
 				Description = description,
-				UserSubscriptionId = subscriptionId
+				UserSubscriptionId = subscriptionId,
+				ReturnUrl = returnUrl,
+				CancelUrl = cancelUrl
 			};
 			var paymentUrl = await _servicesProvider.PaymentService.CreatePaymentAsync(paymentModel);
 			return paymentUrl;
