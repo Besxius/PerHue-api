@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Net.payOS;
 using Net.payOS.Types;
+using PerHue.Application.Models;
 
 namespace PerHue.Infrastructure.Utils
 {
@@ -13,7 +14,7 @@ namespace PerHue.Infrastructure.Utils
 			_configuration = configuration;
 		}
 
-		public async Task<string> CreatePaymentAsync(int amount, string description, int subscriptionId)
+		public async Task<string> CreatePaymentAsync(PayOSRequestModel model)
 		{
 			var clientId = _configuration["PayOS:ClientId"];
 			var apiKey = _configuration["PayOS:ApiKey"];
@@ -24,11 +25,11 @@ namespace PerHue.Infrastructure.Utils
 
 			var paymentLinkRequest = new PaymentData(
 				orderCode: int.Parse(DateTimeOffset.Now.ToString("ffffff")),
-				amount: amount,
+				amount: model.Amount,
 				items: null!, 
-				description: description,
-				returnUrl: domain + "/api/usersubscriptions/subscription/success",
-				cancelUrl: domain + "/api/usersubscriptions/subscription/cancel"
+				description: model.Description,
+				returnUrl: model.ReturnUrl,
+				cancelUrl: model.CancelUrl
 				);
 			var response = await payOs.createPaymentLink(paymentLinkRequest);
 
