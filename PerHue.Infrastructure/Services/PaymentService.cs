@@ -21,7 +21,7 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<string> CreatePaymentAsync(PayOSRequestModel model)
 		{
-			return await _payOSPaymentService.CreatePaymentAsync(model.Amount, model.Description, model.UserSubscriptionId);
+			return await _payOSPaymentService.CreatePaymentAsync(model);
 		}
 
 		public async Task<IEnumerable<PaymentModel>> GetAllPaymentsAsync(int userId)
