@@ -1,13 +1,11 @@
-﻿using PerHue.Application.Models;
+﻿using PerHue.Application.Basic;
+using PerHue.Application.Models;
 
 namespace PerHue.Application.IServices
 {
-	public interface IServicePackageService
+	public interface IServicePackageService : IGenericService<ServicePackageModel>
 	{
-		Task<IEnumerable<ServicePackageModel>> GetAllServicePackagesAsync();
-		Task<ServicePackageModel> GetServicePackageByIdAsync(int id);
-		Task CreateServicePackageAsync(ServicePackageModel servicePackageModel);
-		Task<bool> UpdateServicePackageAsync(int id, ServicePackageModel servicePackageModel);
-		Task DeleteServicePackageAsync(int id);
+		Task CreateAsync(ServicePackageModel servicePackageModel);
+		Task<bool> UpdateAsync(int id, ServicePackageModel servicePackageModel);
 	}
 }

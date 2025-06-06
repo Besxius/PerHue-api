@@ -43,7 +43,7 @@ namespace PerHue.Infrastructure.Services
 			return true;
 		}
 
-		public async Task CreateUserAsync(CreateUserModel model)
+		public async Task CreateAsync(CreateUserModel model)
 		{
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
@@ -54,30 +54,30 @@ namespace PerHue.Infrastructure.Services
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}
 
-		public async Task DeleteUserAsync(string email)
+		public async Task<bool> DeleteAsync(string email)
 		{
-			await _unitOfWork.UserRepository.DeleteByEmailAsync(email);
+			return await _unitOfWork.UserRepository.DeleteByEmailAsync(email);
 		}
 
-		public async Task DeleteUserAsync(int id)
+		public async Task<bool> DeleteAsync(int id)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByIdAsync(id);
-			await _unitOfWork.UserRepository.RemoveAsync(entity);
+			return await _unitOfWork.UserRepository.RemoveAsync(entity);
 		}
 
-		public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
+		public async Task<IEnumerable<UserModel>> GetAllAsync()
 		{
 			var entities = await _unitOfWork.UserRepository.GetAllAsync();
 			return _mapper.Map<IEnumerable<UserModel>>(entities);
 		}
 
-		public async Task<UserModel> GetUserByEmailAsync(string email)
+		public async Task<UserModel> GetByEmailAsync(string email)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
 			return _mapper.Map<UserModel>(entity);
 		}
 
-		public async Task<UserModel> GetUserByIdAsync(int id)
+		public async Task<UserModel> GetByIdAsync(int id)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByIdAsync(id);
 			return _mapper.Map<UserModel>(entity);
@@ -89,7 +89,7 @@ namespace PerHue.Infrastructure.Services
 			return entity.Password;
 		}
 
-		public async Task<bool> UpdateUserAsync(int id, UpdateUserModel user)
+		public async Task<bool> UpdateAsync(int id, UpdateUserModel user)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByIdAsync(id);
 			if (entity is null)
