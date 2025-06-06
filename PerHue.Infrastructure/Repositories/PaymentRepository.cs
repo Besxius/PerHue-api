@@ -12,9 +12,28 @@ namespace PerHue.Infrastructure.Repositories
 		{
 		}
 
-		public async Task<IEnumerable<Payment>> GetAllPaymentsByUserIdAsync(int userId)
+		public async Task<IEnumerable<Payment>> GetAllByUserIdAsync(int userId)
 		{
-			return await _context.Payments.Where(p => p.UserId == userId).ToListAsync();
+			return await _context.Payments
+				.Include(p => p.User)
+				.Include(p => p.UserSubscription)
+				.Where(p => p.UserId == userId).ToListAsync();
+		}
+
+		public async Task<IEnumerable<Payment>> GetAllAsync()
+		{
+			return await _context.Payments
+				.Include(p => p.User)
+				.Include(p => p.UserSubscription)
+				.ToListAsync();
+		}
+
+		public async Task<Payment> GetByIdAsync(int id)
+		{
+			return await _context.Payments
+				.Include(p => p.User)
+				.Include(p => p.UserSubscription)
+				.FirstOrDefaultAsync(p => p.Id == id);
 		}
 	}
 }

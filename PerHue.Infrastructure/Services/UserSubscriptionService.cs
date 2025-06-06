@@ -17,7 +17,7 @@ namespace PerHue.Infrastructure.Services
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 		}
-		public async Task<int> CreateUserSubscriptionAsync(CreateUserSubscriptionModel model)
+		public async Task<int> CreateAsync(CreateUserSubscriptionModel model)
 		{
 			var entity = _mapper.Map<UserSubscription>(model);
 
@@ -35,8 +35,19 @@ namespace PerHue.Infrastructure.Services
 
 			return entity.Id;
 		}
+		public async Task<IEnumerable<UserSubscriptionModel>> GetAllAsync()
+		{
+			var entities = await _unitOfWork.UserSubscriptionRepository.GetAllAsync();
+			return _mapper.Map<IEnumerable<UserSubscriptionModel>>(entities);
+		}
+		public async Task<UserSubscriptionModel> GetByIdAsync(int id)
+		{
+			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
+			return _mapper.Map<UserSubscriptionModel>(entity);
 
-		public async Task UpdateUserSubscriptionAsync(int id, string status)
+		}
+
+		public async Task UpdateStatusUserSubscriptionAsync(int id, string status)
 		{
 			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
 
@@ -45,29 +56,22 @@ namespace PerHue.Infrastructure.Services
 			await _unitOfWork.UserSubscriptionRepository.UpdateAsync(entity);
 		}
 
-		public async Task<UserSubscriptionModel> GetUserSubscriptionByIdAsync(int id)
-		{
-			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
-			return _mapper.Map<UserSubscriptionModel>(entity);
-
-		}
-
 		public async Task<UserSubscriptionModel> GetCurrentUserSubscriptionByUserIdAsync(int userId)
 		{
 			var entity = await _unitOfWork.UserSubscriptionRepository.GetCurrentUserSubscriptionByUserIdAsync(userId);
 			return _mapper.Map<UserSubscriptionModel>(entity);
 		}
 
-		public async Task<IEnumerable<UserSubscriptionModel>> GetUserSubscriptionModels()
-		{
-			var entities = await _unitOfWork.UserSubscriptionRepository.GetAllAsync();
-			return _mapper.Map<IEnumerable<UserSubscriptionModel>>(entities);
-		}
-
 		public Task<IEnumerable<UserSubscriptionModel>> GetHistoryUserSubscriptionsByUserIdAsync(int userId)
 		{
 			var entities = _unitOfWork.UserSubscriptionRepository.GetHistoryUserSubscriptionsByUserIdAsync(userId);
 			return _mapper.Map<Task<IEnumerable<UserSubscriptionModel>>>(entities);
+		}
+
+		public async Task<bool> DeleteAsync(int id)
+		{
+			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
+			return await _unitOfWork.UserSubscriptionRepository.RemoveAsync(entity);
 		}
 	}
 }

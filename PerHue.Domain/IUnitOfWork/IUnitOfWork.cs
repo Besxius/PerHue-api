@@ -8,6 +8,8 @@ namespace PerHue.Domain.UnitOfWork
 		IServicePackageRepository ServicePackageRepository { get; }
 		IUserRepository UserRepository { get; }
 		IUserSubscriptionRepository UserSubscriptionRepository { get; }
+		IPaymentLogRepository PaymentLogRepository { get; }
+		IRoleRepository RoleRepository { get; }
 
 		int SaveChangesWithTransaction();
 		Task<int> SaveChangesWithTransactionAsync();
