@@ -19,12 +19,19 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<ServicePackage, ServicePackageModel>().ReverseMap();
 			CreateMap<UserSubscription, UserSubscriptionModel>().ReverseMap();
 			CreateMap<UserSubscription, CreateUserSubscriptionModel>().ReverseMap();
-			//CreateMap<User, User>()
-			//	.ForMember(dest => dest.Id, opt => opt.Ignore())
-			//	.ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-			//	.ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-			//	.ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
-			//	.ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+			CreateMap<PaymentLog, PaymentLogModel>().ReverseMap();
+			CreateMap<Role, RoleModel>().ReverseMap();
+
+
+			
 		}
 	}
 }
+
+
+//CreateMap<User, User>()
+//	.ForMember(dest => dest.Id, opt => opt.Ignore())
+//	.ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+//	.ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+//	.ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+//	.ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
