@@ -20,7 +20,7 @@ namespace PerHue.Api.Controllers
 		[Route("login")]
 		public async Task<IActionResult> Login(LoginModel model)
 		{
-			var account = await _servicesProvider.UserService.GetUserByEmailAsync(model.Email);
+			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
 			if (account is null)
 				return NotFound();
 			if (account.Isactive == false)
@@ -47,14 +47,14 @@ namespace PerHue.Api.Controllers
 		[HttpGet]
 		public async Task<IEnumerable<UserModel>> GetUsers()
 		{
-			return await _servicesProvider.UserService.GetAllUsersAsync();
+			return await _servicesProvider.UserService.GetAllAsync();
 		}
 
 		// GET: api/Users/5
 		[HttpGet("{id}")]
 		public async Task<ActionResult<UserModel>> GetUser(int id)
 		{
-			var user = await _servicesProvider.UserService.GetUserByIdAsync(id);
+			var user = await _servicesProvider.UserService.GetByIdAsync(id);
 
 			if (user == null)
 			{
@@ -71,7 +71,7 @@ namespace PerHue.Api.Controllers
 		{
 			try
 			{
-				await _servicesProvider.UserService.UpdateUserAsync(id, model);
+				await _servicesProvider.UserService.UpdateAsync(id, model);
 			}
 			catch (DbUpdateConcurrencyException)
 			{
@@ -94,27 +94,27 @@ namespace PerHue.Api.Controllers
 		[Route("register")]
 		public async Task PostUser(CreateUserModel user)
 		{
-			await _servicesProvider.UserService.CreateUserAsync(user);
+			await _servicesProvider.UserService.CreateAsync(user);
 		}
 
 		// DELETE: api/Users/5
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteUser(int id)
 		{
-			var user = await _servicesProvider.UserService.GetUserByIdAsync(id);
+			var user = await _servicesProvider.UserService.GetByIdAsync(id);
 			if (user == null)
 			{
 				return NotFound();
 			}
 
-			await _servicesProvider.UserService.DeleteUserAsync(user.Email);
+			await _servicesProvider.UserService.DeleteAsync(user.Email);
 
 			return NoContent();
 		}
 
 		private async Task<bool> UserExists(int id)
 		{
-			var result = await _servicesProvider.UserService.GetUserByIdAsync(id);
+			var result = await _servicesProvider.UserService.GetByIdAsync(id);
 			return result is not null;
 		}
 	}

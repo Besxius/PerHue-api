@@ -31,6 +31,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IUserSubscriptionRepository, UserSubscriptionRepository>();
 			services.AddScoped<IPaymentRepository, PaymentRepository>();
 			services.AddScoped<IServicePackageRepository, ServicePackageRepository>();
+			services.AddScoped<IPaymentLogRepository, PaymentLogRepository>();
+			services.AddScoped<IRoleRepository, RoleRepository>();
 			#endregion
 
 			#region Services
@@ -39,6 +41,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
+			services.AddScoped<IPaymentLogService, PaymentLogService>();
+			services.AddScoped<IRoleService, RoleService>();
 			#endregion
 
 			#region Other Services
