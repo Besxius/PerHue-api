@@ -8,5 +8,7 @@ namespace PerHue.Application.IServicesProvider
 		IPaymentService PaymentService { get; }
 		IServicePackageService ServicePackageService { get; }
 		IUserSubscriptionService UserSubscriptionService { get; }
+		IPaymentLogService PaymentLogService { get; }
+		IRoleService RoleService { get; }
 	}
 }

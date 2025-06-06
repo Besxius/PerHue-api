@@ -5,6 +5,8 @@ namespace PerHue.Domain.IRepositories
 {
 	public interface IPaymentRepository : IGenericRepository<Payment>
 	{
-		Task<IEnumerable<Payment>> GetAllPaymentsByUserIdAsync(int userId);
+		Task<IEnumerable<Payment>> GetAllAsync();
+		Task<IEnumerable<Payment>> GetAllByUserIdAsync(int userId);
+		Task<Payment> GetByIdAsync(int id);
 	}
 }

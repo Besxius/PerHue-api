@@ -1,12 +1,13 @@
-﻿using PerHue.Application.Models;
+﻿using PerHue.Application.Basic;
+using PerHue.Application.Models;
 
 namespace PerHue.Application.IServices
 {
-	public interface IPaymentService
+	public interface IPaymentService : IGenericService<PaymentModel>
 	{
-		Task<IEnumerable<PaymentModel>> GetAllPaymentsAsync(int userId);
-		Task<IEnumerable<PaymentModel>> GetAllPaymentsAsync();
-		Task<PaymentModel> GetPaymentByIdAsync(int id);
-		Task<string> CreatePaymentAsync(PayOSRequestModel model);
+		Task<IEnumerable<PaymentModel>> GetAllAsync(int userId);
+		Task<IEnumerable<PaymentModel>> GetAllAsync();
+		Task<PaymentModel> GetByIdAsync(int id);
+		Task<string> CreateAsync(PayOSRequestModel model);
 	}
 }
