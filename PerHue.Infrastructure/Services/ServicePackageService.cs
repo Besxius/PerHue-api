@@ -16,19 +16,19 @@ namespace PerHue.Infrastructure.Services
 			_mapper = mapper;
 		}
 
-		public async Task CreateServicePackageAsync(ServicePackageModel servicePackageModel)
+		public async Task CreateAsync(ServicePackageModel servicePackageModel)
 		{
 			var entity = _mapper.Map<ServicePackage>(servicePackageModel);
 			await _unitOfWork.ServicePackageRepository.CreateAsync(entity);
 		}
 
-		public async Task DeleteServicePackageAsync(int id)
+		public async Task<bool> DeleteAsync(int id)
 		{
 			var entity = await _unitOfWork.ServicePackageRepository.GetByIdAsync(id);
-			await _unitOfWork.ServicePackageRepository.RemoveAsync(entity);
+			return await _unitOfWork.ServicePackageRepository.RemoveAsync(entity);
 		}
 
-		public async Task<IEnumerable<ServicePackageModel>> GetAllServicePackagesAsync()
+		public async Task<IEnumerable<ServicePackageModel>> GetAllAsync()
 		{
 			var entities = await _unitOfWork.ServicePackageRepository.GetAllAsync();
 			
@@ -36,13 +36,13 @@ namespace PerHue.Infrastructure.Services
 			return models;
 		}
 
-		public async Task<ServicePackageModel> GetServicePackageByIdAsync(int id)
+		public async Task<ServicePackageModel> GetByIdAsync(int id)
 		{ 
 			var entity = await _unitOfWork.ServicePackageRepository.GetByIdAsync(id);
 			return _mapper.Map<ServicePackageModel>(entity);
 		}
 
-		public async Task<bool> UpdateServicePackageAsync(int id, ServicePackageModel servicePackageModel)
+		public async Task<bool> UpdateAsync(int id, ServicePackageModel servicePackageModel)
 		{
 			var entity = _mapper.Map<ServicePackage>(servicePackageModel);
 			entity.Id = id;

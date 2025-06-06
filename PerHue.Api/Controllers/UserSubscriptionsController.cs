@@ -18,13 +18,13 @@ namespace PerHue.Api.Controllers
 		[HttpGet]
 		public async Task<IEnumerable<UserSubscriptionModel>> Gets()
 		{
-			return await _servicesProvider.UserSubscriptionService.GetUserSubscriptionModels();
+			return await _servicesProvider.UserSubscriptionService.GetAllAsync();
 		}
 
 		[HttpGet("{id}")]
 		public async Task<ActionResult<UserSubscriptionModel>> Get(int id)
 		{
-			var model = await _servicesProvider.UserSubscriptionService.GetUserSubscriptionByIdAsync(id);
+			var model = await _servicesProvider.UserSubscriptionService.GetByIdAsync(id);
 			if (model == null)
 				return NotFound();
 			return Ok(model);
@@ -54,9 +54,9 @@ namespace PerHue.Api.Controllers
 				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = packageId,
 			};
-			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateUserSubscriptionAsync(model);
+			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
-			var package = await _servicesProvider.ServicePackageService.GetServicePackageByIdAsync(packageId);
+			var package = await _servicesProvider.ServicePackageService.GetByIdAsync(packageId);
 			var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{model.UserId}P{model.ServicePackageId}";
 
 			var paymentModel = new PayOSRequestModel
@@ -67,7 +67,7 @@ namespace PerHue.Api.Controllers
 				ReturnUrl = returnUrl,
 				CancelUrl = cancelUrl
 			};
-			var paymentUrl = await _servicesProvider.PaymentService.CreatePaymentAsync(paymentModel);
+			var paymentUrl = await _servicesProvider.PaymentService.CreateAsync(paymentModel);
 			return paymentUrl;
 		}
 

@@ -20,43 +20,43 @@ namespace PerHue.Api.Controllers
 		[HttpGet]
 		public async Task<IEnumerable<ServicePackageModel>> Gets()
 		{
-			var models = await _servicesProvider.ServicePackageService.GetAllServicePackagesAsync();
+			var models = await _servicesProvider.ServicePackageService.GetAllAsync();
 			return models;
 		}
 
 		[HttpGet("{id}")]
 		public async Task<ServicePackageModel> Get(int id)
 		{
-			return await _servicesProvider.ServicePackageService.GetServicePackageByIdAsync(id);
+			return await _servicesProvider.ServicePackageService.GetByIdAsync(id);
 		}
 
 		[HttpPost]
 		public async Task Post([FromBody] ServicePackageModel model)
 		{
-			await _servicesProvider.ServicePackageService.CreateServicePackageAsync(model);
+			await _servicesProvider.ServicePackageService.CreateAsync(model);
 		}
 
 		[HttpPut("{id}")]
 		public async Task Put(int id, [FromBody] ServicePackageModel model)
 		{
-			var isExists = await _servicesProvider.ServicePackageService.GetServicePackageByIdAsync(id) == null;
+			var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
 			if (!isExists)
 			{
 				NotFound();
 			}
-			await _servicesProvider.ServicePackageService.UpdateServicePackageAsync(id, model);
+			await _servicesProvider.ServicePackageService.UpdateAsync(id, model);
 			Ok();
 		}
 
 		[HttpDelete("{id}")]
 		public async Task Delete(int id)
 		{
-			var isExists = await _servicesProvider.ServicePackageService.GetServicePackageByIdAsync(id) == null;
+			var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
 			if (!isExists)
 			{
 				NotFound();
 			}
-			await _servicesProvider.ServicePackageService.DeleteServicePackageAsync(id);
+			await _servicesProvider.ServicePackageService.DeleteAsync(id);
 		}
 	}
 }
