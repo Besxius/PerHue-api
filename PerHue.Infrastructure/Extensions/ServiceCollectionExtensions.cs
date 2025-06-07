@@ -60,36 +60,34 @@ namespace PerHue.Infrastructure.Extensions
 			var secretKey = configuration["AppSettings:SecretKey"];
 			var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey!);
 
-			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-			.AddJwtBearer(opt =>
-			{
-				opt.TokenValidationParameters = new TokenValidationParameters
-				{
-					//tu cap token
-					ValidateIssuer = false,
-					ValidateAudience = false,
-					ValidateLifetime = false,
-
-					//ky vao token 
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
-
-					ClockSkew = TimeSpan.Zero
-				};
-			});
-
 			services.AddAuthentication(options =>
 			{
-				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;  // Đây là default scheme cho Google
+				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;  // Scheme mặc định cho Google Authentication
 			})
-			.AddCookie()
+			.AddCookie()  // Cấu hình cookie cho phiên làm việc
+			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>  // Cấu hình JWT cho API
+			{
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					// Định cấu hình kiểm tra token
+					ValidateIssuer = false,
+					ValidateAudience = false,
+					ValidateLifetime = false,  // Có thể để `false` nếu không muốn kiểm tra thời gian sống của token
+			
+					// Kiểm tra khóa ký
+					ValidateIssuerSigningKey = true,
+					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
+			
+					ClockSkew = TimeSpan.Zero  // Xóa độ trễ thời gian giữa máy chủ và client
+				};
+			})
 			.AddGoogle(options =>
 			{
 				options.ClientId = configuration["Google:ClientId"];
 				options.ClientSecret = configuration["Google:ClientSecret"];
-				options.Scope.Add("email");
-				options.SaveTokens = true;
+				options.Scope.Add("email");  // Cấp quyền truy cập email
+				options.SaveTokens = true;   // Lưu token
 			});
 			#endregion
 		}
