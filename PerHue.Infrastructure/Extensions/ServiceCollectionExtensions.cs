@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -75,8 +77,22 @@ namespace PerHue.Infrastructure.Extensions
 					ClockSkew = TimeSpan.Zero
 				};
 			});
-			#endregion
 
+
+			services.AddAuthentication(options =>
+			{
+				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+			})
+			.AddCookie()
+			.AddGoogle(options =>
+			{
+				options.ClientId = configuration["Google:ClientId"];
+				options.ClientSecret = configuration["Google:ClientSecret"];
+				options.Scope.Add("email");
+				options.SaveTokens = true;
+			});
+			#endregion
 		}
 	}
 }

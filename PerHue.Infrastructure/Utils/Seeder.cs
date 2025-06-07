@@ -58,7 +58,7 @@ namespace PerHue.Infrastructure.Utils
 		{
 			return new List<ServicePackage>
 			{
-				new() { Name = "Free", Price = 0, Description = "Free service package", Duration = 0 },
+				new() { Name = "Free", Price = 0, Description = " Basic personal color analysis based on skin, hair, and eye color.\r\n\r\nSimple outfit/cosmetic suggestions (no in-depth styling)\r\n\r\nLimited to 1-2 analyses per month\r\n\r\nLight adversting", Duration = 0 },
 				new() { Name = "OneTime", Price = 2000, Description = "AI-powered detailed color analysis\r\n\r\nOne-time AR try-on (makeup/outfits)\r\n\r\nEnhanced styling recommendations", Duration = 30 },
 				new() { Name = "Premium", Price = 4000, Description = "Unlimited AI color analysis & AR/VR try-ons\r\n\r\nPersonalized styling for seasons & events\r\n\r\nAd-free & exclusive brand offers\r\n\r\nMonthly 1-on-1 session with a top stylist or beauty expert", Duration = 30 },
 				new() { Name = "Premium", Price = 10000, Description = "Unlimited AI color analysis & AR/VR try-ons\r\n\r\nPersonalized styling for seasons & events\r\n\r\nAd-free & exclusive brand offers\r\n\r\nMonthly 1-on-1 session with a top stylist or beauty expert", Duration = 365 },
