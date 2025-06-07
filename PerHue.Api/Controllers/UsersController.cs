@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
+using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
@@ -30,6 +33,30 @@ namespace PerHue.Api.Controllers
 				return BadRequest();
 
 			return Ok(token);
+		}
+
+		[HttpGet("signin-google")]
+		public IActionResult SignInGoogle()
+		{
+			var redirectUrl = Url.Action("GoogleResponse", "Auth");
+			var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+		}
+
+		[HttpGet("google-response")]
+		public async Task<IActionResult> GoogleResponse()
+		{
+			var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+			if (info.Succeeded)
+			{
+				var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+				
+
+				return Ok(new { email });
+			}
+
+			return Unauthorized();
 		}
 
 		[HttpPost]
