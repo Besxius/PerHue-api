@@ -78,7 +78,6 @@ namespace PerHue.Infrastructure.Extensions
 				};
 			});
 
-
 			services.AddAuthentication(options =>
 			{
 				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
