@@ -15,42 +15,7 @@ builder.Services.Configure<RouteOptions>(options =>
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Google OAuth API", Version = "v1" });
-
-	// Tạo các định nghĩa cho OAuth2
-	c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-	{
-		Type = SecuritySchemeType.OAuth2,
-		Flows = new OpenApiOAuthFlows
-		{
-			Implicit = new OpenApiOAuthFlow
-			{
-				AuthorizationUrl = new Uri("https://accounts.google.com/o/oauth2/auth"),
-				Scopes = new Dictionary<string, string>
-					{
-						{ "email", "Access your email" }
-					}
-			}
-		}
-	});
-
-	c.AddSecurityRequirement(new OpenApiSecurityRequirement
-		{
-			{
-				new OpenApiSecurityScheme
-				{
-					Reference = new OpenApiReference
-					{
-						Type = ReferenceType.SecurityScheme,
-						Id = "oauth2"
-					}
-				},
-				new List<string> { "email" }
-			}
-		});
-});
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
@@ -71,13 +36,7 @@ await seeder.Seed();
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
-	app.UseSwaggerUI(c =>
-	{
-		c.SwaggerEndpoint("/swagger/v1/swagger.json", "Google OAuth API V1");
-		c.OAuthClientId(builder.Configuration["Google:ClientId"]);  // Thêm Google Client ID của bạn
-		c.OAuthClientSecret(builder.Configuration["Google:ClientSecret"]);  // Thêm Google Client Secret của bạn
-		c.OAuthUsePkce();
-	});
+	app.UseSwaggerUI();
 }
 
 app.UseCors();
