@@ -38,7 +38,7 @@ namespace PerHue.Api.Controllers
 		[HttpGet("signin-google")]
 		public IActionResult SignInGoogle()
 		{
-			var redirectUrl = Url.Action("GoogleResponse", "Auth");
+			var redirectUrl = "https://perhue-fjgve4gjhfafbvh6.southeastasia-01.azurewebsites.net/api/users/signin-google";
 			var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
 			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
 		}
