@@ -89,6 +89,8 @@ namespace PerHue.Infrastructure.Extensions
 				options.Scope.Add("email");  // Cấp quyền truy cập email
 				options.SaveTokens = true;   // Lưu token
 			});
+			var clientId = configuration["Google:ClientId"];
+			var clientSecret = configuration["Google:ClientSecret"];
 			#endregion
 		}
 	}
