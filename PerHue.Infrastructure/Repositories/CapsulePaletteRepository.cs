@@ -1,0 +1,14 @@
+﻿using PerHue.Domain.Entities;
+using PerHue.Domain.IRepositories;
+using PerHue.Infrastructure.Basic;
+using PerHue.Infrastructure.Persistence;
+
+namespace PerHue.Infrastructure.Repositories
+{
+	internal class CapsulePaletteRepository : GenericRepository<CapsulePalette>, ICapsulePaletteRepository
+	{
+		public CapsulePaletteRepository(PerHueDbContext context) : base(context)
+		{
+		}
+	}
+}
