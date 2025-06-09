@@ -18,6 +18,16 @@ namespace PerHue.Infrastructure.Repositories
 			return await _context.UserAccounts.Include(p => p.Role).FirstOrDefaultAsync(u => u.Email == email);
 		}
 
+		public async Task<UserAccount> GetByIdAsync(int id)
+		{
+			return await _context.UserAccounts.Include(p => p.Role).FirstOrDefaultAsync(u => u.Id == id);
+		}
+
+		public async Task<IEnumerable<UserAccount>> GetAllAsync()
+		{
+			return await _context.UserAccounts.Include(p => p.Role).ToListAsync();
+		}
+
 		public async Task<bool> DeleteByEmailAsync(string email)
 		{
 			var user = await _context.UserAccounts.FirstOrDefaultAsync(u => u.Email == email);
