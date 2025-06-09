@@ -1605,4 +1605,3 @@ namespace PerHue.Infrastructure.Utils
 		}
 	}
 }
-
