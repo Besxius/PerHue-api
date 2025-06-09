@@ -19,5 +19,7 @@
 		public string? Profilepicture { get; set; }
 
 		public bool Isaitested { get; set; }
+		public int RoleId { get; set; }
+		public virtual RoleModel Role { get; set; } = null!;
 	}
 }
