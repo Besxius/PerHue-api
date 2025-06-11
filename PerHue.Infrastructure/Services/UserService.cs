@@ -121,15 +121,29 @@ namespace PerHue.Infrastructure.Services
 			return token;
 		}
 
-		private string GenerateRefreshToken()
+		public async Task<string> ValidateUserAsync(string email)
 		{
-			var randomNumber = new byte[32];
-			using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
+			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
+
+			if (entity is null)
 			{
-				rng.GetBytes(randomNumber);
-				return Convert.ToBase64String(randomNumber);
+				entity = new UserAccount
+				{
+					Email = email,
+					Password = "PerHuedefaultPassword166203", 
+					Username = GenerateUserName(email),
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+					Role = await _unitOfWork.RoleRepository.GetByIdAsync(2),
+				};
+				await _unitOfWork.UserRepository.CreateAsync(entity);
 			}
+			var token = _jwtProvider.GenerateToken(entity);
+
+			return token;
 		}
+
 		private string GenerateUserName(string email)
 		{
 			var userName = email.Split('@')[0];

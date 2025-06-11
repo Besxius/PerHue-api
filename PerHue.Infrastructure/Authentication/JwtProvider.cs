@@ -24,7 +24,8 @@ namespace PerHue.Infrastructure.Authentication
 				new Claim(ClaimTypes.Email, user.Email),
 				new Claim("UserId", user.Id.ToString()),
 				new Claim("UserName", user.Username!),
-				new Claim(ClaimTypes.Role, user.Role.Name)
+				new Claim("FullName", user.Fullname ?? string.Empty),
+				new Claim(ClaimTypes.Role, user.Role.Name),
 			}),
 				Expires = DateTime.Now.AddMinutes(30),
 				SigningCredentials = new SigningCredentials(
@@ -34,23 +35,6 @@ namespace PerHue.Infrastructure.Authentication
 			var token = jwtTokenHandler.CreateToken(tokenDescription);
 
 			var accessToken = jwtTokenHandler.WriteToken(token);
-
-
-			//var refreshToken = GenerateRefreshToken();
-
-			//var refreshTokenEntity = new RefreshToken
-			//{
-			//	JwtId = token.Id,
-			//	UserId = user.Id,
-			//	Token = refreshToken,
-			//	IsUsed = false,
-			//	IsRevoked = false,
-			//	IssuedAt = DateTime.Now,
-			//	ExpiredAt = DateTime.Now.AddHours(1),
-			//};
-
-			//await _context.AddAsync(refreshTokenEntity);
-			//await _context.SaveChangesAsync();
 
 			return accessToken;
 		}
