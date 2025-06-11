@@ -66,12 +66,18 @@ namespace PerHue.Infrastructure.Extensions
 				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 			})
-			.AddCookie()
+			.AddCookie(options =>
+			{
+				options.Cookie.HttpOnly = true;
+				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Đảm bảo cookie chỉ được gửi qua HTTPS
+				options.Cookie.SameSite = SameSiteMode.Strict; // Bảo vệ chống CSRF
+			})
 			.AddGoogle(options =>
 			{
 				options.ClientId = configuration["Google:ClientId"];
 				options.ClientSecret = configuration["Google:ClientSecret"];
 				options.Scope.Add("email");
+				options.Scope.Add("profile");
 				options.SaveTokens = true;
 				options.CallbackPath = configuration["Google:CallbackPath"];
 			})
