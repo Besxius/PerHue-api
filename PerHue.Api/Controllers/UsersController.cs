@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +39,7 @@ namespace PerHue.Api.Controllers
 		[HttpGet("signin-google")]
 		public IActionResult SignInGoogle()
 		{
-			var redirectUrl = "https://perhue-fjgve4gjhfafbvh6.southeastasia-01.azurewebsites.net/api/users/signin-google";
+			var redirectUrl = Url.Action("GoogleResponse", "users", null, Request.Scheme);
 			var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
 			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
 		}
@@ -48,15 +49,27 @@ namespace PerHue.Api.Controllers
 		{
 			var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
 
-			if (info.Succeeded)
+			if (!info.Succeeded)
 			{
-				var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-				
-
-				return Ok(new { email });
+				var error = info.Failure?.Message ?? "Unknown error";
+				Console.WriteLine($"Google Authentication Failed: {error}");
+				return Unauthorized();
 			}
 
-			return Unauthorized();
+			var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+			var fullName = info.Principal.FindFirstValue(ClaimTypes.Name);
+
+			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
+			if (user != null && !user.Isactive)
+			{
+				return Accepted();
+			}
+
+			var token = await _servicesProvider.UserService.ValidateUserAsync(email);
+			if (token.Length == 0)
+				return BadRequest();
+
+			return Ok(token);
 		}
 
 		[HttpPost]
