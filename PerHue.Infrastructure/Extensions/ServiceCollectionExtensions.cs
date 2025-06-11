@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿	using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,35 +63,34 @@ namespace PerHue.Infrastructure.Extensions
 
 			services.AddAuthentication(options =>
 			{
-				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;  // Đây là default scheme cho Google
-				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;  // Scheme mặc định cho Google Authentication
+				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 			})
-			.AddCookie()  // Cấu hình cookie cho phiên làm việc
-			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>  // Cấu hình JWT cho API
-			{
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					// Định cấu hình kiểm tra token
-					ValidateIssuer = false,
-					ValidateAudience = false,
-					ValidateLifetime = false,  // Có thể để `false` nếu không muốn kiểm tra thời gian sống của token
-			
-					// Kiểm tra khóa ký
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
-			
-					ClockSkew = TimeSpan.Zero  // Xóa độ trễ thời gian giữa máy chủ và client
-				};
-			})
+			.AddCookie()
 			.AddGoogle(options =>
 			{
 				options.ClientId = configuration["Google:ClientId"];
 				options.ClientSecret = configuration["Google:ClientSecret"];
-				options.Scope.Add("email");  // Cấp quyền truy cập email
-				options.SaveTokens = true;   // Lưu token
+				options.Scope.Add("email");
+				options.SaveTokens = true;
+				options.CallbackPath = configuration["Google:CallbackPath"];
+			})
+			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+			{
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					ValidateIssuer = false,
+					ValidateAudience = false,
+					ValidateLifetime = false,
+
+					ValidateIssuerSigningKey = true,
+					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
+
+					ClockSkew = TimeSpan.Zero
+				};
 			});
-			var clientId = configuration["Google:ClientId"];
-			var clientSecret = configuration["Google:ClientSecret"];
+
+			services.AddAuthorization();
 			#endregion
 		}
 	}
