@@ -14,6 +14,9 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public IUserSubscriptionRepository UserSubscriptionRepository { get; private set; }
 		public IPaymentLogRepository PaymentLogRepository { get; private set; }
 		public IRoleRepository RoleRepository { get; private set; }
+		public IColorRepository ColorRepository { get; private set; }
+		public ICapsulePaletteRepository CapsulePaletteRepository { get; private set; }
+		public IColorTypeRepository ColorTypeRepository { get; private set; }
 
 		public UnitOfWork(
 			PerHueDbContext context,
@@ -22,7 +25,10 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			IPaymentRepository paymentRepository,
 			IUserSubscriptionRepository userSubscriptionRepository,
 			IPaymentLogRepository paymentLogRepository,
-			IRoleRepository roleRepository)
+			IRoleRepository roleRepository,
+			IColorRepository colorRepository,
+			ICapsulePaletteRepository capsulePaletteRepository,
+			IColorTypeRepository colorTypeRepository)
 		{
 			_context = context;
 			UserRepository = userRepository;
@@ -31,6 +37,9 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			UserSubscriptionRepository = userSubscriptionRepository;
 			PaymentLogRepository = paymentLogRepository;
 			RoleRepository = roleRepository;
+			ColorRepository = colorRepository;
+			CapsulePaletteRepository = capsulePaletteRepository;
+			ColorTypeRepository = colorTypeRepository;
 		}
 
 		public int SaveChangesWithTransaction()
