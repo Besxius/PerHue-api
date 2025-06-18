@@ -1,6 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
-using PerHue.Api.Utils;
-using PerHue.Application.Extensions;
+﻿using PerHue.Application.Extensions;
 using PerHue.Infrastructure.Extensions;
 using PerHue.Infrastructure.Utils;
 

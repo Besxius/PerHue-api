@@ -14,6 +14,9 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public IUserSubscriptionService UserSubscriptionService { get; private set; }
 		public IPaymentLogService PaymentLogService { get; private set; }
 		public IRoleService RoleService { get; private set; }
+		public IColorService ColorService { get; private set; }
+		public ICapsulePaletteService CapsulePaletteService { get; private set; }
+		public IColorTypeService ColorTypeService { get; private set; }
 
 		public ServicesProvider(
 			IUnitOfWork unitOfWork,
@@ -22,7 +25,10 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IServicePackageService servicePackageService,
 			IUserSubscriptionService userSubscriptionService,
 			IPaymentLogService paymentLogService,
-			IRoleService roleService)
+			IRoleService roleService,
+			IColorService colorService,
+			ICapsulePaletteService capsulePaletteService,
+			IColorTypeService colorTypeService)
 		{
 			_unitOfWork = unitOfWork;
 			UserService = userService;
@@ -31,6 +37,9 @@ namespace PerHue.Infrastructure.ServicesProviders
 			UserSubscriptionService = userSubscriptionService;
 			PaymentLogService = paymentLogService;
 			RoleService = roleService;
+			ColorService = colorService;
+			CapsulePaletteService = capsulePaletteService;
+			ColorTypeService = colorTypeService;
 		}
 
 	}

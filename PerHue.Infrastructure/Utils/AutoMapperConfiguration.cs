@@ -21,9 +21,12 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<UserSubscription, CreateUserSubscriptionModel>().ReverseMap();
 			CreateMap<PaymentLog, PaymentLogModel>().ReverseMap();
 			CreateMap<Role, RoleModel>().ReverseMap();
+			CreateMap<Color, ColorModel>().ReverseMap();
+			CreateMap<ColorType, ColorTypeModel>().ReverseMap();
+			CreateMap<CapsulePalette, CapsulePaletteModel>().ReverseMap();
 
 
-			
+
 		}
 	}
 }

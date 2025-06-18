@@ -10,5 +10,8 @@ namespace PerHue.Application.IServicesProvider
 		IUserSubscriptionService UserSubscriptionService { get; }
 		IPaymentLogService PaymentLogService { get; }
 		IRoleService RoleService { get; }
+		IColorService ColorService { get; }
+		ICapsulePaletteService CapsulePaletteService { get; }
+		IColorTypeService ColorTypeService { get; }
 	}
 }
