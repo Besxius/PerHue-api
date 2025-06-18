@@ -10,7 +10,9 @@ namespace PerHue.Domain.UnitOfWork
 		IUserSubscriptionRepository UserSubscriptionRepository { get; }
 		IPaymentLogRepository PaymentLogRepository { get; }
 		IRoleRepository RoleRepository { get; }
-
+		IColorRepository ColorRepository { get; }
+		ICapsulePaletteRepository CapsulePaletteRepository { get; }
+		IColorTypeRepository ColorTypeRepository { get; }
 		int SaveChangesWithTransaction();
 		Task<int> SaveChangesWithTransactionAsync();
 	}
