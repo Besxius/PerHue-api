@@ -3,7 +3,7 @@ using PerHue.Application.Models;
 
 namespace PerHue.Application.IServices
 {
-	public interface IPaymentLogService : IGenericService<PaymentLogModel>
+	public interface IColorTypeService : IGenericService<ColorTypeModel>
 	{
 	}
 }

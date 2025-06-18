@@ -1,4 +1,4 @@
-﻿	using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +36,9 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IServicePackageRepository, ServicePackageRepository>();
 			services.AddScoped<IPaymentLogRepository, PaymentLogRepository>();
 			services.AddScoped<IRoleRepository, RoleRepository>();
+			services.AddScoped<IColorRepository, ColorRepository>();
+			services.AddScoped<ICapsulePaletteRepository, CapsulePaletteRepository>();
+			services.AddScoped<IColorTypeRepository, ColorTypeRespository>();
 			#endregion
 
 			#region Services
@@ -46,6 +49,9 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IServicePackageService, ServicePackageService>();
 			services.AddScoped<IPaymentLogService, PaymentLogService>();
 			services.AddScoped<IRoleService, RoleService>();
+			services.AddScoped<IColorService, ColorService>();
+			services.AddScoped<ICapsulePaletteService, CapsulePaletteService>();
+			services.AddScoped<IColorTypeService, ColorTypeService>();
 			#endregion
 
 			#region Other Services
