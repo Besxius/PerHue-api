@@ -5,5 +5,6 @@ namespace PerHue.Domain.IRepositories
 {
 	public interface ICapsulePaletteRepository : IGenericRepository<CapsulePalette>
 	{
+		Task<IEnumerable<CapsulePalette>> GetAllAsync(int pageIndex, int pageSize, string? searchTerm);
 	}
 }
