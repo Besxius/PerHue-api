@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Domain.Entities;
@@ -25,6 +26,10 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entities = await _unitOfWork.CapsulePaletteRepository.GetAllAsync(pageIndex, pageSize, searchTerm);
 			var totalCount = entities.Count();
+			if (searchTerm.IsNullOrEmpty())
+			{
+				totalCount = _unitOfWork.CapsulePaletteRepository.GetAllAsync().Result.Count();
+			}
 			var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 			var paginatedResult = new PaginatedResult<CapsulePaletteModel>
 			{
