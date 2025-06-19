@@ -16,7 +16,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet]
-		public async Task<NormalTestResultModel> Post(int? pageIndex = 1, int? pageSize = 15, string? selectedColor = "")
+		public async Task<NormalTestResultModel> UploadImageTest(int? pageIndex = 1, int? pageSize = 15, string? selectedColor = "")
 		{
 			var palettes = await _servicesProvider.CapsulePaletteService.GetAllAsync(pageIndex ?? 1, pageSize ?? 15, selectedColor);
 			return new NormalTestResultModel
