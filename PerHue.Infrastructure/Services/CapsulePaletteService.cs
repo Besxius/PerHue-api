@@ -2,7 +2,6 @@
 using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
-using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 
 namespace PerHue.Infrastructure.Services
@@ -52,6 +51,12 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = await _unitOfWork.CapsulePaletteRepository.GetByIdAsync(id);
 			return _mapper.Map<CapsulePaletteModel>(entity);
+		}
+
+		public async Task<IEnumerable<CapsulePaletteModel>> GetRelativeCapsulePalettes(List<string> selectedColors)
+		{
+			var entities = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(selectedColors);
+			return _mapper.Map<IEnumerable<CapsulePaletteModel>>(entities);
 		}
 	}
 }

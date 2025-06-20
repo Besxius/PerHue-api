@@ -54,5 +54,11 @@ namespace PerHue.Infrastructure.Services
 			var entity = await _unitOfWork.ColorRepository.GetByIdAsync(id);
 			return _mapper.Map<ColorModel>(entity);
 		}
+
+		public async Task<IEnumerable<ColorModel>> GetRelativeColors(List<string> selectedColors)
+		{
+			var entities = await _unitOfWork.ColorRepository.GetRelativeColors(selectedColors);
+			return _mapper.Map<IEnumerable<ColorModel>>(entities);
+		}
 	}
 }
