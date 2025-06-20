@@ -136,8 +136,7 @@ namespace PerHue.Infrastructure.Utils
 
 		private IEnumerable<Color> GetColors()
 		{
-			return new List<Color>
-			{
+			return new List<Color> {
 				new() { Name = "Fresh Guacamole", HexCode = "#AEBE89" },
 				new() { Name = "Aloe Cream", HexCode = "#DAE3BB" },
 				new() { Name = "White Lace", HexCode = "#FFF7EC" },
@@ -201,7 +200,6 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Dusty Purple", HexCode = "#8E6C90" },
 				new() { Name = "Coral Mantle", HexCode = "#FCD8CC" },
 				new() { Name = "Maroon Oak", HexCode = "#550D0E" },
-				new() { Name = "Soy Milk", HexCode = "#FFF7EC" },
 				new() { Name = "Majestic Beige", HexCode = "#DFD7CC" },
 				new() { Name = "Almond Rose", HexCode = "#CE8884" },
 				new() { Name = "Coral Dune", HexCode = "#FBD3C4" },
@@ -275,7 +273,7 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Sweet Cherry Red", HexCode = "#8E1533" },
 				new() { Name = "Rosewood", HexCode = "#762014" },
 				new() { Name = "Raw Sunset", HexCode = "#D23520" },
-				new() { Name = "Anemone White", HexCode = "#FFFFFF" },
+				new() { Name = "Anemone White", HexCode = "#F9EFE5 " },
 				new() { Name = "Novelle Peach", HexCode = "#E57B30" },
 				new() { Name = "Heirloom Rose", HexCode = "#D186A0" },
 				new() { Name = "Tropical Peach", HexCode = "#FDC2B1" },
@@ -306,7 +304,6 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Storm Blue", HexCode = "#182F53" },
 				new() { Name = "Alpaca Wool", HexCode = "#F9EEE2" },
 				new() { Name = "Coral Rose", HexCode = "#F57A4D" },
-				new() { Name = "Brownish Red", HexCode = "#AEBE89" },
 				new() { Name = "Smoked Purple", HexCode = "#444251" },
 				new() { Name = "Lavender Haze", HexCode = "#8D89A3" },
 				new() { Name = "Violet Hush", HexCode = "#E4E3E5" },
@@ -406,15 +403,12 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Rose Sugar", HexCode = "#FFF4F2" },
 				new() { Name = "Sweet Aqua", HexCode = "#A5EACF" },
 				new() { Name = "Molten Lava", HexCode = "#B33534" },
-				new() { Name = "Lime Meringue", HexCode = "#E3E8CD" },
-				new() { Name = "Coconut Cream", HexCode = "#FAFCEE" },
 				new() { Name = "Tropical Light", HexCode = "#A1DD70" },
 				new() { Name = "Wood Charcoal", HexCode = "#464646" },
 				new() { Name = "Mist Grey", HexCode = "#C4C4BC" },
 				new() { Name = "Shy Beige", HexCode = "#DEDAD1" },
 				new() { Name = "Stormy Strait Green", HexCode = "#13A699" },
 				new() { Name = "Sunflower Yellow", HexCode = "#FFD708" },
-				new() { Name = "White Romance", HexCode = "#FFF7ED" },
 				new() { Name = "Tamy Thyme", HexCode = "#C7C6AB" },
 				new() { Name = "Bright Winter Cloud", HexCode = "#F9F5F0" },
 				new() { Name = "Cameo Rose", HexCode = "#F7E1D8" },
@@ -443,8 +437,6 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Fuchsia Rose", HexCode = "#C74375" },
 				new() { Name = "Bubblegum", HexCode = "#EE778A" },
 				new() { Name = "Whitewashed Fence", HexCode = "#FAF3E3" },
-				new() { Name = "White Briquette", HexCode = "#FFFFFF" },
-				new() { Name = "Coconut Pulp", HexCode = "#FAFADC" },
 				new() { Name = "Pale Daffodil", HexCode = "#FEE698" },
 				new() { Name = "Soft Orange", HexCode = "#FDB15D" },
 				new() { Name = "Red Pear", HexCode = "#7B3638" },
