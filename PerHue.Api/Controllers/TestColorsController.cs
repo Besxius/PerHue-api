@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 
@@ -24,7 +23,8 @@ namespace PerHue.Api.Controllers
 			return new NormalTestResultModel
 			{
 				SelectedColors = selectedColor,
-				CapsulePalettes = palettes,
+				totalResultCount = palettes.Count(),
+				CapsulePalettes = palettes
 			};
 		}
 	}
