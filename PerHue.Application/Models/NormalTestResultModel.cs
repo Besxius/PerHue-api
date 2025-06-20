@@ -2,7 +2,7 @@
 {
 	public class NormalTestResultModel
 	{
-		public string SelectedColor { get; set; } = null!;
-		public PaginatedResult<CapsulePaletteModel> CapsulePalettes { get; set; } = null!;
+		public List<string> SelectedColors { get; set; } = null!;
+		public IEnumerable<CapsulePaletteModel> CapsulePalettes { get; set; } = null!;
 	}
 }
