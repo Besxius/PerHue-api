@@ -15,13 +15,15 @@ namespace PerHue.Api.Controllers
 			_servicesProvider = servicesProvider;
 		}
 
-		[HttpGet]
-		public async Task<NormalTestResultModel> UploadImageTest(int? pageIndex = 1, int? pageSize = 15, string? selectedColor = "")
+		[HttpPost]
+		[Route("upload-image-test")]
+		public async Task<NormalTestResultModel> UploadImageTest(string colorsListJson)
 		{
-			var palettes = await _servicesProvider.CapsulePaletteService.GetAllAsync(pageIndex ?? 1, pageSize ?? 15, selectedColor);
+			var selectedColor = System.Text.Json.JsonSerializer.Deserialize<List<string>>(colorsListJson);
+			var palettes = await _servicesProvider.CapsulePaletteService.GetRelativeCapsulePalettes(selectedColor);
 			return new NormalTestResultModel
 			{
-				SelectedColor = selectedColor,
+				SelectedColors = selectedColor,
 				CapsulePalettes = palettes,
 			};
 		}
