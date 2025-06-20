@@ -6,5 +6,6 @@ namespace PerHue.Domain.IRepositories
 	public interface IColorRepository : IGenericRepository<Color>
 	{
 		Task<IEnumerable<Color>> GetAllAsync(int pageIndex, int pageSize, string? searchTerm);
+		Task<IEnumerable<Color>> GetRelativeColors(List<string> selectedColors);
 	}
 }
