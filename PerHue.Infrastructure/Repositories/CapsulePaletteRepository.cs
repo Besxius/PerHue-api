@@ -101,7 +101,7 @@ namespace PerHue.Infrastructure.Repositories
 					colorsList.AddRange(filteredColors);
 				}
 			}
-			return colorsList.GroupBy(p => p.ColorTypeId).SelectMany(g => g);
+			return colorsList.DistinctBy(p => p.Id).GroupBy(p => p.ColorTypeId).SelectMany(g => g);
 		}
 	}
 }
