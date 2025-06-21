@@ -48,5 +48,10 @@ namespace PerHue.Infrastructure.Services
 			entity.Id = id;
 			return await _unitOfWork.ServicePackageRepository.UpdateAsync(entity) > 0;
 		}
+		public async Task<ServicePackageModel> GetByAmountAsync(int amount)
+		{
+			var entity = await _unitOfWork.ServicePackageRepository.GetByAmountAsync(amount);
+			return _mapper.Map<ServicePackageModel>(entity);
+		}
 	}
 }
