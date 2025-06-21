@@ -74,9 +74,8 @@ namespace PerHue.Infrastructure.Extensions
 			})
 			.AddCookie(options =>
 			{
-				options.Cookie.HttpOnly = true;
+				options.Cookie.SameSite = SameSiteMode.None; // Bảo vệ chống CSRF
 				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Đảm bảo cookie chỉ được gửi qua HTTPS
-				options.Cookie.SameSite = SameSiteMode.Strict; // Bảo vệ chống CSRF
 			})
 			.AddGoogle(options =>
 			{
@@ -86,6 +85,11 @@ namespace PerHue.Infrastructure.Extensions
 				options.Scope.Add("profile");
 				options.SaveTokens = true;
 				options.CallbackPath = configuration["Google:CallbackPath"];
+				options.Events.OnRedirectToAuthorizationEndpoint = context =>
+				{
+					context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
+					return Task.CompletedTask;
+				};
 			})
 			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 			{
@@ -101,7 +105,6 @@ namespace PerHue.Infrastructure.Extensions
 					ClockSkew = TimeSpan.Zero
 				};
 			});
-
 			services.AddAuthorization();
 			#endregion
 		}
