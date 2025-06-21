@@ -10,7 +10,7 @@ namespace PerHue.Infrastructure.Utils
 		{
 			CreateMap<UserAccount, UserModel>().ReverseMap();
 			CreateMap<UserAccount, CreateUserModel>().ReverseMap();
-			CreateMap<UserAccount, UpdateUserModel>().ReverseMap();
+			CreateMap<UserAccount, CreateUserByEmailModel>().ReverseMap();
 			CreateMap<UserAccount, ChangePasswordModel>()
 				.ReverseMap()
 				.ForMember(dest => dest.Password, opt => opt.MapFrom(src => src.NewPassword));

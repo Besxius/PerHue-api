@@ -61,36 +61,25 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<PayOSPaymentService>();
 			#endregion
 
-			#region Authentication	
 			services.Configure<AppSetting>(configuration.GetSection("AppSettings"));
 
 			var secretKey = configuration["AppSettings:SecretKey"];
 			var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey!);
 
+			#region Authentication	
 			services.AddAuthentication(options =>
 			{
 				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 			})
-			.AddCookie(options =>
-			{
-				options.Cookie.SameSite = SameSiteMode.None; // Bảo vệ chống CSRF
-				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Đảm bảo cookie chỉ được gửi qua HTTPS
-				options.Cookie.HttpOnly = false; // Ngăn chặn truy cập cookie từ JavaScript
-			})
+			.AddCookie()
 			.AddGoogle(options =>
 			{
 				options.ClientId = configuration["Google:ClientId"];
 				options.ClientSecret = configuration["Google:ClientSecret"];
 				options.Scope.Add("email");
-				options.Scope.Add("profile");
 				options.SaveTokens = true;
 				options.CallbackPath = configuration["Google:CallbackPath"];
-				options.Events.OnRedirectToAuthorizationEndpoint = context =>
-				{
-					context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
-					return Task.CompletedTask;
-				};
 			})
 			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 			{
@@ -105,13 +94,6 @@ namespace PerHue.Infrastructure.Extensions
 
 					ClockSkew = TimeSpan.Zero
 				};
-			});
-			services.AddDistributedMemoryCache();
-			services.AddSession(options =>
-			{
-				options.IdleTimeout = TimeSpan.FromMinutes(30);
-				options.Cookie.HttpOnly = false;
-				options.Cookie.IsEssential = true;
 			});
 			services.AddAuthorization();
 			#endregion
