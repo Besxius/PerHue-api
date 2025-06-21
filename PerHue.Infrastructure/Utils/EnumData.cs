@@ -29,4 +29,8 @@
 		Expired,        // Đã hết hạn đăng ký
 		Suspended       // Bị tạm khóa (do vi phạm hoặc lỗi thanh toán)
 	}
+	public enum PerHueDefaultPassword
+	{
+		PerHueDefaultPassword166203
+	}
 }
