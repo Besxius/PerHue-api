@@ -6,6 +6,7 @@ namespace PerHue.Application.IServices
 	public interface IServicePackageService : IGenericService<ServicePackageModel>
 	{
 		Task CreateAsync(ServicePackageModel servicePackageModel);
+		Task<ServicePackageModel> GetByAmountAsync(int amount);
 		Task<bool> UpdateAsync(int id, ServicePackageModel servicePackageModel);
 	}
 }
