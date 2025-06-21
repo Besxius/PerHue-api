@@ -55,14 +55,15 @@ namespace PerHue.Api.Controllers
 		[HttpGet("google-response")]
 		public async Task<IActionResult> GoogleResponse()
 		{
-			if (User.Identity != null && User.Identity.IsAuthenticated)
+			var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+			if (User != null && User.Identity.IsAuthenticated)
 			{
 				var emailCookie = User.FindFirstValue(ClaimTypes.Email);
 				var tokenCookie = await _servicesProvider.UserService.ValidateUserAsync(emailCookie);
 
 				return Ok(tokenCookie);
 			}
-			var info = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			if (!info.Succeeded)
 			{
@@ -70,6 +71,8 @@ namespace PerHue.Api.Controllers
 				Console.WriteLine($"Google Authentication Failed: {error}");
 				return Unauthorized();
 			}
+
+			await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, info.Principal, info.Properties);
 
 			var email = info.Principal.FindFirstValue(ClaimTypes.Email);
 			var fullName = info.Principal.FindFirstValue(ClaimTypes.Name);
@@ -87,13 +90,20 @@ namespace PerHue.Api.Controllers
 			return Ok(token);
 		}
 
-		[HttpPost("logout")]
+		[HttpPost("signout")]
 		public async Task<IActionResult> Logout()
 		{
 			// Đăng xuất khỏi cookie authentication
 			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			return Ok(new { message = "Đăng xuất thành công" });
+		}
+
+		[HttpPost]
+		[Route("register-google")]
+		public async Task CreateUser(CreateUserByEmailModel user)
+		{
+			await _servicesProvider.UserService.CreateAsync(user);
 		}
 
 		[HttpPost]
