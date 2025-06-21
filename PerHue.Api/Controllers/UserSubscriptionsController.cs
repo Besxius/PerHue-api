@@ -2,7 +2,6 @@
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 using PerHue.Infrastructure.Utils;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace PerHue.Api.Controllers
 {
@@ -11,9 +10,11 @@ namespace PerHue.Api.Controllers
 	public class UserSubscriptionsController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;
-		public UserSubscriptionsController(IServicesProvider servicesProvider)
+		private readonly PayOSPaymentService _payOSPaymentService;
+		public UserSubscriptionsController(IServicesProvider servicesProvider, PayOSPaymentService payOSPaymentService)
 		{
 			_servicesProvider = servicesProvider;
+			_payOSPaymentService = payOSPaymentService;
 		}
 		[HttpGet]
 		public async Task<IEnumerable<UserSubscriptionModel>> Gets()
@@ -54,7 +55,6 @@ namespace PerHue.Api.Controllers
 				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = packageId,
 			};
-			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
 			var package = await _servicesProvider.ServicePackageService.GetByIdAsync(packageId);
 			var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{model.UserId}P{model.ServicePackageId}";
@@ -63,7 +63,6 @@ namespace PerHue.Api.Controllers
 			{
 				Amount = package.Price,
 				Description = description,
-				UserSubscriptionId = subscriptionId,
 				ReturnUrl = returnUrl,
 				CancelUrl = cancelUrl
 			};
@@ -80,12 +79,22 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string orderCode
 			)
 		{
-			//await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Active.ToString());
+			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
+			var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+
+			var model = new CreateUserSubscriptionModel
+			{
+				UserId = 2,
+				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				ServicePackageId = servicePackage.Id,
+				Status = UserSubscriptionStatusEnum.Active.ToString(),
+			};
+
+			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
 			return Ok(new
 			{
-				Message = "Đã nhận dữ liệu thành công",
-				ReceivedData = new { code, id, cancel, status, orderCode }
+				Message = "Payment process successful!",
 			});
 		}
 		[HttpGet("subscription/cancel")]
@@ -97,12 +106,22 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string orderCode
 			)
 		{
-			//await _servicesProvider.UserSubscriptionService.UpdateUserSubscriptionAsync(int.Parse(orderCode), UserSubscriptionStatusEnum.Cancelled.ToString());
+			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
+			var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+
+			var model = new CreateUserSubscriptionModel
+			{
+				UserId = 2,
+				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				ServicePackageId = servicePackage.Id,
+				Status = UserSubscriptionStatusEnum.Cancelled.ToString(),
+			};
+
+			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
 			return Ok(new
 			{
-				Message = "Đã nhận dữ liệu thành công",
-				ReceivedData = new { code, id, cancel, status, orderCode }
+				Message = "Payment process failed!",
 			});
 		}
 
