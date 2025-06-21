@@ -38,8 +38,15 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("signin-google")]
-		public IActionResult SignInGoogle()
+		public async Task<IActionResult> SignInGoogleAsync()
 		{
+			if (User.Identity != null && User.Identity.IsAuthenticated)
+			{
+				var email = User.FindFirstValue(ClaimTypes.Email);
+				var token = await _servicesProvider.UserService.ValidateUserAsync(email);
+
+				return Ok(token);
+			}
 			var redirectUrl = Url.Action("GoogleResponse", "users", null, Request.Scheme);
 			var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
 			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
@@ -48,7 +55,14 @@ namespace PerHue.Api.Controllers
 		[HttpGet("google-response")]
 		public async Task<IActionResult> GoogleResponse()
 		{
-			var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+			if (User.Identity != null && User.Identity.IsAuthenticated)
+			{
+				var emailCookie = User.FindFirstValue(ClaimTypes.Email);
+				var tokenCookie = await _servicesProvider.UserService.ValidateUserAsync(emailCookie);
+
+				return Ok(tokenCookie);
+			}
+			var info = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			if (!info.Succeeded)
 			{
@@ -71,6 +85,15 @@ namespace PerHue.Api.Controllers
 				return BadRequest();
 
 			return Ok(token);
+		}
+
+		[HttpPost("logout")]
+		public async Task<IActionResult> Logout()
+		{
+			// Đăng xuất khỏi cookie authentication
+			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+			return Ok(new { message = "Đăng xuất thành công" });
 		}
 
 		[HttpPost]

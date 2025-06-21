@@ -76,6 +76,7 @@ namespace PerHue.Infrastructure.Extensions
 			{
 				options.Cookie.SameSite = SameSiteMode.None; // Bảo vệ chống CSRF
 				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Đảm bảo cookie chỉ được gửi qua HTTPS
+				options.Cookie.HttpOnly = false; // Ngăn chặn truy cập cookie từ JavaScript
 			})
 			.AddGoogle(options =>
 			{
@@ -104,6 +105,13 @@ namespace PerHue.Infrastructure.Extensions
 
 					ClockSkew = TimeSpan.Zero
 				};
+			});
+			services.AddDistributedMemoryCache();
+			services.AddSession(options =>
+			{
+				options.IdleTimeout = TimeSpan.FromMinutes(30);
+				options.Cookie.HttpOnly = false;
+				options.Cookie.IsEssential = true;
 			});
 			services.AddAuthorization();
 			#endregion
