@@ -5,5 +5,6 @@
 		public int UserId { get; set; }
 
 		public int ServicePackageId { get; set; }
+		public string Status { get; set; } = default!;
 	}
 }
