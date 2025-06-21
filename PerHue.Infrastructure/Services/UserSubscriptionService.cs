@@ -27,7 +27,7 @@ namespace PerHue.Infrastructure.Services
 			entity.StartDate = DateTime.Now;
 			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration.Value);
 			entity.CreateAt = DateTime.Now;
-			entity.Status = UserSubscriptionStatusEnum.Pending.ToString();
+			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
 
