@@ -55,7 +55,7 @@ namespace PerHue.Api.Controllers
 		[HttpGet("google-response")]
 		public async Task<IActionResult> GoogleResponse()
 		{
-			var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+			var info = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			if (User != null && User.Identity.IsAuthenticated)
 			{
@@ -104,6 +104,14 @@ namespace PerHue.Api.Controllers
 		public async Task CreateUser(CreateUserByEmailModel user)
 		{
 			await _servicesProvider.UserService.CreateAsync(user);
+		}
+
+		[HttpPost("get-token")]
+		public async Task<IActionResult> GetToken (string email)
+		{
+			return await _servicesProvider.UserService.ValidateUserAsync(email) is string token
+				? Ok(token)
+				: BadRequest("Failed to get token.");
 		}
 
 		[HttpPost]
