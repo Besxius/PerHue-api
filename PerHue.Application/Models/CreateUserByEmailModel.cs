@@ -11,5 +11,16 @@ namespace PerHue.Application.Models
 		public string? Fullname { get; set; }
 
 		public string? Profilepicture { get; set; }
+
+		[DataType(DataType.PhoneNumber)]
+		public string? Phone { get; set; }
+
+		[Required]
+		[DefaultValue(false)]
+		public bool Gender { get; set; }
+
+		[DataType(DataType.Date)]
+		public DateOnly? Dob { get; set; }
+
 	}
 }
