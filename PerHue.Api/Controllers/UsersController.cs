@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using PerHue.Application.IServicesProvider;
@@ -19,6 +20,17 @@ namespace PerHue.Api.Controllers
 		public UsersController(IServicesProvider servicesProvider)
 		{
 			_servicesProvider = servicesProvider;
+		}
+		[HttpGet("test-for")]
+		public async Task<IActionResult> TestFor(AiTestResultModel model)
+		{
+			if (User.Identity != null && User.Identity.IsAuthenticated)
+			{
+				var email = User.FindFirstValue(ClaimTypes.Email);
+				var token = await _servicesProvider.UserService.ValidateUserAsync(email);
+				return Ok(token);
+			}
+			return Unauthorized();
 		}
 
 		[HttpPost]
@@ -101,9 +113,15 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost]
 		[Route("register-google")]
-		public async Task CreateUser(CreateUserByEmailModel user)
+		public async Task<IActionResult> CreateUser(CreateUserByEmailModel user)
 		{
+			var existingUser = await _servicesProvider.UserService.GetByEmailAsync(user.Email);
+			if (existingUser != null)
+			{
+				return BadRequest("Email has exited!");
+			}
 			await _servicesProvider.UserService.CreateAsync(user);
+			return Ok("User created successfully.");
 		}
 
 		[HttpPost("get-token")]
