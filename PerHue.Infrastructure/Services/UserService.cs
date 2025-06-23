@@ -59,7 +59,7 @@ namespace PerHue.Infrastructure.Services
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Password = PerHueDefaultPassword.PerHueDefaultPassword166203.ToString();
 			entity.Username = model.Fullname;
-			entity.Gender = false;
+			entity.Gender = model.Gender;
 			entity.IsActive = true;
 			entity.IsAitested = false;
 			entity.RoleId = 3;
