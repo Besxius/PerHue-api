@@ -21,5 +21,13 @@ public partial class Expert
 
     public string Certification { get; set; } = null!;
 
+    public string? Introduction { get; set; }
+
+    public string? FacebookAccount { get; set; }
+
+    public string? LinkedInAccount { get; set; }
+
+    public string? InstagramAccount { get; set; }
+
     public virtual UserAccount IdNavigation { get; set; } = null!;
 }

@@ -13,5 +13,6 @@ namespace PerHue.Application.IServicesProvider
 		IColorService ColorService { get; }
 		ICapsulePaletteService CapsulePaletteService { get; }
 		IColorTypeService ColorTypeService { get; }
+		ITestResultService TestResultService { get; }
 	}
 }

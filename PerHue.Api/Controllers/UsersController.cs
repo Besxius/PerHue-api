@@ -2,9 +2,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 using System.Security.Claims;
@@ -21,33 +19,6 @@ namespace PerHue.Api.Controllers
 		{
 			_servicesProvider = servicesProvider;
 		}
-		[HttpGet("test-for")]
-		public async Task<IActionResult> TestFor(AiTestResultModel model)
-		{
-			if (User.Identity != null && User.Identity.IsAuthenticated)
-			{
-				var email = User.FindFirstValue(ClaimTypes.Email);
-				var token = await _servicesProvider.UserService.ValidateUserAsync(email);
-				return Ok(token);
-			}
-			return Unauthorized();
-		}
-
-		[HttpPost]
-		[Route("login")]
-		public async Task<IActionResult> Login(LoginModel model)
-		{
-			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null)
-				return NotFound();
-			if (account.Isactive == false)
-				return Accepted();
-			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-			if (token.Length == 0)
-				return BadRequest();
-
-			return Ok(token);
-		}
 
 		[HttpGet("signin-google")]
 		public async Task<IActionResult> SignInGoogleAsync()
@@ -55,11 +26,9 @@ namespace PerHue.Api.Controllers
 			if (User.Identity != null && User.Identity.IsAuthenticated)
 			{
 				var email = User.FindFirstValue(ClaimTypes.Email);
-				var token = await _servicesProvider.UserService.ValidateUserAsync(email);
-
-				return Ok(token);
+				return Accepted();
 			}
-			var redirectUrl = Url.Action("GoogleResponse", "users", null, Request.Scheme);
+			var redirectUrl = Url.Action("GoogleResponse", "users");
 			var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
 			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
 		}
@@ -102,15 +71,6 @@ namespace PerHue.Api.Controllers
 			return Ok(token);
 		}
 
-		[HttpPost("signout")]
-		public async Task<IActionResult> Logout()
-		{
-			// Đăng xuất khỏi cookie authentication
-			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-			return Ok(new { message = "Đăng xuất thành công" });
-		}
-
 		[HttpPost]
 		[Route("register-google")]
 		public async Task<IActionResult> CreateUser(CreateUserByEmailModel user)
@@ -125,22 +85,31 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost("get-token")]
-		public async Task<IActionResult> GetToken (string email)
+		public async Task<IActionResult> GetToken(string email)
 		{
+			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
+			var claims = User.Claims.ToList();
+			claims.Add(new Claim("UserId", user.Id.ToString()));
+			claims.Add(new Claim(ClaimTypes.Role, user.RoleId.ToString()));
+
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+			var principal = new ClaimsPrincipal(identity);
+
+			// Đăng nhập lại để cập nhật claims
+			await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
 			return await _servicesProvider.UserService.ValidateUserAsync(email) is string token
 				? Ok(token)
 				: BadRequest("Failed to get token.");
 		}
 
-		[HttpPost]
-		[Route("change-password")]
-		public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+		[HttpPost("signout")]
+		public async Task<IActionResult> Logout()
 		{
-			if (await _servicesProvider.UserService.ChangePasswordAsync(model))
-			{
-				return Ok();
-			}
-			return BadRequest("Failed to change password.");
+			// Đăng xuất khỏi cookie authentication
+			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+			return Ok(new { message = "Đăng xuất thành công" });
 		}
 
 		// GET: api/Users
@@ -187,15 +156,7 @@ namespace PerHue.Api.Controllers
 
 			return NoContent();
 		}
-
-		// POST: api/Users
-		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-		[HttpPost]
-		[Route("register")]
-		public async Task PostUser(CreateUserModel user)
-		{
-			await _servicesProvider.UserService.CreateAsync(user);
-		}
+		
 
 		// DELETE: api/Users/5
 		[HttpDelete("{id}")]
@@ -217,5 +178,41 @@ namespace PerHue.Api.Controllers
 			var result = await _servicesProvider.UserService.GetByIdAsync(id);
 			return result is not null;
 		}
+
+
+		//[HttpPost]
+		//[Route("login")]
+		//public async Task<IActionResult> Login(LoginModel model)
+		//{
+		//	var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
+		//	if (account is null)
+		//		return NotFound();
+		//	if (account.Isactive == false)
+		//		return Accepted();
+		//	var token = await _servicesProvider.UserService.ValidateUserAsync(model);
+		//	if (token.Length == 0)
+		//		return BadRequest();
+
+		//	return Ok(token);
+		//}
+		//[HttpPost]
+		//[Route("change-password")]
+		//public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+		//{
+		//	if (await _servicesProvider.UserService.ChangePasswordAsync(model))
+		//	{
+		//		return Ok();
+		//	}
+		//	return BadRequest("Failed to change password.");
+		//}
+
+		//// POST: api/Users
+		//// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+		//[HttpPost]
+		//[Route("register")]
+		//public async Task PostUser(CreateUserModel user)
+		//{
+		//	await _servicesProvider.UserService.CreateAsync(user);
+		//}
 	}
 }
