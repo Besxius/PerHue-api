@@ -1,4 +1,5 @@
-﻿using PerHue.Application.Extensions;
+﻿using Microsoft.OpenApi.Models;
+using PerHue.Application.Extensions;
 using PerHue.Infrastructure.Extensions;
 using PerHue.Infrastructure.Utils;
 
@@ -12,11 +13,34 @@ builder.Services.Configure<RouteOptions>(options =>
 	options.LowercaseUrls = true;
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+var googleClientId = builder.Configuration["Google:ClientId"];
+var googleClientSecret = builder.Configuration["Google:ClientSecret"];
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
+// Định nghĩa tên chính sách CORS
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins"; // Tên chính sách của bạn
+
+//// Thêm dịch vụ CORS vào DI container
+//builder.Services.AddCors(options =>
+//{
+//	options.AddPolicy(name: MyAllowSpecificOrigins,
+//		policy =>
+//		{
+//			// Cho phép các request từ một hoặc nhiều origin cụ thể
+//			// Thay thế "http://localhost:3000" và "https://yourfrontend.com"
+//			// bằng địa chỉ chính xác của frontend của bạn.
+
+//			policy
+//			.WithOrigins("http://localhost:7092", "https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net")
+//			//.AllowAnyOrigin() // Cho phép tất cả các origin (cẩn thận với việc này trong môi trường sản xuất)
+//			.AllowAnyHeader() // Cho phép tất cả các header
+//			.AllowAnyMethod() // Cho phép tất cả các phương thức HTTP (GET, POST, PUT, DELETE, v.v.)
+//			.AllowCredentials(); // RẤT QUAN TRỌNG: Cho phép gửi cookie, header Authorization, v.v.
+//								 // Nếu dùng AllowCredentials(), KHÔNG ĐƯỢC dùng AllowAnyOrigin().
+//		});
+//});
 
 //builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 //builder.Services.AddProblemDetails();
@@ -38,7 +62,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseExceptionHandler();
-app.UseCors();
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseHttpsRedirection();
 

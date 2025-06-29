@@ -24,7 +24,7 @@ namespace PerHue.Infrastructure.Authentication
 				new Claim(ClaimTypes.Email, user.Email),
 				new Claim("UserId", user.Id.ToString()),
 				new Claim("UserName", user.Username!),
-				new Claim("FullName", user.Fullname ?? string.Empty),
+				//new Claim("FullName", user.Fullname ?? string.Empty),
 				new Claim(ClaimTypes.Role, user.Role.Name),
 			}),
 				Expires = DateTime.Now.AddMinutes(30),

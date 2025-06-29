@@ -24,7 +24,8 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<Color, ColorModel>().ReverseMap();
 			CreateMap<ColorType, ColorTypeModel>().ReverseMap();
 			CreateMap<CapsulePalette, CapsulePaletteModel>().ReverseMap();
-
+			CreateMap<TestResult, TestResultModel>().ReverseMap();
+			CreateMap<SimpleColor, SimpleColorModel>().ReverseMap();
 
 
 		}
