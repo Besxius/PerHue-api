@@ -20,14 +20,11 @@ namespace PerHue.Api.Controllers
 		public async Task<TestResultModel> NormalTestSimpleColor(string colorsListJson)
 		{
 			var selectedColor = System.Text.Json.JsonSerializer.Deserialize<List<string>>(colorsListJson);
-			var palettes = await _servicesProvider.CapsulePaletteService.GetRelativeCapsulePalettes(selectedColor);
 
 			var testResult = new CreateNormalTestResultModel
 			{
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				SelectedColors = selectedColor,
-				ColorTypeId = palettes.First().ColorType.Id,
-				CapsulePalettes = palettes
 			};
 			var result = await _servicesProvider.TestResultService.CreateNormalTestSimpleColorResult(testResult);
 
@@ -39,14 +36,11 @@ namespace PerHue.Api.Controllers
 		public async Task<TestResultModel> NormalTestColorPalette(string colorsListJson)
 		{
 			var selectedColor = System.Text.Json.JsonSerializer.Deserialize<List<string>>(colorsListJson);
-			var palettes = await _servicesProvider.CapsulePaletteService.GetRelativeCapsulePalettes(selectedColor);
 
 			var testResult = new CreateNormalTestResultModel
 			{
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				SelectedColors = selectedColor,
-				ColorTypeId = palettes.First().ColorType.Id,
-				CapsulePalettes = palettes
 			};
 			var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(testResult);
 
