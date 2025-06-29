@@ -38,20 +38,22 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(CreateNormalTestResultModel model)
 		{
+			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
+
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
 				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
 				Picture = "",
 				Type = TestTypeEnum.NormalTestSimpleColor.ToString(),
-				ColorTypeId = model.ColorTypeId,
-				ColorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(model.ColorTypeId),
+				ColorTypeId = capsulePalettes.First().ColorTypeId,
+				CapsulePalettes = capsulePalettes.ToList(),
 			};
 
 			await _unitOfWork.TestResultRepository.CreateAsync(entity);
 
 			var simpleColorList = new List<SimpleColor>();
-			foreach(var color in model.SelectedColors)
+			foreach (var color in model.SelectedColors)
 			{
 				var simpleColor = new SimpleColor
 				{
@@ -69,20 +71,22 @@ namespace PerHue.Infrastructure.Services
 		}
 		public async Task<TestResultModel> CreateNormalTestCapsulePaletteResult(CreateNormalTestResultModel model)
 		{
+			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
+
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
 				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
 				Picture = "",
 				Type = TestTypeEnum.NormalTestCapsulePalette.ToString(),
-				ColorTypeId = model.ColorTypeId,
-				ColorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(model.ColorTypeId),
+				ColorTypeId = capsulePalettes.First().ColorTypeId,
+				CapsulePalettes = capsulePalettes.ToList(),
 			};
 
 			await _unitOfWork.TestResultRepository.CreateAsync(entity);
 
 			var simpleColorList = new List<SimpleColor>();
-			foreach(var color in model.SelectedColors)
+			foreach (var color in model.SelectedColors)
 			{
 				var simpleColor = new SimpleColor
 				{

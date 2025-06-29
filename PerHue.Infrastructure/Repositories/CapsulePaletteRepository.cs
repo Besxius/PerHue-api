@@ -103,7 +103,7 @@ namespace PerHue.Infrastructure.Repositories
 			}
 			var result = colorsList.DistinctBy(p => p.Id).GroupBy(p => p.ColorTypeId).SelectMany(g => g);
 
-			result.Where(p => p.ColorTypeId == result.First().ColorTypeId)
+			result = result.Where(p => p.ColorTypeId == result.First().ColorTypeId)
 				.ToList();
 			return result;
 		}
