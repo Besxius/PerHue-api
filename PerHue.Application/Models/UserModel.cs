@@ -3,6 +3,7 @@
 	public class UserModel
 	{
 		public int Id { get; set; }
+
 		public string Email { get; set; } = null!;
 
 		public string Username { get; set; } = null!;
@@ -20,7 +21,9 @@
 		public string? Profilepicture { get; set; }
 
 		public bool Isaitested { get; set; }
+
 		public int RoleId { get; set; }
+
 		public virtual RoleModel Role { get; set; } = null!;
 	}
 }

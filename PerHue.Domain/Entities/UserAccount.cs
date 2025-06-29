@@ -29,8 +29,6 @@ public partial class UserAccount
 
     public int RoleId { get; set; }
 
-    public virtual ICollection<AiTestResult> AiTestResults { get; set; } = new List<AiTestResult>();
-
     public virtual Brand? Brand { get; set; }
 
     public virtual ICollection<ChatRoom> ChatRoomPerson1Navigations { get; set; } = new List<ChatRoom>();
@@ -48,6 +46,8 @@ public partial class UserAccount
     public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 
     public virtual Role Role { get; set; } = null!;
+
+    public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
 
     public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 

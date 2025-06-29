@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 using PerHue.Infrastructure.Utils;
@@ -47,12 +48,17 @@ namespace PerHue.Api.Controllers
 		}
 		[HttpPost]
 		[Route("subscription/{packageId}")]
+		//[Authorize(Roles = "User")]
 		public async Task<string> Post([FromRoute] int packageId, string returnUrl, string cancelUrl)
 		{
+			if (User.FindFirst("UserId") == null)
+			{
+				throw new UnauthorizedAccessException("User is not authenticated.");
+			}
 			var model = new CreateUserSubscriptionModel
 			{
-				UserId = 2,
-				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				//UserId = 2,
+				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = packageId,
 			};
 
@@ -84,8 +90,8 @@ namespace PerHue.Api.Controllers
 
 			var model = new CreateUserSubscriptionModel
 			{
-				UserId = 2,
-				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				//UserId = 2,
+				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = UserSubscriptionStatusEnum.Active.ToString(),
 			};
@@ -111,8 +117,8 @@ namespace PerHue.Api.Controllers
 
 			var model = new CreateUserSubscriptionModel
 			{
-				UserId = 2,
-				//UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				//UserId = 2,
+				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = UserSubscriptionStatusEnum.Cancelled.ToString(),
 			};

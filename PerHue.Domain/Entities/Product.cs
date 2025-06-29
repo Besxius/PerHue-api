@@ -11,11 +11,21 @@ public partial class Product
 
     public decimal Sale { get; set; }
 
+    public string? Description { get; set; }
+
+    public string Status { get; set; } = null!;
+
+    public DateTime CreateAt { get; set; }
+
+    public string? Note { get; set; }
+
     public int CategoryId { get; set; }
+
+    public int BrandId { get; set; }
+
+    public virtual Brand Brand { get; set; } = null!;
 
     public virtual Category Category { get; set; } = null!;
 
     public virtual ICollection<ProductPicture> ProductPictures { get; set; } = new List<ProductPicture>();
-
-    public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 }
