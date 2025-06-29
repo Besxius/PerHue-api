@@ -10,4 +10,6 @@ public partial class ColorType
     public string Name { get; set; } = null!;
 
     public virtual ICollection<CapsulePalette> CapsulePalettes { get; set; } = new List<CapsulePalette>();
+
+    public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
 }

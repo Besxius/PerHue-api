@@ -13,5 +13,5 @@ public partial class CapsulePalette
 
     public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 
-    public virtual ICollection<Palette> Palettes { get; set; } = new List<Palette>();
+    public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
 }

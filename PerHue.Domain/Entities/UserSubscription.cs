@@ -17,6 +17,8 @@ public partial class UserSubscription
 
     public DateTime? UpdateAt { get; set; }
 
+    public short? Duration { get; set; }
+
     public int UserId { get; set; }
 
     public int ServicePackageId { get; set; }
