@@ -2,8 +2,8 @@
 {
 	public class NormalTestResultModel
 	{
-		public List<string> SelectedColors { get; set; } = null!;
-		public int totalResultCount { get; set; } = 0;
+		public ColorTypeModel ColorType { get; set; }
+		public IEnumerable<SimpleColorModel> SimpleColors { get; set; } = null!;
 		public IEnumerable<CapsulePaletteModel> CapsulePalettes { get; set; } = null!;
 	}
 }

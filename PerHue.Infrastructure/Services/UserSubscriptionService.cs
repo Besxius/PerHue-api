@@ -4,7 +4,6 @@ using PerHue.Application.Models;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.Utils;
-using System.Security.Claims;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -30,8 +29,15 @@ namespace PerHue.Infrastructure.Services
 			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
+			entity.Duration = servicePackage.Duration;
 
 			await _unitOfWork.UserSubscriptionRepository.CreateAsync(entity);
+
+			if (model.Status == UserSubscriptionStatusEnum.Active.ToString())
+			{
+				user.IsAitested = true;
+				await _unitOfWork.SaveChangesWithTransactionAsync();
+			}
 
 			return entity.Id;
 		}

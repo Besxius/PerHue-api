@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
+using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
@@ -15,17 +16,48 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost]
-		[Route("upload-image-test")]
-		public async Task<NormalTestResultModel> UploadImageTest(string colorsListJson)
+		[Route("normal-test/simple-color")]
+		public async Task<TestResultModel> NormalTestSimpleColor(string colorsListJson)
 		{
 			var selectedColor = System.Text.Json.JsonSerializer.Deserialize<List<string>>(colorsListJson);
 			var palettes = await _servicesProvider.CapsulePaletteService.GetRelativeCapsulePalettes(selectedColor);
-			return new NormalTestResultModel
+
+			var testResult = new CreateNormalTestResultModel
 			{
+				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				SelectedColors = selectedColor,
-				totalResultCount = palettes.Count(),
+				ColorTypeId = palettes.First().ColorType.Id,
 				CapsulePalettes = palettes
 			};
+			var result = await _servicesProvider.TestResultService.CreateNormalTestSimpleColorResult(testResult);
+
+			return result;
+		}
+
+		[HttpPost] 
+		[Route("normal-test/capsule-palette")]
+		public async Task<TestResultModel> NormalTestColorPalette(string colorsListJson)
+		{
+			var selectedColor = System.Text.Json.JsonSerializer.Deserialize<List<string>>(colorsListJson);
+			var palettes = await _servicesProvider.CapsulePaletteService.GetRelativeCapsulePalettes(selectedColor);
+
+			var testResult = new CreateNormalTestResultModel
+			{
+				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				SelectedColors = selectedColor,
+				ColorTypeId = palettes.First().ColorType.Id,
+				CapsulePalettes = palettes
+			};
+			var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(testResult);
+
+			return result;
+		}
+
+		[HttpPost]
+		[Route("ai-test/upload-image")]
+		public async Task<NormalTestResultModel> AiTestKUploadImage(string colorsListJson)
+		{
+			throw new NotSupportedException();
 		}
 	}
 }

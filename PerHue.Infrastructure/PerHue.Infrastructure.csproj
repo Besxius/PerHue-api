@@ -29,4 +29,8 @@
 	  <ProjectReference Include="..\PerHue.Application\PerHue.Application.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Authentication\" />
+	</ItemGroup>
+
 </Project>
