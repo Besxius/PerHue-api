@@ -13,6 +13,9 @@ namespace PerHue.Domain.UnitOfWork
 		IColorRepository ColorRepository { get; }
 		ICapsulePaletteRepository CapsulePaletteRepository { get; }
 		IColorTypeRepository ColorTypeRepository { get; }
+		ITestResultRepository TestResultRepository { get; }
+		ISimpleColorRepository SimpleColorRepository { get; }
+
 		int SaveChangesWithTransaction();
 		Task<int> SaveChangesWithTransactionAsync();
 	}

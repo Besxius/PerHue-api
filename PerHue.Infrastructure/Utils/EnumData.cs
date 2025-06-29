@@ -33,4 +33,11 @@
 	{
 		PerHueDefaultPassword166203
 	}
+	public enum TestTypeEnum
+	{
+		NormalTestSimpleColor,      // Kiểm tra bình thường
+		NormalTestCapsulePalette,
+		AiTestUploadImage,          // Kiểm tra AI
+	}
+
 }
