@@ -18,6 +18,7 @@ namespace PerHue.Api.Controllers
 		[Route("normal-test/simple-color")]
 		public async Task<TestResultModel> NormalTestSimpleColor(NormalTestSimpleColorModel model)
 		{
+			var user = User.Identity;
 			var testResult = new CreateNormalTestResultModel
 			{
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
@@ -50,13 +51,13 @@ namespace PerHue.Api.Controllers
 			return result;
 		}
 
-		[HttpPost]
-		[Route("normal-test/capsule-palette/save")]
-		public async Task<TestResultModel> SaveNormalTestColorPalette(TestResultModel model)
-		{
-			var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(model);
-			return result;
-		}
+		//[HttpPost]
+		//[Route("normal-test/capsule-palette/save")]
+		//public async Task<TestResultModel> SaveNormalTestColorPalette(TestResultModel model)
+		//{
+		//	var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(model);
+		//	return result;
+		//}
 
 		[HttpPost]
 		[Route("ai-test/upload-image")]
