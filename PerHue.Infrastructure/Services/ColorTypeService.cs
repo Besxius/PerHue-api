@@ -31,5 +31,11 @@ namespace PerHue.Infrastructure.Services
 			var entity = await _unitOfWork.ColorTypeRepository.GetByIdAsync(id);
 			return _mapper.Map<ColorTypeModel>(entity);
 		}
+
+		public async Task<ColorTypeModel> GetByNameAsync(string name)
+		{
+			var entity = await _unitOfWork.ColorTypeRepository.GetByNameAsync(name);
+			return _mapper.Map<ColorTypeModel>(entity);
+		}
 	}
 }
