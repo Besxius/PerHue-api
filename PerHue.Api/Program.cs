@@ -17,10 +17,41 @@ var googleClientId = builder.Configuration["Google:ClientId"];
 var googleClientSecret = builder.Configuration["Google:ClientSecret"];
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+	options.SwaggerDoc("v1", new OpenApiInfo { Title = "App.API", Version = "v1" });
+	options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+	{
+		In = ParameterLocation.Header,
+		Description = "Please enter token  into field",
+		Name = "Authorization",
+		Type = SecuritySchemeType.Http,
+		BearerFormat = "JWT",
+		Scheme = "bearer",
+	});
+	options.AddSecurityRequirement(new OpenApiSecurityRequirement
+	{
+		{
+			new OpenApiSecurityScheme
+			{
+				Reference = new OpenApiReference
+				{
+					Type = ReferenceType.SecurityScheme,
+					Id = "Bearer"
+				}
+			},
+			[]
+		}
+	});
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
 
 // Định nghĩa tên chính sách CORS
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins"; // Tên chính sách của bạn
+//var MyAllowSpecificOrigins = "_myAllowSpecificOrigins"; // Tên chính sách của bạn
 
 //// Thêm dịch vụ CORS vào DI container
 //builder.Services.AddCors(options =>
@@ -62,7 +93,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseExceptionHandler();
-app.UseCors(MyAllowSpecificOrigins);
+app.UseCors();
 
 app.UseHttpsRedirection();
 

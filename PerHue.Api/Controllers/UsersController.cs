@@ -88,15 +88,15 @@ namespace PerHue.Api.Controllers
 		public async Task<IActionResult> GetToken(string email)
 		{
 			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
-			var claims = User.Claims.ToList();
-			claims.Add(new Claim("UserId", user.Id.ToString()));
-			claims.Add(new Claim(ClaimTypes.Role, user.RoleId.ToString()));
+			//var claims = User.Claims.ToList();
+			//claims.Add(new Claim("UserId", user.Id.ToString()));
+			//claims.Add(new Claim(ClaimTypes.Role, user.RoleId.ToString()));
 
-			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-			var principal = new ClaimsPrincipal(identity);
+			//var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+			//var principal = new ClaimsPrincipal(identity);
 
-			// Đăng nhập lại để cập nhật claims
-			await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+			//// Đăng nhập lại để cập nhật claims
+			//await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
 			return await _servicesProvider.UserService.ValidateUserAsync(email) is string token
 				? Ok(token)
