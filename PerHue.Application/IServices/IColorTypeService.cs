@@ -5,5 +5,6 @@ namespace PerHue.Application.IServices
 {
 	public interface IColorTypeService : IGenericService<ColorTypeModel>
 	{
+		Task<ColorTypeModel> GetByNameAsync(string name);
 	}
 }
