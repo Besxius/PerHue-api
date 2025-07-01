@@ -138,20 +138,20 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
 
-			if (entity is null)
-			{
-				entity = new UserAccount
-				{
-					Email = email,
-					Password = "PerHuedefaultPassword166203", 
-					Username = GenerateUserName(email),
-					IsActive = true,
-					IsAitested = false,
-					RoleId = 2,
-					Role = await _unitOfWork.RoleRepository.GetByIdAsync(2),
-				};
-				await _unitOfWork.UserRepository.CreateAsync(entity);
-			}
+			//if (entity is null)
+			//{
+			//	entity = new UserAccount
+			//	{
+			//		Email = email,
+			//		Password = "PerHuedefaultPassword166203", 
+			//		Username = GenerateUserName(email),
+			//		IsActive = true,
+			//		IsAitested = false,
+			//		RoleId = 2,
+			//		Role = await _unitOfWork.RoleRepository.GetByIdAsync(2),
+			//	};
+			//	await _unitOfWork.UserRepository.CreateAsync(entity);
+			//}
 			var token = _jwtProvider.GenerateToken(entity);
 
 			return token;
