@@ -107,5 +107,50 @@ namespace PerHue.Infrastructure.Repositories
 				.ToList();
 			return result;
 		}
+		public async Task<IEnumerable<CapsulePalette>> GetRelativeCapsulePalettes(List<string> selectedColors, string colorType)
+		{
+			var colorsList = new List<CapsulePalette>();
+
+			foreach (var color in selectedColors)
+			{
+				var query = _context.CapsulePalettes.Include(p => p.ColorType).Include(p => p.Colors).AsQueryable();
+				if (!string.IsNullOrEmpty(color) && color.StartsWith("#") && color.Length == 7)
+				{
+					// Chuyển đổi searchTerm thành giá trị RGB
+					var searchR = Convert.ToInt32(color.Substring(1, 2), 16);
+					var searchG = Convert.ToInt32(color.Substring(3, 2), 16);
+					var searchB = Convert.ToInt32(color.Substring(5, 2), 16);
+
+					query = query.Where(p => p.Colors.Any(cl => cl.HexCode.StartsWith("#") && cl.HexCode.Length == 7));
+					// Lọc các mã hex hợp lệ trong SQL
+					var filteredColors = await query.ToListAsync();
+
+					// Tính toán khoảng cách Euclidean trong bộ nhớ
+					filteredColors = filteredColors
+						.Where(c => c.Colors.Any(cl =>
+						{
+							var colorR = Convert.ToInt32(cl.HexCode.Substring(1, 2), 16);
+							var colorG = Convert.ToInt32(cl.HexCode.Substring(3, 2), 16);
+							var colorB = Convert.ToInt32(cl.HexCode.Substring(5, 2), 16);
+
+							var distance = Math.Sqrt(Math.Pow(colorR - searchR, 2) +
+													 Math.Pow(colorG - searchG, 2) +
+													 Math.Pow(colorB - searchB, 2));
+
+							// Giới hạn khoảng cách (ví dụ: 50)
+							return distance <= 50;
+						})).ToList();
+
+					colorsList.AddRange(filteredColors);
+				}
+			}
+			var result = colorsList.DistinctBy(p => p.Id).GroupBy(p => p.ColorTypeId).SelectMany(g => g);
+
+			var colorTypeId = _context.ColorTypes.FirstOrDefault(ct => ct.Name.ToLower().Equals(colorType.ToLower())).Id;
+
+			result = result.Where(p => p.ColorTypeId == colorTypeId)
+				.ToList();
+			return result;
+		}
 	}
 }

@@ -5,5 +5,6 @@ namespace PerHue.Domain.IRepositories
 {
 	public interface IColorTypeRepository : IGenericRepository<ColorType>
 	{
+		Task<ColorType> GetByNameAsync(string name);
 	}
 }
