@@ -36,7 +36,7 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<TestResultModel>(testResult);
 		}
 
-		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(CreateNormalTestResultModel model)
+		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
 
@@ -47,6 +47,40 @@ namespace PerHue.Infrastructure.Services
 				Picture = "",
 				Type = TestTypeEnum.NormalTestSimpleColor.ToString(),
 				ColorTypeId = capsulePalettes.First().ColorTypeId,
+				ColorType = capsulePalettes.First().ColorType,
+				CapsulePalettes = capsulePalettes.ToList(),
+			};
+			await _unitOfWork.TestResultRepository.CreateAsync(entity);
+
+			var simpleColorList = new List<SimpleColor>();
+			foreach (var color in model.SelectedColors)
+			{
+				var simpleColor = new SimpleColor
+				{
+					Hexcode = color,
+					TestResultId = entity.Id,
+					TestResult = entity
+				};
+				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
+				simpleColorList.Add(simpleColor);
+			}
+
+			entity.SimpleColors = simpleColorList;
+
+			return _mapper.Map<TestResultModel>(entity);
+		}
+		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model)
+		{
+			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors, model.ColorType);
+
+			var entity = new TestResult
+			{
+				UserId = model.UserId,
+				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
+				Picture = "",
+				Type = TestTypeEnum.NormalTestCapsulePalette.ToString(),
+				ColorTypeId = capsulePalettes.First().ColorTypeId,
+				ColorType = capsulePalettes.First().ColorType,
 				CapsulePalettes = capsulePalettes.ToList(),
 			};
 
@@ -69,28 +103,45 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
-		public async Task<TestResultModel> CreateNormalTestCapsulePaletteResult(CreateNormalTestResultModel model)
-		{
-			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
 
-			var entity = new TestResult
-			{
-				UserId = model.UserId,
-				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
-				Picture = "",
-				Type = TestTypeEnum.NormalTestCapsulePalette.ToString(),
-				ColorTypeId = capsulePalettes.First().ColorTypeId,
-				CapsulePalettes = capsulePalettes.ToList(),
-			};
+		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model)
+		{
+			var entity = _mapper.Map<TestResult>(model);
+
+			entity.ColorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(entity.ColorTypeId);
 
 			await _unitOfWork.TestResultRepository.CreateAsync(entity);
 
 			var simpleColorList = new List<SimpleColor>();
-			foreach (var color in model.SelectedColors)
+			foreach (var color in model.SimpleColors)
 			{
 				var simpleColor = new SimpleColor
 				{
-					Hexcode = color,
+					Hexcode = color.Hexcode,
+					TestResultId = entity.Id,
+					TestResult = entity
+				};
+				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
+				simpleColorList.Add(simpleColor);
+			}
+
+			entity.SimpleColors = simpleColorList;
+
+			return _mapper.Map<TestResultModel>(entity);
+		}
+
+		public async Task<TestResultModel> CreateNormalTestCapsulePaletteResult(TestResultModel model)
+		{
+			var entity = _mapper.Map<TestResult>(model);
+
+			await _unitOfWork.TestResultRepository.CreateAsync(entity);
+
+			var simpleColorList = new List<SimpleColor>();
+			foreach (var color in model.SimpleColors)
+			{
+				var simpleColor = new SimpleColor
+				{
+					Hexcode = color.Hexcode,
 					TestResultId = entity.Id,
 					TestResult = entity
 				};
