@@ -6,7 +6,9 @@ namespace PerHue.Application.IServices
 {
 	public interface ITestResultService : IGenericService<TestResultModel>
 	{
-		Task<TestResultModel> CreateNormalTestCapsulePaletteResult(CreateNormalTestResultModel model);
-		Task<TestResultModel> CreateNormalTestSimpleColorResult(CreateNormalTestResultModel model);
+		Task<TestResultModel> CreateNormalTestCapsulePaletteResult(TestResultModel model);
+		Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model);
+		Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model);
+		Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model);
 	}
 }
