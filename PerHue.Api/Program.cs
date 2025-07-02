@@ -45,6 +45,8 @@ builder.Services.AddSwaggerGen(options =>
 	});
 });
 
+builder.Services.AddHttpClient();	
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>

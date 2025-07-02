@@ -4,6 +4,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
@@ -12,10 +13,12 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
-		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper)
+		private readonly GeminiService _gemini;
+		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_gemini = gemini;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -102,6 +105,12 @@ namespace PerHue.Infrastructure.Services
 			entity.SimpleColors = simpleColorList;
 
 			return _mapper.Map<TestResultModel>(entity);
+		}
+
+		public async Task<string> GetAiTestUploadImageResult(AiTestUploadImageModel model)
+		{
+			var result = await _gemini.GeneratePromptWithImageFromUrl(model.ImageUrl);
+			return result;
 		}
 
 		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model)

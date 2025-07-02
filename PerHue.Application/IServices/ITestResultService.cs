@@ -8,6 +8,7 @@ namespace PerHue.Application.IServices
 	{
 		Task<TestResultModel> CreateNormalTestCapsulePaletteResult(TestResultModel model);
 		Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model);
+		Task<string> GetAiTestUploadImageResult(AiTestUploadImageModel model);
 		Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model);
 		Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model);
 	}
