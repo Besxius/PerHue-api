@@ -10,6 +10,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Domain.IRepositories;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Authentication;
 using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Repositories;
@@ -63,9 +64,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<Seeder>();
 			services.AddScoped<JwtProvider>();
 			services.AddScoped<PayOSPaymentService>();
+			services.AddScoped<GeminiService>();
 			#endregion
-
-
 
 			#region Authentication	
 			//services.AddAuthentication(options =>
@@ -135,6 +135,7 @@ namespace PerHue.Infrastructure.Extensions
 			});
 
 			#endregion
+
 		}
 	}
 }
