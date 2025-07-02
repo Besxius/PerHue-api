@@ -61,9 +61,11 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost]
 		[Route("ai-test/upload-image")]
-		public async Task<NormalTestResultModel> AiTestKUploadImage(string colorsListJson)
+		public async Task<string> AiTestUploadImage(AiTestUploadImageModel model)
 		{
-			throw new NotSupportedException();
+			var result = await _servicesProvider.TestResultService.GetAiTestUploadImageResult(model);
+			return result;
 		}
 	}
 }
+
