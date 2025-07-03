@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +15,6 @@ using PerHue.Infrastructure.Services;
 using PerHue.Infrastructure.ServicesProviders;
 using PerHue.Infrastructure.UnitOfWorks;
 using PerHue.Infrastructure.Utils;
-using System.Security.Claims;
 using System.Text;
 
 namespace PerHue.Infrastructure.Extensions
