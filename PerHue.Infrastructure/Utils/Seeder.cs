@@ -63,21 +63,27 @@ namespace PerHue.Infrastructure.Utils
 			return new List<ServicePackage>
 			{
 				new() {
-					Name = "Free",
+					Name = "Freemium",
 					Price = 0,
 					Description = "Unlimited normal test color\r\n\r\nRelevant suggestions from the brand",
 					Duration = 0
 				},
 				new() {
-					Name = "Vip 1",
-					Price = 2000,
+					Name = "Premium 1",
+					Price = 69000,
 					Description = "Three times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
 					Duration = 3
 				},
 				new() {
-					Name = "Vip 2",
-					Price = 4000,
+					Name = "Premium 2",
+					Price = 129000,
 					Description = "Ten times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
+					Duration = 10
+				},
+				new() {
+					Name = "Premium 3",
+					Price = 229000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 10
 				},
 			};
