@@ -117,7 +117,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
-					RoleId = 3,
+					RoleId = 2,
 				},
 				new()
 				{
@@ -131,7 +131,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
-					RoleId = 4,
+					RoleId = 2,
 				},
 				new()
 				{
@@ -147,7 +147,53 @@ namespace PerHue.Infrastructure.Utils
 					IsAitested = false,
 					RoleId = 2,
 				},
-
+				new()
+				{
+					Email = "phuongthaocamvien.tiktok@gmail.com",
+					Username = "phuongthaocamvien.tiktok",
+					Password = "PerHueDefaultPassword",
+					Fullname = "Tran Thi Phuong Thao",
+					Phone = "0345678914",
+					Gender = false,
+					Dob = new DateOnly(2003, 3, 3),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 3,
+					Expert = new Expert
+					{
+						Nickname = "Puta Makeup",
+						Specialization = "Makeup Artist",
+						Bio = "Hiwon makeup course graduate. Makeup artist with a passion for enhancing natural beauty. Specializes in bridal and special occasion makeup",
+						YearsOfExperience = 2,
+						Languages = "Vietnamese, English",
+						Rating = (decimal?)5.0,
+						Certification = "Certified Makeup Artist, Professional Beauty Course",
+						Introduction = "Hello, I'm Phuong Thao, a passionate makeup artist with a love for enhancing natural beauty. I specialize in bridal and special occasion makeup, ensuring every client feels beautiful and confident. With over 2 years of experience and certifications from renowned makeup courses, I am dedicated to providing exceptional service and creating stunning looks tailored to each individual's style. Let's work together to bring your beauty vision to life!",
+						FacebookAccount = "https://www.facebook.com/tran.thi.phuong.thao.430397?locale=vi_VN"
+					}
+				},
+				new()
+				{
+					Email = "ouroborus.free@gmail.com",
+					Username = "ouroborus.free",
+					Password = "PerHueDefaultPassword",
+					Fullname = "Oroborus",
+					Phone = "0345678917",
+					Gender = true,
+					Dob = new DateOnly(1999, 11, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 4,
+					Brand = new Brand
+					{
+						Name = "Oroborus",
+						Slogan = "Sustainable Fashion for the Modern World",
+						Logo = null,
+						Website = "https://www.instagram.com/oroborus_ciy/",
+					}
+				}
 			};
 		}
 
