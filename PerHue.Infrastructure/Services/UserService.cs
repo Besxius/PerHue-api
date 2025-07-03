@@ -50,7 +50,7 @@ namespace PerHue.Infrastructure.Services
 			entity.Username = GenerateUserName(model.Email);
 			entity.IsActive = true;
 			entity.IsAitested = false;
-			entity.RoleId = 3;
+			entity.RoleId = 2;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}
@@ -62,7 +62,7 @@ namespace PerHue.Infrastructure.Services
 			entity.Gender = model.Gender;
 			entity.IsActive = true;
 			entity.IsAitested = false;
-			entity.RoleId = 3;
+			entity.RoleId = 2;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}
