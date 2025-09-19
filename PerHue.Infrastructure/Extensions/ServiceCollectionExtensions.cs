@@ -39,6 +39,9 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IColorTypeRepository, ColorTypeRespository>();
 			services.AddScoped<ITestResultRepository, TestResultRepository>();
 			services.AddScoped<ISimpleColorRepository, SimpleColorRepository>();
+			services.AddScoped<IVerificationRepository, VerificationRepository>();
+			services.AddScoped<IExpertRepository, ExpertRepository>();
+			services.AddScoped<INotificationRepository, NotificationRepository>();
 			#endregion
 
 			#region Services
@@ -53,6 +56,9 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<ICapsulePaletteService, CapsulePaletteService>();
 			services.AddScoped<IColorTypeService, ColorTypeService>();
 			services.AddScoped<ITestResultService, TestResultService>();
+			services.AddScoped<IVerificationService, VerificationService>();
+			services.AddScoped<IExpertService, ExpertService>();
+			services.AddScoped<INotificationService, NotificationService>();
 			#endregion
 
 			#region Other Services
