@@ -20,4 +20,6 @@ public partial class Reply
     public virtual Post Post { get; set; } = null!;
 
     public virtual Reply ReplyNavigation { get; set; } = null!;
+
+    public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
 }
