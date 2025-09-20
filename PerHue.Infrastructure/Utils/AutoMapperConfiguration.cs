@@ -26,6 +26,11 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<CapsulePalette, CapsulePaletteModel>().ReverseMap();
 			CreateMap<TestResult, TestResultModel>().ReverseMap();
 			CreateMap<SimpleColor, SimpleColorModel>().ReverseMap();
+			CreateMap<Expert, ExpertModel>()
+				.ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.IdNavigation.Email))
+				.ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.IdNavigation.Username));
+			CreateMap<Notification, NotificationModel>()
+				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
 
 
 		}
