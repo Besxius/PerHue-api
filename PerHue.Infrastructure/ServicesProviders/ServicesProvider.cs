@@ -1,6 +1,7 @@
 ﻿using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Services;
 
 namespace PerHue.Infrastructure.ServicesProviders
 {
@@ -18,7 +19,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public ICapsulePaletteService CapsulePaletteService { get; private set; }
 		public IColorTypeService ColorTypeService { get; private set; }
 		public ITestResultService TestResultService { get; private set; }
-
+		public IOtpService OtpService { get; private set; }
 		public ServicesProvider(
 			IUnitOfWork unitOfWork,
 			IUserService userService,
@@ -30,7 +31,8 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IColorService colorService,
 			ICapsulePaletteService capsulePaletteService,
 			IColorTypeService colorTypeService,
-			ITestResultService testResultService)
+			ITestResultService testResultService,
+			IOtpService otpService)
 		{
 			_unitOfWork = unitOfWork;
 			UserService = userService;
@@ -43,6 +45,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			CapsulePaletteService = capsulePaletteService;
 			ColorTypeService = colorTypeService;
 			TestResultService = testResultService;
+			OtpService = otpService;
 		}
 
 	}
