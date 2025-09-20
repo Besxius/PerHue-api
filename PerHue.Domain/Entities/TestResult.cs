@@ -25,6 +25,8 @@ public partial class TestResult
 
     public virtual ColorType ColorType { get; set; } = null!;
 
+    public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
+
     public virtual ICollection<SimpleColor> SimpleColors { get; set; } = new List<SimpleColor>();
 
     public virtual UserAccount User { get; set; } = null!;
