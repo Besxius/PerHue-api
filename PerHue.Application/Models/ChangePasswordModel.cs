@@ -5,8 +5,8 @@ namespace PerHue.Application.Models
 	public class ChangePasswordModel
 	{
 		public int Id { get; set; } = default!;
-		[Required(ErrorMessage = "Old password is required.")]
-		public string OldPassword { get; set; } = default!;
+		/*[Required(ErrorMessage = "Old password is required.")]
+		public string OldPassword { get; set; } = default!;*/
 
 		[Required(ErrorMessage = "Password is required.")]
 		[MinLength(8)]
@@ -20,5 +20,7 @@ namespace PerHue.Application.Models
 		[DataType(DataType.Password)]
 		[Compare("NewPassword", ErrorMessage = "The old password and confirmation password do not match.")]
 		public string ConfirmPassword { get; set; }
+		public string Otp { get; set; }
+		public string SentEmail { get; set; }
 	}
 }
