@@ -45,6 +45,8 @@ public partial class UserAccount
 
     public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 
+    public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
+
     public virtual Role Role { get; set; } = null!;
 
     public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
