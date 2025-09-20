@@ -13,6 +13,10 @@ public partial class Report
 
     public int UserAccountId { get; set; }
 
+    public int? ReplyId { get; set; }
+
+    public virtual Reply? Reply { get; set; }
+
     public virtual ReportType ReportType { get; set; } = null!;
 
     public virtual UserAccount UserAccount { get; set; } = null!;

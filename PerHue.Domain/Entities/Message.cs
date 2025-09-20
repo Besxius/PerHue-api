@@ -17,7 +17,11 @@ public partial class Message
 
     public int ChatRoomId { get; set; }
 
+    public int? TestResultId { get; set; }
+
     public virtual ChatRoom ChatRoom { get; set; } = null!;
 
     public virtual UserAccount SenderNavigation { get; set; } = null!;
+
+    public virtual TestResult? TestResult { get; set; }
 }
