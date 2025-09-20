@@ -13,25 +13,34 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
 		private readonly JwtProvider _jwtProvider;
+		private readonly IOtpService _otpService;
 
-		public UserService(IUnitOfWork unitOfWork, IMapper mapper, JwtProvider jwtProvider)
+		public UserService(IUnitOfWork unitOfWork, IMapper mapper, JwtProvider jwtProvider, IOtpService otpService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_jwtProvider = jwtProvider;
+			_otpService = otpService;
 		}
 		public async Task<bool> ChangePasswordAsync(ChangePasswordModel model)
 		{
 			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.Id);
+			bool isValid = _otpService.VerifyOtp(model.SentEmail, model.Otp);
+			if (!isValid)
+			{
+				Console.WriteLine("Invalid OTP.");
+				return false;
+
+			}
 			if (user is null)
 				return false;
-			if (model.NewPassword != model.OldPassword)
-			{
+			/*if (model.NewPassword != model.OldPassword)
+			{*/
 				user.Password = model.NewPassword;
 				await _unitOfWork.UserRepository.UpdateAsync(user);
 				return true;
-			}
-			return false;
+			/*}*/
+			/*return false;*/
 		}
 
 		public async Task<bool> ChangePasswordAsync(int id, string newPassword)
