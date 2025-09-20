@@ -1,4 +1,4 @@
-﻿using PerHue.Application.IServices;
+﻿using PerHue.Application.IServices;	
 
 namespace PerHue.Application.IServicesProvider
 {
@@ -14,5 +14,6 @@ namespace PerHue.Application.IServicesProvider
 		ICapsulePaletteService CapsulePaletteService { get; }
 		IColorTypeService ColorTypeService { get; }
 		ITestResultService TestResultService { get; }
+		IOtpService OtpService { get; }
 	}
 }
