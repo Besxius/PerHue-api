@@ -100,6 +100,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<PerHue.Infrastructure.SignalR.Hub.ServerHub>("/serverhub");
 app.MapControllers();
 
 app.Run();
