@@ -17,6 +17,7 @@ using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Services;
 using PerHue.Infrastructure.ServicesProviders;
+using PerHue.Infrastructure.SignalR.BroadcastService;
 using PerHue.Infrastructure.UnitOfWorks;
 using PerHue.Infrastructure.Utils;
 using System.Security.Claims;
@@ -47,6 +48,7 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IVerificationRepository, VerificationRepository>();
 			services.AddScoped<IExpertRepository, ExpertRepository>();
 			services.AddScoped<INotificationRepository, NotificationRepository>();
+			services.AddScoped<IPostRepository, PostRepository>();
 			#endregion
 
 			#region Services
@@ -64,6 +66,7 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IVerificationService, VerificationService>();
 			services.AddScoped<IExpertService, ExpertService>();
 			services.AddScoped<INotificationService, NotificationService>();
+			services.AddScoped<IPostService, PostService>();
 			#endregion
 
 			#region Other Services
@@ -83,6 +86,10 @@ namespace PerHue.Infrastructure.Extensions
 				Console.WriteLine($"Connecting to Redis Cloud at: {redisHost}:{redisPort}");
 				return new RedisHelper(connectionString);
 			});
+			// SignalR-Automated Email and Package Expire Service
+			services.AddSignalR();
+			services.AddHostedService<AutoEmail>();
+			services.AddHostedService<PackageExpire>();
 			#endregion
 
 			#region Authentication	

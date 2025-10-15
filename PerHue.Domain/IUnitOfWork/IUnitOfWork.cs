@@ -18,6 +18,7 @@ namespace PerHue.Domain.UnitOfWork
 		IVerificationRepository VerificationRepository { get; }
 		IExpertRepository ExpertRepository { get; }
 		INotificationRepository NotificationRepository { get; }
+		IPostRepository PostRepository { get; }
 
 		int SaveChangesWithTransaction();
 		Task<int> SaveChangesWithTransactionAsync();
