@@ -24,16 +24,15 @@ namespace PerHue.Infrastructure.Services
 			var servicePackage = await _unitOfWork.ServicePackageRepository.GetByIdAsync(model.ServicePackageId);
 
 			entity.StartDate = DateTime.Now;
-			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration.Value);
+			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration);
 			entity.CreateAt = DateTime.Now;
 			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
-			entity.Duration = servicePackage.Duration;
 
 			await _unitOfWork.UserSubscriptionRepository.CreateAsync(entity);
 
-			if (model.Status == UserSubscriptionStatusEnum.Active.ToString())
+			if (model.Status == true)
 			{
 				user.IsAitested = true;
 				await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -53,14 +52,13 @@ namespace PerHue.Infrastructure.Services
 
 		}
 
-		public async Task UpdateStatusUserSubscriptionAsync(int id, string status)
-		{
-			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
+		//public async Task UpdateStatusUserSubscriptionAsync(int id, bool status)
+		//{
+		//	var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
 
-			entity.Status = status;
-			entity.UpdateAt = DateTime.Now;
-			await _unitOfWork.UserSubscriptionRepository.UpdateAsync(entity);
-		}
+		//	entity.Status = status;
+		//	await _unitOfWork.UserSubscriptionRepository.UpdateAsync(entity);
+		//}
 
 		public async Task<UserSubscriptionModel> GetCurrentUserSubscriptionByUserIdAsync(int userId)
 		{
@@ -78,6 +76,11 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(id);
 			return await _unitOfWork.UserSubscriptionRepository.RemoveAsync(entity);
+		}
+
+		public Task UpdateStatusUserSubscriptionAsync(int id, string status)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

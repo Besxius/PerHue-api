@@ -16,7 +16,6 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.Payments
 				.Include(p => p.User)
-				.Include(p => p.UserSubscription)
 				.Where(p => p.UserId == userId).ToListAsync();
 		}
 
@@ -24,7 +23,6 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.Payments
 				.Include(p => p.User)
-				.Include(p => p.UserSubscription)
 				.ToListAsync();
 		}
 
@@ -32,7 +30,6 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.Payments
 				.Include(p => p.User)
-				.Include(p => p.UserSubscription)
 				.FirstOrDefaultAsync(p => p.Id == id);
 		}
 	}
