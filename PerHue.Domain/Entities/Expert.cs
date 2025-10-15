@@ -30,4 +30,8 @@ public partial class Expert
     public string? InstagramAccount { get; set; }
 
     public virtual UserAccount IdNavigation { get; set; } = null!;
+
+    public virtual ICollection<TestResponse> TestResponses { get; set; } = new List<TestResponse>();
+
+    public virtual ICollection<TestRequest> TestRequests { get; set; } = new List<TestRequest>();
 }

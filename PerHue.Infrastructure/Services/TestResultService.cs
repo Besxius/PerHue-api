@@ -48,27 +48,8 @@ namespace PerHue.Infrastructure.Services
 				UserId = model.UserId,
 				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
 				Picture = "",
-				Type = TestTypeEnum.NormalTestSimpleColor.ToString(),
-				ColorTypeId = capsulePalettes.First().ColorTypeId,
-				ColorType = capsulePalettes.First().ColorType,
-				CapsulePalettes = capsulePalettes.ToList(),
 			};
-			await _unitOfWork.TestResultRepository.CreateAsync(entity);
-
-			var simpleColorList = new List<SimpleColor>();
-			foreach (var color in model.SelectedColors)
-			{
-				var simpleColor = new SimpleColor
-				{
-					Hexcode = color,
-					TestResultId = entity.Id,
-					TestResult = entity
-				};
-				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
-				simpleColorList.Add(simpleColor);
-			}
-
-			entity.SimpleColors = simpleColorList;
+			// code fix
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
@@ -76,33 +57,13 @@ namespace PerHue.Infrastructure.Services
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors, model.ColorType);
 
+			// code fix
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
 				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
 				Picture = "",
-				Type = TestTypeEnum.NormalTestCapsulePalette.ToString(),
-				ColorTypeId = capsulePalettes.First().ColorTypeId,
-				ColorType = capsulePalettes.First().ColorType,
-				CapsulePalettes = capsulePalettes.ToList(),
 			};
-
-			await _unitOfWork.TestResultRepository.CreateAsync(entity);
-
-			var simpleColorList = new List<SimpleColor>();
-			foreach (var color in model.SelectedColors)
-			{
-				var simpleColor = new SimpleColor
-				{
-					Hexcode = color,
-					TestResultId = entity.Id,
-					TestResult = entity
-				};
-				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
-				simpleColorList.Add(simpleColor);
-			}
-
-			entity.SimpleColors = simpleColorList;
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
@@ -117,24 +78,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = _mapper.Map<TestResult>(model);
 
-			entity.ColorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(entity.ColorTypeId);
-
-			await _unitOfWork.TestResultRepository.CreateAsync(entity);
-
-			var simpleColorList = new List<SimpleColor>();
-			foreach (var color in model.SimpleColors)
-			{
-				var simpleColor = new SimpleColor
-				{
-					Hexcode = color.Hexcode,
-					TestResultId = entity.Id,
-					TestResult = entity
-				};
-				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
-				simpleColorList.Add(simpleColor);
-			}
-
-			entity.SimpleColors = simpleColorList;
+			// code fix
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
@@ -143,22 +87,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = _mapper.Map<TestResult>(model);
 
-			await _unitOfWork.TestResultRepository.CreateAsync(entity);
-
-			var simpleColorList = new List<SimpleColor>();
-			foreach (var color in model.SimpleColors)
-			{
-				var simpleColor = new SimpleColor
-				{
-					Hexcode = color.Hexcode,
-					TestResultId = entity.Id,
-					TestResult = entity
-				};
-				await _unitOfWork.SimpleColorRepository.CreateAsync(simpleColor);
-				simpleColorList.Add(simpleColor);
-			}
-
-			entity.SimpleColors = simpleColorList;
+			// code fix
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
