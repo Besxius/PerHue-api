@@ -93,7 +93,7 @@ namespace PerHue.Api.Controllers
 				//UserId = 2,
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = servicePackage.Id,
-				Status = UserSubscriptionStatusEnum.Active.ToString(),
+				Status = true,
 			};
 
 			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
@@ -120,7 +120,7 @@ namespace PerHue.Api.Controllers
 				//UserId = 2,
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				ServicePackageId = servicePackage.Id,
-				Status = UserSubscriptionStatusEnum.Cancelled.ToString(),
+				Status = true,
 			};
 
 			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);

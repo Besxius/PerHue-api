@@ -11,9 +11,11 @@ public partial class ServicePackage
 
     public string? Description { get; set; }
 
-    public int Price { get; set; }
+    public long Price { get; set; }
 
-    public short? Duration { get; set; }
+    public short Duration { get; set; }
+
+    public short Uses { get; set; }
 
     public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 }
