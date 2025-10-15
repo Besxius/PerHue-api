@@ -18,11 +18,9 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public ICapsulePaletteRepository CapsulePaletteRepository { get; private set; }
 		public IColorTypeRepository ColorTypeRepository { get; private set; }
 		public ITestResultRepository TestResultRepository { get; private set; }
-		public ISimpleColorRepository SimpleColorRepository { get; private set; }
 		public IVerificationRepository VerificationRepository { get; private set; }
 		public IExpertRepository ExpertRepository { get; private set; }
 		public INotificationRepository NotificationRepository { get; private set; }
-		public IPostRepository PostRepository { get; private set; }
 
 
 		public UnitOfWork(
@@ -37,11 +35,10 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			ICapsulePaletteRepository capsulePaletteRepository,
 			IColorTypeRepository colorTypeRepository,
 			ITestResultRepository testResultRepository,
-			ISimpleColorRepository simpleColorRepository,
 			IVerificationRepository verificationRepository,
 			IExpertRepository expertRepository,
-			INotificationRepository notificationRepository,
-			IPostRepository postRepository)
+			INotificationRepository notificationRepository
+			)
 		{
 			_context = context;
 			UserRepository = userRepository;
@@ -54,11 +51,9 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			CapsulePaletteRepository = capsulePaletteRepository;
 			ColorTypeRepository = colorTypeRepository;
 			TestResultRepository = testResultRepository;
-			SimpleColorRepository = simpleColorRepository;
 			VerificationRepository = verificationRepository;
 			ExpertRepository = expertRepository;
 			NotificationRepository = notificationRepository;
-			PostRepository = postRepository;
 		}
 
 		public int SaveChangesWithTransaction()

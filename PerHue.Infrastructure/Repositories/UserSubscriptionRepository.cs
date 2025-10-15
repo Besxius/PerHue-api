@@ -21,7 +21,7 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<UserSubscription> GetCurrentUserSubscriptionByUserIdAsync(int userId)
 		{
 			return await _context.UserSubscriptions
-				.FirstOrDefaultAsync(us => us.UserId == userId && us.Status == UserSubscriptionStatusEnum.Active.ToString());
+				.FirstOrDefaultAsync(us => us.UserId == userId && us.Status == true);
 		}
 	}
 }
