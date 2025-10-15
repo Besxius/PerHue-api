@@ -11,6 +11,8 @@ public partial class VerifyInformation
 
     public string? Nickname { get; set; }
 
+    public string Picture { get; set; } = null!;
+
     public string Specialization { get; set; } = null!;
 
     public string Bio { get; set; } = null!;

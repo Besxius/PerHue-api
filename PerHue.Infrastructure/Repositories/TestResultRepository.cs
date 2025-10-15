@@ -15,12 +15,12 @@ namespace PerHue.Infrastructure.Repositories
 
 		public async Task<IEnumerable<TestResult>> GetAllAsync()
 		{
-			return await _context.TestResults.Include(p => p.ColorType).Include(p => p.User).ToListAsync();
+			return await _context.TestResults.Include(p => p.User).ToListAsync();
 		}
 
 		public async Task<TestResult> GetByIdAsync(int id)
 		{
-			return await _context.TestResults.Include(p => p.ColorType).Include(p => p.User).FirstOrDefaultAsync(p => p.Id == id);
+			return await _context.TestResults.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == id);
 		}
 	}
 }

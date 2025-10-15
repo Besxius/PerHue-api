@@ -162,8 +162,8 @@ namespace PerHue.Infrastructure.Utils
 					RoleId = 3,
 					Expert = new Expert
 					{
-						Nickname = "Puta Makeup",
-						Specialization = "Makeup Artist",
+						Nickname = "Puta Color",
+						Specialization = "Personal color expert",
 						Bio = "Hiwon makeup course graduate. Makeup artist with a passion for enhancing natural beauty. Specializes in bridal and special occasion makeup",
 						YearsOfExperience = 2,
 						Languages = "Vietnamese, English",
@@ -186,13 +186,6 @@ namespace PerHue.Infrastructure.Utils
 					IsActive = true,
 					IsAitested = false,
 					RoleId = 4,
-					Brand = new Brand
-					{
-						Name = "Oroborus",
-						Slogan = "Sustainable Fashion for the Modern World",
-						Logo = null,
-						Website = "https://www.instagram.com/oroborus_ciy/",
-					}
 				}
 			};
 		}
