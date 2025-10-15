@@ -22,6 +22,7 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public IVerificationRepository VerificationRepository { get; private set; }
 		public IExpertRepository ExpertRepository { get; private set; }
 		public INotificationRepository NotificationRepository { get; private set; }
+		public IPostRepository PostRepository { get; private set; }
 
 
 		public UnitOfWork(
@@ -39,7 +40,8 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			ISimpleColorRepository simpleColorRepository,
 			IVerificationRepository verificationRepository,
 			IExpertRepository expertRepository,
-			INotificationRepository notificationRepository)
+			INotificationRepository notificationRepository,
+			IPostRepository postRepository)
 		{
 			_context = context;
 			UserRepository = userRepository;
@@ -56,6 +58,7 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			VerificationRepository = verificationRepository;
 			ExpertRepository = expertRepository;
 			NotificationRepository = notificationRepository;
+			PostRepository = postRepository;
 		}
 
 		public int SaveChangesWithTransaction()

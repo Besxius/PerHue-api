@@ -31,6 +31,8 @@ namespace PerHue.Infrastructure.Utils
 				.ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.IdNavigation.Username));
 			CreateMap<Notification, NotificationModel>()
 				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
+			CreateMap<Post, PostModel>().ReverseMap();
+			CreateMap<Topic, TopicModel>().ReverseMap();
 
 
 		}
