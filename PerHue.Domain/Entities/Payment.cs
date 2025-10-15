@@ -21,11 +21,9 @@ public partial class Payment
 
     public int UserId { get; set; }
 
-    public int UserSubscriptionId { get; set; }
+    public virtual UserSubscription IdNavigation { get; set; } = null!;
 
     public virtual ICollection<PaymentLog> PaymentLogs { get; set; } = new List<PaymentLog>();
 
     public virtual UserAccount User { get; set; } = null!;
-
-    public virtual UserSubscription UserSubscription { get; set; } = null!;
 }

@@ -53,7 +53,7 @@ public class PackageExpire : BackgroundService
 					var daysLeft = (item.EndDate.Value.Date - DateTime.UtcNow.Date).TotalDays;
 
 					// expired subscriptions
-					if (daysLeft <= 0 && item.Status == "True") // only process if still active
+					if (daysLeft <= 0 && item.Status == true) // only process if still active
 					{
 						expiredSubcriptions.Add(item.Id);
 
@@ -67,7 +67,7 @@ public class PackageExpire : BackgroundService
 						}
 
 						// mark subscription as expired
-						item.Status = "False";
+						item.Status = false;
 						_context.UserSubscriptions.Update(item);
 						await _context.SaveChangesAsync(stoppingToken);
 					}
@@ -85,7 +85,7 @@ public class PackageExpire : BackgroundService
 							string reminderBody = $"Hello {user.Fullname},\n\n" +
 								$"Your subscription will expire on {item.EndDate.Value:dd/MM/yyyy}. " +
 								$"That’s only {daysLeft} day(s) from now!\n\n" +
-								$"👉 You still have {item.Duration ?? 0} usage(s) left in your package.\n\n" +
+								$"👉 You still have {item.RemainingUses == 0} usage(s) left in your package.\n\n" +
 								$"Remember to use all of your color analysis before it ends!.";
 
 							// send reminder email
