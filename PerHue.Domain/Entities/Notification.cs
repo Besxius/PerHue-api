@@ -13,9 +13,15 @@ public partial class Notification
 
     public bool IsRead { get; set; }
 
-    public DateTime Time { get; set; }
+    public DateTime ReceivedTime { get; set; }
+
+    public string Type { get; set; } = null!;
 
     public int Receiver { get; set; }
 
+    public int TestRequestId { get; set; }
+
     public virtual UserAccount ReceiverNavigation { get; set; } = null!;
+
+    public virtual TestRequest TestRequest { get; set; } = null!;
 }

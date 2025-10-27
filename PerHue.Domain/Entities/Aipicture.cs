@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-public partial class Aipicture
+public partial class AiPicture
 {
     public int Id { get; set; }
 

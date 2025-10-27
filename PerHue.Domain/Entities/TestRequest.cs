@@ -17,21 +17,23 @@ public partial class TestRequest
 
     public string? Status { get; set; }
 
-    public DateTime? Date { get; set; }
+    public DateTime? CreatedDate { get; set; }
 
-    public bool IsAitest { get; set; }
+    public string TypeOfTest { get; set; } = null!;
 
     public int UserAccountId { get; set; }
 
-    public virtual ICollection<Aipicture> Aipictures { get; set; } = new List<Aipicture>();
+    public virtual ICollection<AiPicture> AiPictures { get; set; } = new List<AiPicture>();
 
-    public virtual AitestResult? AitestResult { get; set; }
+    public virtual AiTestResult? AiTestResult { get; set; }
+
+    public virtual ICollection<ExpertTestRequest> ExpertTestRequests { get; set; } = new List<ExpertTestRequest>();
+
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     public virtual ICollection<Picture> Pictures { get; set; } = new List<Picture>();
 
     public virtual ICollection<TestResponse> TestResponses { get; set; } = new List<TestResponse>();
 
     public virtual UserAccount UserAccount { get; set; } = null!;
-
-    public virtual ICollection<Expert> Experts { get; set; } = new List<Expert>();
 }
