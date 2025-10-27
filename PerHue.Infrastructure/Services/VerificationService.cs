@@ -130,7 +130,7 @@ namespace PerHue.Infrastructure.Services
                 Receiver = id,
                 Title = "Expert Verification Request Denied",
                 Content = $"Your verification request has been denied. Reason: {reason}",
-                Time = DateTime.Now,
+                ReceivedTime = DateTime.Now,
                 IsRead = false
             };
 

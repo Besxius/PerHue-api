@@ -9,9 +9,13 @@ public partial class TestResponse
 
     public string? Note { get; set; }
 
-    public DateTime? Date { get; set; }
+    public DateTime? CreatedDate { get; set; }
 
     public int? Rating { get; set; }
+
+    public string BestColor { get; set; } = null!;
+
+    public string WorstColor { get; set; } = null!;
 
     public int ColorTypeId { get; set; }
 
@@ -24,8 +28,4 @@ public partial class TestResponse
     public virtual Expert Expert { get; set; } = null!;
 
     public virtual TestRequest TestRequest { get; set; } = null!;
-
-    public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
-
-    public virtual ICollection<Color> ColorsNavigation { get; set; } = new List<Color>();
 }

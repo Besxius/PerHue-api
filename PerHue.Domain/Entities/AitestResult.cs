@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-public partial class AitestResult
+public partial class AiTestResult
 {
     public int Id { get; set; }
 
@@ -11,13 +11,13 @@ public partial class AitestResult
 
     public DateTime? Date { get; set; }
 
-    public int ColorTypeId { get; set; }
+    public string SuggestedColor { get; set; } = null!;
 
-    public virtual ICollection<AvoidedColor> AvoidedColors { get; set; } = new List<AvoidedColor>();
+    public string AvoidedColor { get; set; } = null!;
+
+    public int ColorTypeId { get; set; }
 
     public virtual ColorType ColorType { get; set; } = null!;
 
     public virtual TestRequest IdNavigation { get; set; } = null!;
-
-    public virtual ICollection<SuggestedColor> SuggestedColors { get; set; } = new List<SuggestedColor>();
 }
