@@ -66,26 +66,66 @@ namespace PerHue.Infrastructure.Utils
 					Name = "Freemium",
 					Price = 0,
 					Description = "Unlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 0
+					Duration = 0,
+					CreatedDate = DateTime.Now
 				},
 				new() {
-					Name = "Premium 1",
+					Name = "AI Test 1",
 					Price = 69000,
 					Description = "Three times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 3
+					Duration = 3,
+					CreatedDate = DateTime.Now
 				},
 				new() {
-					Name = "Premium 2",
+					Name = "AI Test 2",
 					Price = 129000,
 					Description = "Ten times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 10
+					Duration = 10,
+					CreatedDate = DateTime.Now
 				},
 				new() {
-					Name = "Premium 3",
+					Name = "AI Test 3",
 					Price = 229000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 10
+					Duration = 10,
+					CreatedDate = DateTime.Now
 				},
+				new() {
+					Name = "Expert Suggestion 1",
+					Price = 199000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
+					Duration = 3,
+					CreatedDate = DateTime.Now
+				},
+				new() {
+					Name = "Expert Suggestion 2",
+					Price = 299000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
+					Duration = 5,
+					CreatedDate = DateTime.Now
+				},
+				new() {
+					Name = "Expert Suggestion 3",
+					Price = 499000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
+					Duration = 10,
+					CreatedDate = DateTime.Now
+				},
+				new() {
+					Name = "Test system 1",
+					Price = 5000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
+					Duration = 10,
+					CreatedDate = DateTime.Now
+				},
+				new() {
+					Name = "Test System 2",
+					Price = 100000,
+					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
+					Duration = 10,
+					CreatedDate = DateTime.Now
+				},
+				
 			};
 		}
 

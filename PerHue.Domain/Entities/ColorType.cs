@@ -9,7 +9,7 @@ public partial class ColorType
 
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<AitestResult> AitestResults { get; set; } = new List<AitestResult>();
+    public virtual ICollection<AiTestResult> AiTestResults { get; set; } = new List<AiTestResult>();
 
     public virtual ICollection<CapsulePalette> CapsulePalettes { get; set; } = new List<CapsulePalette>();
 
