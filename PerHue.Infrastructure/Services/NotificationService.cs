@@ -51,7 +51,7 @@ namespace PerHue.Infrastructure.Services
                 Title = model.Title,
                 Content = model.Content,
                 Receiver = model.Receiver,
-                Time = DateTime.Now,
+                ReceivedTime = DateTime.Now,
                 IsRead = false
             };
 

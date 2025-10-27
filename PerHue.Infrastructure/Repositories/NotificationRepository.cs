@@ -35,7 +35,7 @@ namespace PerHue.Infrastructure.Repositories
         {
             return await _context.Notifications
                 .Where(n => n.Receiver == receiverId)
-                .OrderByDescending(n => n.Time)
+                .OrderByDescending(n => n.ReceivedTime)
                 .ToListAsync();
         }
 
@@ -43,7 +43,7 @@ namespace PerHue.Infrastructure.Repositories
         {
             return await _context.Notifications
                 .Where(n => n.Receiver == receiverId && !n.IsRead)
-                .OrderByDescending(n => n.Time)
+                .OrderByDescending(n => n.ReceivedTime)
                 .ToListAsync();
         }
 
