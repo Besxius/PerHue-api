@@ -12,6 +12,6 @@ namespace PerHue.Application.Models
 
 		public DateOnly? Dob { get; set; }
 
-		public string? ProfilePicture { get; set; }
+		public string? Profilepicture { get; set; }
 	}
 }

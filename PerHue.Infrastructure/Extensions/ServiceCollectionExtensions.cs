@@ -73,7 +73,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<PayOSPaymentService>();
 			services.AddScoped<GeminiService>();
 			services.AddScoped<EmailService>();
-			services.AddScoped<IOtpService,OtpService>();
+			services.AddScoped<IOtpService, OtpService>();
+			services.AddScoped<IImageUploadService, CloudinaryService>();
 			services.AddSingleton<RedisHelper>(sp => {
 				var redisHost = configuration["Redis:Host"];
 				var redisPort = configuration["Redis:Port"];
