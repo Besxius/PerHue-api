@@ -2,6 +2,9 @@
 using PerHue.Application.Extensions;
 using PerHue.Infrastructure.Extensions;
 using PerHue.Infrastructure.Utils;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,9 +48,10 @@ builder.Services.AddSwaggerGen(options =>
 	});
 });
 
-builder.Services.AddHttpClient();	
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthorization();
+
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
