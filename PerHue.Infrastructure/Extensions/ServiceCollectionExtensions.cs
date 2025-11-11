@@ -47,6 +47,13 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IVerificationRepository, VerificationRepository>();
 			services.AddScoped<IExpertRepository, ExpertRepository>();
 			services.AddScoped<INotificationRepository, NotificationRepository>();
+
+			services.AddScoped<ITestRequestRepository, TestRequestRepository>();
+			services.AddScoped<ITestResponseRepository, TestResponseRepository>();
+			services.AddScoped<IExpertTestRequestRepository, ExpertTestRequestRepository>();
+
+			services.AddScoped<IAiPictureRepository, AiPictureRepository>();
+			services.AddScoped<IAiTestResultRepository, AiTestResultRepository>();
 			#endregion
 
 			#region Services
@@ -64,6 +71,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IVerificationService, VerificationService>();
 			services.AddScoped<IExpertService, ExpertService>();
 			services.AddScoped<INotificationService, NotificationService>();
+
+			services.AddScoped<IExpertTestService, ExpertTestService>();
 			#endregion
 
 			#region Other Services
@@ -88,6 +97,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddSignalR();
 			services.AddHostedService<AutoEmail>();
 			services.AddHostedService<PackageExpire>();
+
+			services.AddHostedService<ExpertTestMonitor>();
 			#endregion
 
 			#region Authentication	
