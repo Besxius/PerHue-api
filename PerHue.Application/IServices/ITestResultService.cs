@@ -11,5 +11,8 @@ namespace PerHue.Application.IServices
 		Task<string> GetAiTestUploadImageResult(AiTestUploadImageModel model);
 		Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model);
 		Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model);
+
+		Task<TestRequestModel> CreateExpertTestRequestAsync(int userId, string imageUrl);
+
 	}
 }
