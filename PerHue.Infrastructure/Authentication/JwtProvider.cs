@@ -23,6 +23,7 @@ namespace PerHue.Infrastructure.Authentication
 				new Claim("TokenId", Guid.NewGuid().ToString()),
 				new Claim(ClaimTypes.Email, user.Email),
 				new Claim("UserId", user.Id.ToString()),
+				new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 				new Claim("UserName", user.Username!),
 				//new Claim("FullName", user.Fullname ?? string.Empty),
 				new Claim(ClaimTypes.Role, user.Role.Name),
