@@ -204,39 +204,39 @@ namespace PerHue.Api.Controllers
 			return isValid ? Ok("OTP verified!") : BadRequest("Invalid OTP.");
 		}
 
-		//[HttpPost]
-		//[Route("login")]
-		//public async Task<IActionResult> Login(LoginModel model)
-		//{
-		//	var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-		//	if (account is null)
-		//		return NotFound();
-		//	if (account.Isactive == false)
-		//		return Accepted();
-		//	var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-		//	if (token.Length == 0)
-		//		return BadRequest();
+		[HttpPost]
+		[Route("login")]
+		public async Task<IActionResult> Login(LoginModel model)
+		{
+			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
+			if (account is null)
+				return NotFound();
+			if (account.Isactive == false)
+				return Accepted();
+			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
+			if (token.Length == 0)
+				return BadRequest();
 
-		//	return Ok(token);
-		//}
-		//[HttpPost]
-		//[Route("change-password")]
-		//public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
-		//{
-		//	if (await _servicesProvider.UserService.ChangePasswordAsync(model))
-		//	{
-		//		return Ok();
-		//	}
-		//	return BadRequest("Failed to change password.");
-		//}
+			return Ok(token);
+		}
+		[HttpPost]
+		[Route("change-password-Test-Only")]
+		public async Task<IActionResult> ChangePasswordTestOnly(int id, string newPassword)
+		{
+			if (await _servicesProvider.UserService.ChangePasswordAsync(id, newPassword))
+			{
+				return Ok();
+			}
+			return BadRequest("Failed to change password.");
+		}
 
-		//// POST: api/Users
-		//// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-		//[HttpPost]
-		//[Route("register")]
-		//public async Task PostUser(CreateUserModel user)
-		//{
-		//	await _servicesProvider.UserService.CreateAsync(user);
-		//}
+		// POST: api/Users
+		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+		[HttpPost]
+		[Route("register")]
+		public async Task PostUser(CreateUserModel user)
+		{
+			await _servicesProvider.UserService.CreateAsync(user);
+		}
 	}
 }
