@@ -36,7 +36,9 @@ namespace PerHue.Infrastructure.Services
 				return false;
 			/*if (model.NewPassword != model.OldPassword)
 			{*/
-				user.Password = model.NewPassword;
+				//user.Password = model.NewPassword;
+				var HashPassword = HashPassWithSHA256.HashWithSHA256(model.NewPassword);
+				user.Password = HashPassword;
 				await _unitOfWork.UserRepository.UpdateAsync(user);
 				return true;
 			/*}*/
@@ -48,7 +50,9 @@ namespace PerHue.Infrastructure.Services
 			var entity = await _unitOfWork.UserRepository.GetByIdAsync(id);
 			if (entity is null)
 				return false;
-			entity.Password = newPassword;
+			//entity.Password = newPassword;
+			var HashPassword = HashPassWithSHA256.HashWithSHA256(newPassword);
+			entity.Password = HashPassword;
 			await _unitOfWork.UserRepository.UpdateAsync(entity);
 			return true;
 		}
@@ -57,6 +61,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
+			entity.Password = HashPassWithSHA256.HashWithSHA256(model.Password);
 			entity.IsActive = true;
 			entity.IsAitested = false;
 			entity.RoleId = 2;
@@ -121,7 +126,7 @@ namespace PerHue.Infrastructure.Services
 			entity.Phone = user.Phone;
 			entity.Gender = user.Gender;
 			entity.Dob = user.Dob;
-			entity.ProfilePicture = user.ProfilePicture;
+			entity.ProfilePicture = user.Profilepicture;
 
 			await _unitOfWork.UserRepository.UpdateAsync(entity);
 			return true;
@@ -136,7 +141,8 @@ namespace PerHue.Infrastructure.Services
 		public async Task<string> ValidateUserAsync(LoginModel model)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
-			if (entity.Password != model.Password)
+			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
+			if (entity.Password != HashPass)
 				return string.Empty;
 
 			var token = _jwtProvider.GenerateToken(entity);
