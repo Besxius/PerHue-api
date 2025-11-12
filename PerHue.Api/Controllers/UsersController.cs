@@ -135,6 +135,21 @@ namespace PerHue.Api.Controllers
 			return user;
 		}
 
+		// GET: api/Users
+		[HttpGet("information")]
+		public async Task<ActionResult<UserModel>> GetUserInforamtion()
+		{
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var user = await _servicesProvider.UserService.GetByIdAsync(int.Parse(userId));
+
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			return user;
+		}
+
 		// PUT: api/Users/5
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPut("{id}")]
@@ -204,21 +219,21 @@ namespace PerHue.Api.Controllers
 			return isValid ? Ok("OTP verified!") : BadRequest("Invalid OTP.");
 		}
 
-		//[HttpPost]
-		//[Route("login")]
-		//public async Task<IActionResult> Login(LoginModel model)
-		//{
-		//	var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-		//	if (account is null)
-		//		return NotFound();
-		//	if (account.Isactive == false)
-		//		return Accepted();
-		//	var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-		//	if (token.Length == 0)
-		//		return BadRequest();
+		[HttpPost]
+		[Route("login")]
+		public async Task<IActionResult> Login(LoginModel model)
+		{
+			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
+			if (account is null)
+				return NotFound();
+			if (account.Isactive == false)
+				return Accepted();
+			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
+			if (token.Length == 0)
+				return BadRequest();
 
-		//	return Ok(token);
-		//}
+			return Ok(token);
+		}
 		//[HttpPost]
 		//[Route("change-password")]
 		//public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
@@ -230,13 +245,13 @@ namespace PerHue.Api.Controllers
 		//	return BadRequest("Failed to change password.");
 		//}
 
-		//// POST: api/Users
-		//// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-		//[HttpPost]
-		//[Route("register")]
-		//public async Task PostUser(CreateUserModel user)
-		//{
-		//	await _servicesProvider.UserService.CreateAsync(user);
-		//}
+		// POST: api/Users
+		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+		[HttpPost]
+		[Route("register")]
+		public async Task PostUser(CreateUserModel user)
+		{
+			await _servicesProvider.UserService.CreateAsync(user);
+		}
 	}
 }
