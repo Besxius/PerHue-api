@@ -66,7 +66,13 @@ builder.Services.AddCors(options =>
 			// bằng địa chỉ chính xác của frontend của bạn.
 
 			policy
-			.WithOrigins("http://localhost:7092", "https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net")
+			.WithOrigins(
+				"http://localhost:7092",
+				"https://localhost:7092",
+				"http://10.0.2.2:7092",  // Android Emulator HTTP
+				"https://10.0.2.2:7092", // Android Emulator HTTPS
+				"https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net"
+				)
 			//.AllowAnyOrigin() // Cho phép tất cả các origin (cẩn thận với việc này trong môi trường sản xuất)
 			.AllowAnyHeader() // Cho phép tất cả các header
 			.AllowAnyMethod() // Cho phép tất cả các phương thức HTTP (GET, POST, PUT, DELETE, v.v.)
@@ -95,7 +101,7 @@ if (app.Environment.IsDevelopment())
 //app.UseExceptionHandler();
 app.UseCors(MyAllowSpecificOrigins);
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
