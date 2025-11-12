@@ -27,7 +27,6 @@ namespace PerHue.Application.Models
 		public bool Gender { get; set; }
 		[DataType(DataType.Date)]
 		public DateOnly? Dob { get; set; }
-
 		public string? Profilepicture { get; set; }
 	}
 }

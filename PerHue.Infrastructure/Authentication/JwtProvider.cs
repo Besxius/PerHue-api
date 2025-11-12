@@ -38,5 +38,6 @@ namespace PerHue.Infrastructure.Authentication
 
 			return accessToken;
 		}
+
 	}
 }
