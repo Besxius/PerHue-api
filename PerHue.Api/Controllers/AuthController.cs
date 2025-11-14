@@ -19,8 +19,7 @@ namespace PerHue.Api.Controllers
 			_configuration = configuration;
 		}
 
-		[HttpPost]
-		[Route("login")]
+		[HttpPost("login")]
 		public async Task<IActionResult> Login(LoginRequestModel model)
 		{
 			if (!ModelState.IsValid)
@@ -37,11 +36,16 @@ namespace PerHue.Api.Controllers
 				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
 			}
 
-			return Ok(token);
+			return Ok(new
+			{
+				accessToken = token,
+				tokenType = "Bearer",
+				expiresIn = 120,
+				// refresh_token = "..." // (Tùy chọn) Nếu bạn dùng refresh token
+			});
 		}
 
-		[HttpPost]
-		[Route("register")]
+		[HttpPost("register")]
 		public async Task Register(CreateUserRequestModel user)
 		{
 			await _servicesProvider.UserService.CreateAsync(user);
