@@ -1,5 +1,5 @@
 ﻿using PerHue.Application.Basic;
-using PerHue.Application.Models;
+using PerHue.Application.Models.PaymentLog;
 
 namespace PerHue.Application.IServices
 {

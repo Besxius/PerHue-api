@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +17,6 @@ using PerHue.Infrastructure.ServicesProviders;
 using PerHue.Infrastructure.SignalR.BroadcastService;
 using PerHue.Infrastructure.UnitOfWorks;
 using PerHue.Infrastructure.Utils;
-using System.Security.Claims;
 using System.Text;
 
 namespace PerHue.Infrastructure.Extensions
@@ -73,7 +69,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<PayOSPaymentService>();
 			services.AddScoped<GeminiService>();
 			services.AddScoped<EmailService>();
-			services.AddScoped<IOtpService,OtpService>();
+			services.AddScoped<IOtpService, OtpService>();
+			services.AddScoped<IImageUploadService, CloudinaryService>();
 			services.AddSingleton<RedisHelper>(sp => {
 				var redisHost = configuration["Redis:Host"];
 				var redisPort = configuration["Redis:Port"];
@@ -89,92 +86,42 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddHostedService<PackageExpire>();
 			#endregion
 
+
 			#region Authentication	
-			var secretKey = configuration["AppSettings:SecretKey"];
-			var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey!);
+			var jwtIssuer = configuration["Jwt:Issuer"];
+			var jwtAudience = configuration["Jwt:Audience"];
+			var key = Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key not found."));
+
 			services.AddAuthentication(options =>
 			{
-				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 			})
-			.AddCookie(options =>
-			{
-				// Cấu hình Cookie Authentication.
-				// Đây là nơi thông tin phiên người dùng sẽ được lưu trữ.
-				options.ExpireTimeSpan = TimeSpan.FromDays(30); // Thời gian sống của cookie xác thực
-				options.SlidingExpiration = true; // Gia hạn thời gian sống của cookie khi có hoạt động
-				options.Cookie.HttpOnly = true; // Ngăn JavaScript truy cập cookie (quan trọng cho bảo mật)
-				options.Cookie.IsEssential = true; // Đánh dấu cookie là cần thiết cho chức năng ứng dụng
-				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
-				options.Cookie.SameSite = SameSiteMode.None;
-			})
-			.AddGoogle(options =>
-			{
-				options.ClientId = configuration["Google:ClientId"];
-				options.ClientSecret = configuration["Google:ClientSecret"];
-				options.Scope.Add("email");
-				options.SaveTokens = true;
-				options.CallbackPath = configuration["Google:CallbackPath"];
-
-				// Bạn có thể tùy chỉnh thông tin người dùng được lưu vào ClaimsPrincipal tại đây
-				// Ví dụ: thêm các claims tùy chỉnh từ thông tin Google trả về
-				options.Events.OnCreatingTicket = context =>
+				.AddJwtBearer(options =>
 				{
-					// Lấy thông tin email và tên từ Google
-					var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
-					var name = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
-					var nameIdentifier = context.Identity.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Google User ID
-
-					// Bạn có thể thêm hoặc sửa đổi các claims trong context.Identity
-					// Ví dụ: thêm một claim tùy chỉnh
-					// context.Identity.AddClaim(new Claim("CustomClaimType", "CustomValue"));
-
-					// Nếu bạn muốn lưu trữ thêm thông tin từ Google (ví dụ: access_token của Google)
-					// bạn có thể lưu nó vào AuthenticationProperties
-					// context.Properties.StoreTokens(context.Tokens); // SaveTokens = true đã làm điều này
-
-					return Task.CompletedTask;
-				};
-			}).AddJwtBearer(options =>
-			{
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuer = false,
-					ValidateAudience = false,
-					ValidateLifetime = false,
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
-					ClockSkew = TimeSpan.Zero
-				};
-			});
-			;
+					options.TokenValidationParameters = new TokenValidationParameters
+					{
+						ValidateIssuer = true,
+						ValidateAudience = true,
+						ValidateLifetime = true,
+						ValidateIssuerSigningKey = true,
+						ValidIssuer = jwtIssuer,
+						ValidAudience = jwtAudience,
+						IssuerSigningKey = new SymmetricSecurityKey(key),
+						ClockSkew = TimeSpan.Zero
+					};
+				});
 
 			services.AddLogging(logging =>
 			{
 				logging.AddConsole();
 				logging.SetMinimumLevel(LogLevel.Debug);
-			}); 
+			});
 
-			services.Configure<AppSetting>(configuration.GetSection("AppSettings"));
+			services.AddAuthorization();
 
-			
 
-		/*	services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-			.AddJwtBearer(options =>
-			{
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuer = false,
-					ValidateAudience = false,
-					ValidateLifetime = false,
-
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
-
-					ClockSkew = TimeSpan.Zero
-				};
-			});*/
-
+			services.Configure<JwtSetting>(configuration.GetSection("Jwt"));
 			#endregion
 
 		}

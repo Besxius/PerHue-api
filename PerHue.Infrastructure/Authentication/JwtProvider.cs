@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PerHue.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
@@ -7,30 +8,35 @@ using System.Text;
 
 namespace PerHue.Infrastructure.Authentication
 {
-	public class JwtProvider(IOptionsMonitor<AppSetting> optionsMonitor)
+	public class JwtProvider(IOptionsMonitor<JwtSetting> optionsMonitor)
 	{
-		private readonly AppSetting _appSetting = optionsMonitor.CurrentValue;
+		private readonly JwtSetting _jwtSetting = optionsMonitor.CurrentValue;
 
 		public string GenerateToken(UserAccount user)
 		{
 			var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-			var secretKeyBytes = Encoding.UTF8.GetBytes(_appSetting.SecretKey);
+			var secretKeyBytes = Encoding.UTF8.GetBytes(_jwtSetting.Key);
+
+			var claimsIdentity = new ClaimsIdentity(
+				new[]
+				{
+					new Claim("TokenId", Guid.NewGuid().ToString()),
+					new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+					new Claim(ClaimTypes.Email, user.Email),
+					new Claim(ClaimTypes.Name, user.Username!),
+					new Claim(ClaimTypes.Role, user.Role.Name),
+				},
+				JwtBearerDefaults.AuthenticationScheme
+			);
 
 			var tokenDescription = new SecurityTokenDescriptor
 			{
-				Subject = new ClaimsIdentity(new[]{
-				new Claim("TokenId", Guid.NewGuid().ToString()),
-				new Claim(ClaimTypes.Email, user.Email),
-				new Claim("UserId", user.Id.ToString()),
-				new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-				new Claim("UserName", user.Username!),
-				//new Claim("FullName", user.Fullname ?? string.Empty),
-				new Claim(ClaimTypes.Role, user.Role.Name),
-			}),
-				Expires = DateTime.Now.AddMinutes(30),
-				SigningCredentials = new SigningCredentials(
-					new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256Signature)
+				Subject = claimsIdentity,
+				Expires = DateTime.UtcNow.AddMinutes(_jwtSetting.DurationInMinutes),
+				Issuer = _jwtSetting.Issuer,
+				Audience = _jwtSetting.Audience,
+				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256)
 			};
 
 			var token = jwtTokenHandler.CreateToken(tokenDescription);
@@ -39,5 +45,6 @@ namespace PerHue.Infrastructure.Authentication
 
 			return accessToken;
 		}
+
 	}
 }
