@@ -15,5 +15,8 @@ namespace PerHue.Application.IServicesProvider
 		IColorTypeService ColorTypeService { get; }
 		ITestResultService TestResultService { get; }
 		IOtpService OtpService { get; }
+
+		IExpertTestService ExpertTestService { get; }
+
 	}
 }
