@@ -82,23 +82,24 @@ namespace PerHue.Api.Controllers
 				return BadRequest("No file uploaded.");
 			}
 
-			// Get User ID from token
-			var email = User.FindFirst(ClaimTypes.Email)?.Value;
-			if (email == null)
+			// --- FIX: Get User ID directly from the token ---
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userIdString))
 			{
-				return Unauthorized();
+				return Unauthorized("User ID not found in token.");
 			}
-			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
-			if (user == null)
+
+			if (!int.TryParse(userIdString, out var userId))
 			{
-				return Unauthorized();
+				return Unauthorized("Invalid User ID format in token.");
 			}
+			// --- END FIX ---
 
 			// 1. Upload image
 			var imageUrl = await _imageUploadService.UploadImageAsync(file);
 
 			// 2. Create the expert test request
-			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(user.Id, imageUrl);
+			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(userId, imageUrl);
 
 			return Ok(testRequest);
 		}

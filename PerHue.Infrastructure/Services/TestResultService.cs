@@ -145,12 +145,12 @@ namespace PerHue.Infrastructure.Services
 		{
 			_logger.LogInformation($"Creating expert test request for user {userId} with image {imageUrl}");
 
-			// 1. Create the TestRequest (Node 22)
+			// 1. Create the TestRequest
 			var testRequest = new TestRequest
 			{
-				SkinColor = null, // This will be filled by experts
-				HairColor = null, // This will be filled by experts
-				Status = "Pending", // Pending expert review
+				SkinColor = null,
+				HairColor = null,
+				Status = "Pending",
 				CreatedDate = DateTime.Now,
 				TypeOfTest = "Expert",
 				UserAccountId = userId
@@ -158,16 +158,15 @@ namespace PerHue.Infrastructure.Services
 
 			// 2. Add the user's uploaded picture
 			testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = "Original Photo" });
+			testRequest.Pictures.Add(new Picture { Source = imageUrl });
 
 			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
-			await _unitOfWork.SaveChangesWithTransactionAsync(); // Save to get TestRequest.Id
+			await _unitOfWork.SaveChangesWithTransactionAsync();
 			_logger.LogInformation($"Created TestRequest with ID {testRequest.Id}");
 
-			// 3. Send to Experts (Node 44)
-			// Find 3 experts to send this to.
+			// 3. Send to Experts
 			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
-			var expertsToRequest = allExperts.Take(3); // Simple logic. 
-													   // TODO: Improve this logic (e.g., random, least busy, skip self)
+			var expertsToRequest = allExperts.Where(e => e.Id != userId).Take(3);
 
 			foreach (var expert in expertsToRequest)
 			{
@@ -182,6 +181,7 @@ namespace PerHue.Infrastructure.Services
 				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
 			}
 
+			
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			return _mapper.Map<TestRequestModel>(testRequest);
