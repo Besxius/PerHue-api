@@ -57,28 +57,28 @@ builder.Services.AddHttpClient();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
 
-//var perhueAllowSpecificOrigins = "_perhueAllowSpecificOrigins";
+var perhueAllowSpecificOrigins = "_perhueAllowSpecificOrigins";
 
-//builder.Services.AddCors(options =>
-//{
-//	options.AddPolicy(name: perhueAllowSpecificOrigins,
-//		policy =>
-//		{
-//			policy
-//			.WithOrigins(
-//				"http://localhost:5009",
-//				"https://localhost:7092",
-//				"http://10.0.2.2:5009",
-//				"https://10.0.2.2:7092",
-//				"https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net"
-//				)
-//			//.AllowAnyOrigin()
-//			.AllowAnyHeader()
-//			.AllowAnyMethod()
-//			.AllowCredentials(); // RẤT QUAN TRỌNG: Cho phép gửi cookie, header Authorization, v.v.
-//								 // Nếu dùng AllowCredentials(), KHÔNG ĐƯỢC dùng AllowAnyOrigin().
-//		});
-//});
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy(name: perhueAllowSpecificOrigins,
+		policy =>
+		{
+			policy
+			.WithOrigins(
+				"http://localhost:5009",
+				"https://localhost:7092",
+				"http://10.0.2.2:5009",
+				"https://10.0.2.2:7092",
+				"https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net"
+				)
+			//.AllowAnyOrigin()
+			.AllowAnyHeader()
+			.AllowAnyMethod()
+			.AllowCredentials(); // RẤT QUAN TRỌNG: Cho phép gửi cookie, header Authorization, v.v.
+								 // Nếu dùng AllowCredentials(), KHÔNG ĐƯỢC dùng AllowAnyOrigin().
+		});
+});
 
 var app = builder.Build();
 
@@ -93,7 +93,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseExceptionHandler();
-app.UseCors();
+app.UseCors(perhueAllowSpecificOrigins);
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
