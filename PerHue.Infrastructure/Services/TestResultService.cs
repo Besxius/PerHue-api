@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
+using PerHue.Application.Models;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
