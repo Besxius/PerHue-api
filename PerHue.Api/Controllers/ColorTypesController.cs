@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.ColorType;
 
 namespace PerHue.Api.Controllers
 {

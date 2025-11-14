@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Color;
 using PerHue.Domain.UnitOfWork;
 
 namespace PerHue.Infrastructure.Services
@@ -33,7 +33,7 @@ namespace PerHue.Infrastructure.Services
 			var entities = await _unitOfWork.ColorRepository.GetAllAsync(pageIndex, pageSize, searchTerm);
 			var totalCount = entities.Count();
 			
-			if (searchTerm.IsNullOrEmpty())
+			if (searchTerm.Length == 0)
 			{
 				totalCount = _unitOfWork.ColorRepository.GetAllAsync().Result.Count();
 			}
