@@ -1,4 +1,4 @@
-using PerHue.Application.Models;
+using PerHue.Application.Models.Notification;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

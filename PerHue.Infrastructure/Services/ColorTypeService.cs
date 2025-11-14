@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.ColorType;
 using PerHue.Domain.UnitOfWork;
 
 namespace PerHue.Infrastructure.Services
