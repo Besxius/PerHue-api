@@ -1,6 +1,23 @@
-@PerHue.Api_HostAddress = http://localhost:5009
+﻿@PerHue.Api_HostAddress = https://localhost:7092
+@AccessToken = ""
 
 GET {{PerHue.Api_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+
+POST {{PerHue.Api_HostAddress}}/api/auth/login
+Authorization: bearer {{$bearerToken}}
+Content-Type: application/json
+
+{
+  "email": "trongle1161@gmail.com",
+  "password": "Trong12345!"
+}
+
+###
+
+GET {{PerHue.Api_HostAddress}}/api/users/information
+Authorization: bearer {{$bearerToken}}
 
 ###
