@@ -43,7 +43,13 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<Notification, NotificationModel>()
 				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
 
+			CreateMap<AiPicture, AiPictureModel>().ReverseMap();
+			CreateMap<TestRequest, TestRequestModel>()
+				.ForMember(dest => dest.UserEmail, opt => opt.MapFrom(src => src.UserAccount.Email));
 
+			CreateMap<TestResponse, TestResponseModel>()
+				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name));
+			CreateMap<CreateTestResponseModel, TestResponse>();
 		}
 	}
 }
