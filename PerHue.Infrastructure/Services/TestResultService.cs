@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.ManualTest;
+using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
-using PerHue.Infrastructure.Utils;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -43,7 +40,7 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<TestResultModel>(testResult);
 		}
 
-		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model)
+		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateManualTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
 
@@ -57,7 +54,7 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
-		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model)
+		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateManualTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors, model.ColorType);
 

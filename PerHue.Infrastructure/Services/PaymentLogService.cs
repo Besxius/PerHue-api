@@ -2,7 +2,7 @@
 using Azure.Core;
 using PerHue.Application.Basic;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.PaymentLog;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 
