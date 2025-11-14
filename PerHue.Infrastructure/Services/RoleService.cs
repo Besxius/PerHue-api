@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.Role;
 using PerHue.Domain.UnitOfWork;
 
 namespace PerHue.Infrastructure.Services

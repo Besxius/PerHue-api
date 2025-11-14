@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.Payment;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.Utils;
 
