@@ -4,6 +4,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
+using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
