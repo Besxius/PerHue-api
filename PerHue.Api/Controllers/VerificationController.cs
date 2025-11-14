@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.VerifyInformation;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -33,7 +33,6 @@ public class VerificationController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetRequestById(int id)
     {
-        // Only validate authorization here (controller's responsibility)
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         var isAdmin = User.IsInRole("Admin");
 

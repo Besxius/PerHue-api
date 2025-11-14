@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Net.payOS;
 using Net.payOS.Types;
-using PerHue.Application.Models;
+using PerHue.Application.Models.Payment;
 
 namespace PerHue.Infrastructure.Utils
 {

@@ -54,7 +54,6 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Admin" },
 				new() { Name = "User" },
 				new() { Name = "Expert" },
-				new() { Name = "Brand" },
 			};
 		}
 
@@ -133,12 +132,12 @@ namespace PerHue.Infrastructure.Utils
 		{
 			return new List<UserAccount>{
 				new(){
-					Email = "buihuutien3@gmail.com",
-					Username = "buihuutien3",
-					Password = "Admin12345!",
+					Email = "perhue2025@gmail.com",
+					Username = "Perhue",
+					Password = HashPassWithSHA256.HashWithSHA256("Admin12345!"),
 					Fullname = "Ad Thi Min",
 					Phone = "0378661398",
-					Gender = false,
+					Gender = true,
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
 					IsActive = true,
@@ -149,7 +148,7 @@ namespace PerHue.Infrastructure.Utils
 				{
 					Email = "trongldse173125@fpt.edu.vn",
 					Username = "trongldse173125",
-					Password = "Trong12345!",
+					Password =  HashPassWithSHA256.HashWithSHA256("Trong12345!"),
 					Fullname = "Le Duc Trong",
 					Phone = "0378661398",
 					Gender = true,
@@ -161,10 +160,24 @@ namespace PerHue.Infrastructure.Utils
 				},
 				new()
 				{
-					Email = "tienbhse172562@fpt.edu.vn",
-					Username = "tienbhse172562",
-					Password = "Tien12345!",
-					Fullname = "Bui Huu Tien",
+					Email = "trongle1161@gmail.com",
+					Username = "trongle1161",
+					Password =  HashPassWithSHA256.HashWithSHA256("Trong12345!"),
+					Fullname = "Le Duc Trong",
+					Phone = "0378661398",
+					Gender = true,
+					Dob = new DateOnly(2003, 6, 16),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+				},
+				new()
+				{
+					Email = "hungndse173155@fpt.edu.vn",
+					Username = "hungndse173155",
+					Password = HashPassWithSHA256.HashWithSHA256("Hung12345!"),
+					Fullname = "Nguyen Duc Hung",
 					Phone = "0345678910",
 					Gender = true,
 					Dob = new DateOnly(2003, 1, 11),
@@ -175,10 +188,24 @@ namespace PerHue.Infrastructure.Utils
 				},
 				new()
 				{
-					Email = "duyenntpse172534@fpt.edu.vn",
-					Username = "duyenntpse172534",
-					Password = "Duyen12345!",
-					Fullname = "Nguyen Tram Phuc Duyen",
+					Email = "nguyenduchungdh2103@gmail.com",
+					Username = "nguyenduchungdh2103",
+					Password = HashPassWithSHA256.HashWithSHA256("Hung12345!"),
+					Fullname = "Nguyen Duc Hung",
+					Phone = "0345678910",
+					Gender = true,
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+				},
+				new()
+				{
+					Email = "annqkhe180905@fpt.edu.vn",
+					Username = "annqkhe180905",
+					Password = HashPassWithSHA256.HashWithSHA256("An12345!"),
+					Fullname = "Nguyen Quang Khanh An",
 					Phone = "0345678910",
 					Gender = false,
 					Dob = new DateOnly(2003, 1, 11),
@@ -189,10 +216,52 @@ namespace PerHue.Infrastructure.Utils
 				},
 				new()
 				{
-					Email = "phuongthaocamvien.tiktok@gmail.com",
-					Username = "phuongthaocamvien.tiktok",
-					Password = "PerHueDefaultPassword",
-					Fullname = "Tran Thi Phuong Thao",
+					Email = "annqk569@gmail.com",
+					Username = "annqk569",
+					Password = HashPassWithSHA256.HashWithSHA256("An12345!"),
+					Fullname = "Nguyen Quang Khanh An",
+					Phone = "0345678910",
+					Gender = false,
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+				},
+				new()
+				{
+					Email = "kientse171441@fpt.edu.vn",
+					Username = "kientse171441",
+					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
+					Fullname = "Tran Kien",
+					Phone = "0345678910",
+					Gender = false,
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+				},
+				new()
+				{
+					Email = "trankien214@gmail.com",
+					Username = "trankien214",
+					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
+					Fullname = "Tran Kien",
+					Phone = "0345678910",
+					Gender = false,
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					IsAitested = false,
+					RoleId = 2,
+				},
+				new()
+				{
+					Email = "leeetrong203@gmail.com",
+					Username = "leeetrong203",
+					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
+					Fullname = "Le Duc Trong",
 					Phone = "0345678914",
 					Gender = false,
 					Dob = new DateOnly(2003, 3, 3),
@@ -202,31 +271,31 @@ namespace PerHue.Infrastructure.Utils
 					RoleId = 3,
 					Expert = new Expert
 					{
-						Nickname = "Puta Color",
+						Nickname = "Besxius",
 						Specialization = "Personal color expert",
-						Bio = "Hiwon makeup course graduate. Makeup artist with a passion for enhancing natural beauty. Specializes in bridal and special occasion makeup",
+						Bio = "Hi, I’m Besxius, your personal color decoder and confidence booster.\r\n\r\nI specialize in moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter) to pinpoint your precise Undertone and optimal color palette. Simply put:\r\n\r\nI help you stop buying clothes that make you look like you haven't slept in three days.\r\n\r\nMy Philosophy: The right colors don't just highlight your beauty—they elevate your self-assurance. Stop guessing and start glowing.\r\n\r\nCore Services: In-depth personal color analysis, wardrobe consultations, and color-matched makeup guidance.\r\n\r\nThe Result: A bespoke color palette and the cheat codes to make you look effortlessly radiant, every single time.\r\n\r\nConnect: leeetrong203@gmail.com",
 						YearsOfExperience = 2,
 						Languages = "Vietnamese, English",
 						Rating = (decimal?)5.0,
-						Certification = "Certified Makeup Artist, Professional Beauty Course",
-						Introduction = "Hello, I'm Phuong Thao, a passionate makeup artist with a love for enhancing natural beauty. I specialize in bridal and special occasion makeup, ensuring every client feels beautiful and confident. With over 2 years of experience and certifications from renowned makeup courses, I am dedicated to providing exceptional service and creating stunning looks tailored to each individual's style. Let's work together to bring your beauty vision to life!",
-						FacebookAccount = "https://www.facebook.com/tran.thi.phuong.thao.430397?locale=vi_VN"
+						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
+						Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion. She is not just an analyst; she is a confidence architect who builds dazzling looks starting with the perfect color palette.\r\n\r\nHe is Besxius, and she has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections. Today, she will share the secrets to ensure you always glow instead of just... get dressed.\r\n\r\nPlease join me in giving a warm welcome to Personal Color Expert, Besxius!\"",
+						FacebookAccount = "https://www.facebook.com/trong.le.26298/"
 					}
 				},
-				new()
-				{
-					Email = "ouroborus.free@gmail.com",
-					Username = "ouroborus.free",
-					Password = "PerHueDefaultPassword",
-					Fullname = "Oroborus",
-					Phone = "0345678917",
-					Gender = true,
-					Dob = new DateOnly(1999, 11, 11),
-					ProfilePicture = string.Empty,
-					IsActive = true,
-					IsAitested = false,
-					RoleId = 4,
-				}
+				//new()
+				//{
+				//	Email = "ouroborus.free@gmail.com",
+				//	Username = "ouroborus.free",
+				//	Password = "PerHueDefaultPassword",
+				//	Fullname = "Oroborus",
+				//	Phone = "0345678917",
+				//	Gender = true,
+				//	Dob = new DateOnly(1999, 11, 11),
+				//	ProfilePicture = string.Empty,
+				//	IsActive = true,
+				//	IsAitested = false,
+				//	RoleId = 4,
+				//}
 			};
 		}
 
