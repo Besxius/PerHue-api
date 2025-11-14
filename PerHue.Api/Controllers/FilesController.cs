@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.User;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
