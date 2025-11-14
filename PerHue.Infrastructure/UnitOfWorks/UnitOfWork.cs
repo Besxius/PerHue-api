@@ -22,6 +22,13 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public IExpertRepository ExpertRepository { get; private set; }
 		public INotificationRepository NotificationRepository { get; private set; }
 
+		public ITestRequestRepository TestRequestRepository { get; private set; }
+		public ITestResponseRepository TestResponseRepository { get; private set; }
+		public IExpertTestRequestRepository ExpertTestRequestRepository { get; private set; }
+
+		public IAiPictureRepository AiPictureRepository { get; private set; }
+		public IAiTestResultRepository AiTestResultRepository { get; private set; }
+
 
 		public UnitOfWork(
 			PerHueDbContext context,
@@ -37,7 +44,14 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			ITestResultRepository testResultRepository,
 			IVerificationRepository verificationRepository,
 			IExpertRepository expertRepository,
-			INotificationRepository notificationRepository
+			INotificationRepository notificationRepository,
+
+			ITestRequestRepository testRequestRepository,
+			ITestResponseRepository testResponseRepository,
+			IExpertTestRequestRepository expertTestRequestRepository,
+
+			IAiPictureRepository aiPictureRepository,
+			IAiTestResultRepository aiTestResultRepository
 			)
 		{
 			_context = context;
@@ -54,6 +68,13 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			VerificationRepository = verificationRepository;
 			ExpertRepository = expertRepository;
 			NotificationRepository = notificationRepository;
+
+			TestRequestRepository = testRequestRepository;
+			TestResponseRepository = testResponseRepository;
+			ExpertTestRequestRepository = expertTestRequestRepository;
+
+			AiPictureRepository = aiPictureRepository;
+			AiTestResultRepository = aiTestResultRepository;
 		}
 
 		public int SaveChangesWithTransaction()
