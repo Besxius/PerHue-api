@@ -1,0 +1,59 @@
+### User Info API Test
+### Base URL
+@baseUrl = https://localhost:7092
+@authToken = YOUR_BEARER_TOKEN_HERE
+
+### 1. Get current logged-in user information (stateless)
+GET {{baseUrl}}/api/users/user-info
+Authorization: Bearer {{authToken}}
+
+### 2. Test with invalid token (should return 401)
+GET {{baseUrl}}/api/users/user-info
+Authorization: Bearer invalid_token_here
+
+### 3. Test without authorization header (should return 401)
+GET {{baseUrl}}/api/users/user-info
+
+### Examples of expected responses:
+
+### Success Response (200 OK):
+# {
+#   "success": true,
+#   "data": {
+#     "id": 1,
+#     "email": "user@example.com",
+#     "username": "username123",
+#     "fullname": "John Doe",
+#     "phone": "0123456789",
+#     "gender": true,
+#     "dob": "1995-05-15",
+#     "isactive": true,
+#     "profilepicture": "https://example.com/avatar.jpg",
+#     "isaitested": false,
+#     "roleId": 2,
+#     "roleName": "User"
+#   },
+#   "message": "User information retrieved successfully"
+# }
+
+### Unauthorized Response (401):
+# {
+#   "message": "Invalid or missing user ID in token"
+# }
+
+### Not Found Response (404):
+# {
+#   "message": "User not found"
+# }
+
+### Forbidden Response (403):
+# {
+#   "message": "User account is deactivated"
+# }
+
+### Error Response (500):
+# {
+#   "success": false,
+#   "message": "An error occurred while retrieving user information",
+#   "error": "Detailed error message"
+# }

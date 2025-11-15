@@ -5,6 +5,7 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.Authentication;
 using PerHue.Infrastructure.Utils;
+using Microsoft.EntityFrameworkCore;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -176,6 +177,31 @@ namespace PerHue.Infrastructure.Services
 		{
 			var userName = email.Split('@')[0];
 			return userName;
+		}
+
+		public async Task<UserInfoModel?> GetUserInfoAsync(int userId)
+		{
+			var user = await _unitOfWork.UserRepository.GetQueryable()
+				.Include(u => u.Role)
+				.FirstOrDefaultAsync(u => u.Id == userId);
+
+			if (user == null) return null;
+
+			return new UserInfoModel
+			{
+				Id = user.Id,
+				Email = user.Email,
+				Username = user.Username,
+				Fullname = user.Fullname,
+				Phone = user.Phone,
+				Gender = user.Gender,
+				Dob = user.Dob,
+				Isactive = user.IsActive,
+				Profilepicture = user.ProfilePicture,
+				Isaitested = user.IsAitested,
+				RoleId = user.RoleId,
+				RoleName = user.Role.Name
+			};
 		}
 	}
 }
