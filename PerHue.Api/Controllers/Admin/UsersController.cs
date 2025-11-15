@@ -5,6 +5,8 @@ using NuGet.Common;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Authentication;
+using PerHue.Application.Models.Role;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -236,7 +238,7 @@ namespace PerHue.Api.Controllers.Admin
 		[HttpPost]
 		[Route("login")]
 		[AllowAnonymous]
-		public async Task<IActionResult> Login(LoginModel model)
+		public async Task<IActionResult> Login(LoginRequestModel model)
 		{
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
 			if (account is null)
