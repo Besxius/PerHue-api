@@ -1,4 +1,5 @@
 using PerHue.Application.Models;
+using PerHue.Application.Models.Role;
 
 namespace PerHue.Application.IServices
 {

@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.Authentication;
+using PerHue.Application.Models.User;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.Authentication;
 using PerHue.Infrastructure.Utils;
 using Microsoft.EntityFrameworkCore;
+using PerHue.Application.Models;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -58,7 +60,7 @@ namespace PerHue.Infrastructure.Services
 			return true;
 		}
 
-		public async Task CreateAsync(CreateUserModel model)
+		public async Task CreateAsync(CreateUserRequestModel model)
 		{
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
@@ -72,7 +74,7 @@ namespace PerHue.Infrastructure.Services
 		public async Task CreateAsync(CreateUserByEmailModel model)
 		{
 			var entity = _mapper.Map<UserAccount>(model);
-			entity.Password = PerHueDefaultPassword.PerHueDefaultPassword166203.ToString();
+			entity.Password = PerHueDefaultPassword.PerHueDefaultPasswordFA25SE166.ToString();
 			entity.Username = GenerateUserName(model.Email);
 			entity.Gender = model.Gender;
 			entity.IsActive = true;
@@ -139,7 +141,7 @@ namespace PerHue.Infrastructure.Services
 			return entity is not null;
 		}
 
-		public async Task<string> ValidateUserAsync(LoginModel model)
+		public async Task<string> ValidateUserAsync(LoginRequestModel model)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
 			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
@@ -170,6 +172,52 @@ namespace PerHue.Infrastructure.Services
 			//}
 			var token = _jwtProvider.GenerateToken(entity);
 
+			return token;
+		}
+
+		public async Task<UserModel> CreateOrLinkGoogleUserAsync(string email, string name, string picture)
+		{
+			if (string.IsNullOrEmpty(email))
+			{
+				return null;
+			}
+
+			var existingUser = await _unitOfWork.UserRepository.GetByEmailAsync(email);
+
+			if (existingUser != null)
+			{
+				return _mapper.Map<UserModel>(existingUser);
+			}
+
+			var newUser = new UserAccount
+			{
+				Email = email,
+				Username = GenerateUserName(email),
+				Password = HashPassWithSHA256.HashWithSHA256(PerHueDefaultPassword.PerHueDefaultPasswordFA25SE166.ToString()),
+				Fullname = name,
+				Gender = false,
+				ProfilePicture = picture,
+				IsActive = true,
+				IsAitested = false,
+				RoleId = 2,
+			};
+
+			await _unitOfWork.UserRepository.CreateAsync(newUser);
+
+			var userModel = _mapper.Map<UserModel>(newUser);
+
+			return userModel;
+		}
+		public string GenerateTokenForUser(UserModel model)
+		{
+			if (model == null)
+			{
+				return string.Empty;
+			}
+			var entity = _mapper.Map<UserAccount>(model);
+
+			// Sử dụng _jwtProvider đã được inject để tạo JWT Token
+			var token = _jwtProvider.GenerateToken(entity);
 			return token;
 		}
 
