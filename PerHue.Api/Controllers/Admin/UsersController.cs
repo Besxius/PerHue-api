@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using NuGet.Common;
@@ -7,6 +7,7 @@ using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.Role;
+using System.Security.Claims;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -240,14 +241,19 @@ namespace PerHue.Api.Controllers.Admin
 		[AllowAnonymous]
 		public async Task<IActionResult> Login(LoginRequestModel model)
 		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null)
-				return NotFound();
-			if (account.Isactive == false)
-				return Accepted();
+			if (account is null) return NotFound("Tên đăng nhập hoặc mật khẩu không đúng.");
+			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
+
 			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-			if (token.Length == 0)
-				return BadRequest();
+			if (string.IsNullOrEmpty(token))
+			{
+				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
+			}
 
 			return Ok(new
 			{
@@ -273,7 +279,7 @@ namespace PerHue.Api.Controllers.Admin
 			try
 			{
 				// Extract user ID from JWT token claims
-				var userIdClaim = User.FindFirst("UserId")?.Value;
+				var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
 				if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
 				{
