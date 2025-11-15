@@ -4,6 +4,7 @@ using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Payment;
 using PerHue.Application.Models.UserSubscription;
 using PerHue.Infrastructure.Utils;
+using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
@@ -52,14 +53,14 @@ namespace PerHue.Api.Controllers
 		//[Authorize(Roles = "User")]
 		public async Task<string> Post([FromRoute] int packageId, string returnUrl, string cancelUrl)
 		{
-			if (User.FindFirst("UserId") == null)
+			if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
 			{
 				throw new UnauthorizedAccessException("User is not authenticated.");
 			}
 			var model = new CreateUserSubscriptionModel
 			{
 				//UserId = 2,
-				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = packageId,
 			};
 
@@ -92,7 +93,7 @@ namespace PerHue.Api.Controllers
 			var model = new CreateUserSubscriptionModel
 			{
 				//UserId = 2,
-				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = true,
 			};
@@ -119,7 +120,7 @@ namespace PerHue.Api.Controllers
 			var model = new CreateUserSubscriptionModel
 			{
 				//UserId = 2,
-				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = true,
 			};
