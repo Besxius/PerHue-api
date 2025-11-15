@@ -16,5 +16,6 @@ namespace PerHue.Application.IServices
 		Task<string> ValidateUserAsync(LoginModel model);
 		Task<string> ValidateUserAsync(string email);
 		Task CreateAsync(CreateUserByEmailModel model);
+		Task<UserInfoModel?> GetUserInfoAsync(int userId);
 	}
 }

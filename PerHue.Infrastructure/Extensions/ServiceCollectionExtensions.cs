@@ -52,6 +52,7 @@ namespace PerHue.Infrastructure.Extensions
 			#region Services
 			services.AddScoped<IServicesProvider, ServicesProvider>();
 			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IAdminUserService, AdminUserService>();
 			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
@@ -95,8 +96,12 @@ namespace PerHue.Infrastructure.Extensions
 			var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey!);
 			services.AddAuthentication(options =>
 			{
-				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+				//options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+				//options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // Đặt luôn Default Scheme
 			})
 			.AddCookie(options =>
 			{
@@ -109,34 +114,35 @@ namespace PerHue.Infrastructure.Extensions
 				options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
 				options.Cookie.SameSite = SameSiteMode.None;
 			})
-			.AddGoogle(options =>
-			{
-				options.ClientId = configuration["Google:ClientId"];
-				options.ClientSecret = configuration["Google:ClientSecret"];
-				options.Scope.Add("email");
-				options.SaveTokens = true;
-				options.CallbackPath = configuration["Google:CallbackPath"];
+			//.AddGoogle(options =>
+			//{
+			//	options.ClientId = configuration["Google:ClientId"];
+			//	options.ClientSecret = configuration["Google:ClientSecret"];
+			//	options.Scope.Add("email");
+			//	options.SaveTokens = true;
+			//	options.CallbackPath = configuration["Google:CallbackPath"];
 
-				// Bạn có thể tùy chỉnh thông tin người dùng được lưu vào ClaimsPrincipal tại đây
-				// Ví dụ: thêm các claims tùy chỉnh từ thông tin Google trả về
-				options.Events.OnCreatingTicket = context =>
-				{
-					// Lấy thông tin email và tên từ Google
-					var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
-					var name = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
-					var nameIdentifier = context.Identity.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Google User ID
+			//	// Bạn có thể tùy chỉnh thông tin người dùng được lưu vào ClaimsPrincipal tại đây
+			//	// Ví dụ: thêm các claims tùy chỉnh từ thông tin Google trả về
+			//	options.Events.OnCreatingTicket = context =>
+			//	{
+			//		// Lấy thông tin email và tên từ Google
+			//		var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
+			//		var name = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
+			//		var nameIdentifier = context.Identity.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Google User ID
 
-					// Bạn có thể thêm hoặc sửa đổi các claims trong context.Identity
-					// Ví dụ: thêm một claim tùy chỉnh
-					// context.Identity.AddClaim(new Claim("CustomClaimType", "CustomValue"));
+			//		// Bạn có thể thêm hoặc sửa đổi các claims trong context.Identity
+			//		// Ví dụ: thêm một claim tùy chỉnh
+			//		// context.Identity.AddClaim(new Claim("CustomClaimType", "CustomValue"));
 
-					// Nếu bạn muốn lưu trữ thêm thông tin từ Google (ví dụ: access_token của Google)
-					// bạn có thể lưu nó vào AuthenticationProperties
-					// context.Properties.StoreTokens(context.Tokens); // SaveTokens = true đã làm điều này
+			//		// Nếu bạn muốn lưu trữ thêm thông tin từ Google (ví dụ: access_token của Google)
+			//		// bạn có thể lưu nó vào AuthenticationProperties
+			//		// context.Properties.StoreTokens(context.Tokens); // SaveTokens = true đã làm điều này
 
-					return Task.CompletedTask;
-				};
-			}).AddJwtBearer(options =>
+			//		return Task.CompletedTask;
+			//	};
+			//})
+			.AddJwtBearer(options =>
 			{
 				options.TokenValidationParameters = new TokenValidationParameters
 				{
