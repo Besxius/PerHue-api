@@ -18,6 +18,14 @@ namespace PerHue.Domain.UnitOfWork
 		IExpertRepository ExpertRepository { get; }
 		INotificationRepository NotificationRepository { get; }
 
+
+		ITestRequestRepository TestRequestRepository { get; }
+		ITestResponseRepository TestResponseRepository { get; }
+		IExpertTestRequestRepository ExpertTestRequestRepository { get; }
+
+		IAiPictureRepository AiPictureRepository { get; }
+		IAiTestResultRepository AiTestResultRepository { get; }
+
 		int SaveChangesWithTransaction();
 		Task<int> SaveChangesWithTransactionAsync();
 	}

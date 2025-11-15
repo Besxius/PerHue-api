@@ -1,5 +1,5 @@
 using PerHue.Application.IServices;
-using PerHue.Application.Models;
+using PerHue.Application.Models.VerifyInformation;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using System;

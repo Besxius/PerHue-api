@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.ServicePackage;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

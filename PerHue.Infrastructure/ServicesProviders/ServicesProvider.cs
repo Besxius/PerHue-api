@@ -20,6 +20,8 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public IColorTypeService ColorTypeService { get; private set; }
 		public ITestResultService TestResultService { get; private set; }
 		public IOtpService OtpService { get; private set; }
+
+		public IExpertTestService ExpertTestService { get; private set; }
 		public ServicesProvider(
 			IUnitOfWork unitOfWork,
 			IUserService userService,
@@ -32,7 +34,10 @@ namespace PerHue.Infrastructure.ServicesProviders
 			ICapsulePaletteService capsulePaletteService,
 			IColorTypeService colorTypeService,
 			ITestResultService testResultService,
-			IOtpService otpService
+			IOtpService otpService,
+
+			IExpertTestService expertTestService
+
 			)
 		{
 			_unitOfWork = unitOfWork;
@@ -47,6 +52,8 @@ namespace PerHue.Infrastructure.ServicesProviders
 			ColorTypeService = colorTypeService;
 			TestResultService = testResultService;
 			OtpService = otpService;
+
+			ExpertTestService = expertTestService;
 		}
 
 	}

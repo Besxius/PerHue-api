@@ -1,5 +1,18 @@
 ﻿using AutoMapper;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Authentication;
+using PerHue.Application.Models.CapsulePalette;
+using PerHue.Application.Models.Color;
+using PerHue.Application.Models.ColorType;
+using PerHue.Application.Models.Expert;
+using PerHue.Application.Models.ManualTest;
+using PerHue.Application.Models.Notification;
+using PerHue.Application.Models.Payment;
+using PerHue.Application.Models.PaymentLog;
+using PerHue.Application.Models.Role;
+using PerHue.Application.Models.ServicePackage;
+using PerHue.Application.Models.User;
+using PerHue.Application.Models.UserSubscription;
 using PerHue.Domain.Entities;
 
 namespace PerHue.Infrastructure.Utils
@@ -9,7 +22,7 @@ namespace PerHue.Infrastructure.Utils
 		public AutoMapperConfiguration()
 		{
 			CreateMap<UserAccount, UserModel>().ReverseMap();
-			CreateMap<UserAccount, CreateUserModel>().ReverseMap();
+			CreateMap<UserAccount, CreateUserRequestModel>().ReverseMap();
 			CreateMap<UserAccount, CreateUserByEmailModel>().ReverseMap();
 			CreateMap<UserAccount, ChangePasswordModel>()
 				.ReverseMap()
@@ -31,7 +44,13 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<Notification, NotificationModel>()
 				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
 
+			CreateMap<AiPicture, AiPictureModel>().ReverseMap();
+			CreateMap<TestRequest, TestRequestModel>()
+				.ForMember(dest => dest.UserEmail, opt => opt.MapFrom(src => src.UserAccount.Email));
 
+			CreateMap<TestResponse, TestResponseModel>()
+				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name));
+			CreateMap<CreateTestResponseModel, TestResponse>();
 		}
 	}
 }

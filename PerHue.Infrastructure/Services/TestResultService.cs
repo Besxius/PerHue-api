@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.ManualTest;
+using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
-using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -14,11 +15,13 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
 		private readonly GeminiService _gemini;
-		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini)
+		ILogger<TestResultService> _logger;
+		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_gemini = gemini;
+			_logger = logger;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -39,7 +42,7 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<TestResultModel>(testResult);
 		}
 
-		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateNormalTestResultModel model)
+		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateManualTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
 
@@ -53,7 +56,7 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
-		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateNormalTestResultModel model)
+		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateManualTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors, model.ColorType);
 
@@ -72,6 +75,116 @@ namespace PerHue.Infrastructure.Services
 		{
 			var result = await _gemini.GeneratePromptWithImageFromUrl(model.ImageUrl);
 			return result;
+		}
+
+		/*public async Task<TestRequestModel> CreateExpertTestRequestAsync(int userId, string imageUrl)
+		{
+			// 1. Get user to link
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+			if (user == null)
+			{
+				throw new Exception("User not found");
+			}
+
+			// 2. Use AI to pick color info and generate scenario photos (Nodes 18 & 24)
+			// This requires a different prompt than the one in GeminiService.
+			// For now, we'll simulate this by calling the *existing* AI.
+			// A "real" implementation would need a new Gemini prompt.
+			_logger.LogWarning("Simulating 'Pick color info' and 'Generate scenarios'. Using standard AI test as placeholder.");
+
+			var aiJsonResult = await _gemini.GeneratePromptWithImageFromUrl(imageUrl);
+			var aiModel = JsonSerializer.Deserialize<AiTestResultModel>(aiJsonResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+			// 3. Create the TestRequest (Node 22)
+			var testRequest = new TestRequest
+			{
+				// We'll use the AI's "suggestion" as the "skin/hair" color for this example
+				SkinColor = aiModel.SuggestedColor.FirstOrDefault(),
+				HairColor = aiModel.SuggestedColor.LastOrDefault(),
+				Status = "Pending", // Pending expert review
+				CreatedDate = DateTime.Now,
+				TypeOfTest = "Expert",
+				UserAccountId = userId
+			};
+
+			// 4. Add the "scenario photos"
+			// We will add the original image and simulated "scenario" images
+			testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = "Original Photo" });
+			foreach (var color in aiModel.SuggestedColor)
+			{
+				// In a real app, you'd call an image generation AI here.
+				// We'll just add the hex code as a note.
+				testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = $"Simulated scenario for {color}" });
+			}
+
+			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
+			await _unitOfWork.SaveChangesWithTransactionAsync(); // Save to get TestRequest.Id
+
+			// 5. Send to Experts (Node 44)
+			// Find 3 experts to send this to.
+			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
+			var expertsToRequest = allExperts.Take(3); // Simple logic, needs improvement (e.g., random, least busy)
+
+			foreach (var expert in expertsToRequest)
+			{
+				var expertRequest = new ExpertTestRequest
+				{
+					ExpertId = expert.Id,
+					TestRequestId = testRequest.Id,
+					Status = "Pending",
+					CreatedDate = DateTime.Now
+				};
+				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
+			}
+
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			return _mapper.Map<TestRequestModel>(testRequest);
+		}*/
+		public async Task<TestRequestModel> CreateExpertTestRequestAsync(int userId, string imageUrl)
+		{
+			_logger.LogInformation($"Creating expert test request for user {userId} with image {imageUrl}");
+
+			// 1. Create the TestRequest (Node 22)
+			var testRequest = new TestRequest
+			{
+				SkinColor = null, // This will be filled by experts
+				HairColor = null, // This will be filled by experts
+				Status = "Pending", // Pending expert review
+				CreatedDate = DateTime.Now,
+				TypeOfTest = "Expert",
+				UserAccountId = userId
+			};
+
+			// 2. Add the user's uploaded picture
+			testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = "Original Photo" });
+
+			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
+			await _unitOfWork.SaveChangesWithTransactionAsync(); // Save to get TestRequest.Id
+			_logger.LogInformation($"Created TestRequest with ID {testRequest.Id}");
+
+			// 3. Send to Experts (Node 44)
+			// Find 3 experts to send this to.
+			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
+			var expertsToRequest = allExperts.Take(3); // Simple logic. 
+													   // TODO: Improve this logic (e.g., random, least busy, skip self)
+
+			foreach (var expert in expertsToRequest)
+			{
+				var expertRequest = new ExpertTestRequest
+				{
+					ExpertId = expert.Id,
+					TestRequestId = testRequest.Id,
+					Status = "Pending",
+					CreatedDate = DateTime.Now
+				};
+				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
+				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
+			}
+
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			return _mapper.Map<TestRequestModel>(testRequest);
 		}
 
 		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model)

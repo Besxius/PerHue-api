@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.CapsulePalette;
 using PerHue.Domain.UnitOfWork;
 
 namespace PerHue.Infrastructure.Services
@@ -25,7 +25,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var entities = await _unitOfWork.CapsulePaletteRepository.GetAllAsync(pageIndex, pageSize, searchTerm);
 			var totalCount = entities.Count();
-			if (searchTerm.IsNullOrEmpty())
+			if (searchTerm.Length == 0)
 			{
 				totalCount = _unitOfWork.CapsulePaletteRepository.GetAllAsync().Result.Count();
 			}

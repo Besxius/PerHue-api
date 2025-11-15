@@ -31,7 +31,7 @@
 	}
 	public enum PerHueDefaultPassword
 	{
-		PerHueDefaultPassword166203
+		PerHueDefaultPasswordFA25SE166
 	}
 	public enum TestTypeEnum
 	{
