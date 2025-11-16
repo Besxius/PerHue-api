@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using PerHue.Application.Models;
+using PerHue.Application.Models.ExpertTestResult;
 
 namespace PerHue.Application.IServices
 {
@@ -12,5 +13,11 @@ namespace PerHue.Application.IServices
 	{
 		Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId);
 		Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId);
+
+		Task<IEnumerable<TestResponseModel>> GetExpertResponsesForUserAsync(int testRequestId, int userId);
+
+		Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync();
+		Task<IEnumerable<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId);
+		Task RateExpertResponseAsync(RateExpertResponseModel model, int userId);
 	}
 }
