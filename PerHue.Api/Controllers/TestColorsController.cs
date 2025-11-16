@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
 using System.Security.Claims;
@@ -74,15 +75,16 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost("expert-test")]
-		[Authorize(Roles = "User,Admin")] // Assumes user must be logged in
-		public async Task<IActionResult> CreateExpertTestRequest(IFormFile file)
+		[Authorize(Roles = "User,Admin")]
+		// Use the new DTO from the correct namespace
+		public async Task<IActionResult> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
 		{
-			if (file == null || file.Length == 0)
+			if (model.File == null || model.File.Length == 0)
 			{
 				return BadRequest("No file uploaded.");
 			}
 
-			// --- FIX: Get User ID directly from the token ---
+			// Get User ID from token
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (string.IsNullOrEmpty(userIdString))
 			{
@@ -93,13 +95,23 @@ namespace PerHue.Api.Controllers
 			{
 				return Unauthorized("Invalid User ID format in token.");
 			}
-			// --- END FIX ---
 
 			// 1. Upload image
-			var imageUrl = await _imageUploadService.UploadImageAsync(file);
+			var imageUrl = await _imageUploadService.UploadImageAsync(model.File);
 
-			// 2. Create the expert test request
-			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(userId, imageUrl);
+			// 2. Create the new service parameter DTO
+			var parameters = new ExpertTestCreationParameters
+			{
+				UserId = userId,
+				ImageUrl = imageUrl,
+				HairColor = model.HairColor,
+				EyesColor = model.EyesColor,
+				LipsColor = model.LipsColor,
+				SkinColor = model.SkinColor
+			};
+
+			// 3. Create the expert test request
+			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(parameters);
 
 			return Ok(testRequest);
 		}
