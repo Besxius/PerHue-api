@@ -1,0 +1,137 @@
+### Admin User Management API Tests
+### Base URL
+@baseUrl = https://localhost:7092
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+
+### 1. Get all users with pagination and search
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&searchTerm=&sortBy=1&sortOrder=2
+Authorization: Bearer {{adminToken}}
+
+### 2. Get users with search by username
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&searchTerm=john&searchType=1&sortBy=3&sortOrder=1
+Authorization: Bearer {{adminToken}}
+
+### 3. Get users with search by email
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&searchTerm=@gmail.com&searchType=2
+Authorization: Bearer {{adminToken}}
+
+### 4. Get users by role
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&roleId=2
+Authorization: Bearer {{adminToken}}
+
+### 5. Get active users only
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&isActive=true
+Authorization: Bearer {{adminToken}}
+
+### 6. Get inactive/banned users only
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=10&isActive=false
+Authorization: Bearer {{adminToken}}
+
+### 7. Get user by ID
+GET {{baseUrl}}/api/admin/users/1
+Authorization: Bearer {{adminToken}}
+
+### 8. Create new user
+POST {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "username": "newuser123",
+  "password": "password123",
+  "fullname": "New User Test",
+  "phone": "0123456789",
+  "gender": true,
+  "dob": "1995-05-15",
+  "isactive": true,
+  "roleId": 2
+}
+
+### 9. Update user information
+PUT {{baseUrl}}/api/admin/users/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "updated@example.com",
+  "username": "updateduser",
+  "fullname": "Updated User Name",
+  "phone": "0987654321",
+  "gender": false,
+  "dob": "1990-12-25",
+  "isactive": true,
+  "roleId": 2
+}
+
+### 10. Update user password
+PUT {{baseUrl}}/api/admin/users/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "username",
+  "fullname": "Full Name",
+  "phone": "0123456789",
+  "gender": true,
+  "dob": "1995-05-15",
+  "isactive": true,
+  "roleId": 2,
+  "newPassword": "newpassword123"
+}
+
+### 11. Update user status (activate/deactivate)
+PATCH {{baseUrl}}/api/admin/users/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isactive": false,
+  "reason": "Violating community guidelines"
+}
+
+### 12. Ban user
+POST {{baseUrl}}/api/admin/users/1/ban
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+"User violated terms of service"
+
+### 13. Unban user
+POST {{baseUrl}}/api/admin/users/1/unban
+Authorization: Bearer {{adminToken}}
+
+### 14. Delete user
+DELETE {{baseUrl}}/api/admin/users/1
+Authorization: Bearer {{adminToken}}
+
+### 15. Get all roles
+GET {{baseUrl}}/api/admin/users/roles
+Authorization: Bearer {{adminToken}}
+
+### Advanced Search Examples
+
+### Search by account ID
+GET {{baseUrl}}/api/admin/users?searchTerm=123&searchType=4
+Authorization: Bearer {{adminToken}}
+
+### Search by phone
+GET {{baseUrl}}/api/admin/users?searchTerm=0123&searchType=5
+Authorization: Bearer {{adminToken}}
+
+### Sort by email ascending
+GET {{baseUrl}}/api/admin/users?sortBy=4&sortOrder=1
+Authorization: Bearer {{adminToken}}
+
+### Sort by creation date descending (newest first)
+GET {{baseUrl}}/api/admin/users?sortBy=1&sortOrder=2
+Authorization: Bearer {{adminToken}}
+
+### Combined filters: Active users with role 2, sorted by username
+GET {{baseUrl}}/api/admin/users?isActive=true&roleId=2&sortBy=3&sortOrder=1
+Authorization: Bearer {{adminToken}}
+
+### Large page size for export
+GET {{baseUrl}}/api/admin/users?pageIndex=1&pageSize=100
+Authorization: Bearer {{adminToken}}

@@ -55,6 +55,7 @@ namespace PerHue.Infrastructure.Extensions
 			#region Services
 			services.AddScoped<IServicesProvider, ServicesProvider>();
 			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IAdminUserService, AdminUserService>();
 			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
