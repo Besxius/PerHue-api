@@ -13,8 +13,11 @@
 		<PackageReference Include="Google.GenAI" Version="0.5.0" />
 		<PackageReference Include="Google_GenerativeAI" Version="3.4.1" />
 		<PackageReference Include="MailKit" Version="4.13.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.14" />
+		
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0" />
+		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.14.0" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.14" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.14">
@@ -26,12 +29,15 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		
 		<PackageReference Include="MimeKit" Version="4.13.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 
 		<PackageReference Include="payOS" Version="1.0.9" />
 
 		<PackageReference Include="StackExchange.Redis" Version="2.9.17" />
+
+		<PackageReference Include="System.Text.Encoding" Version="4.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -39,7 +45,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Authentication\" />
 	  <Folder Include="Migrations\" />
 	</ItemGroup>
 

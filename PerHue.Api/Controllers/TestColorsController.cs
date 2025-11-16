@@ -2,7 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.ManualTest;
+using PerHue.Application.Models.TestRequest;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -21,10 +22,10 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost]
 		[Route("normal-test/simple-color")]
-		public async Task<TestResultModel> NormalTestSimpleColor(NormalTestSimpleColorModel model)
+		public async Task<TestResultModel> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
 			var user = User.Identity;
-			var testResult = new CreateNormalTestResultModel
+			var testResult = new CreateManualTestResultModel
 			{
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				SelectedColors = model.SelectedColors,
@@ -44,9 +45,9 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost]
 		[Route("normal-test/capsule-palette")]
-		public async Task<TestResultModel> NormalTestColorPalette(NormalTestColorPaletteModel model)
+		public async Task<TestResultModel> NormalTestColorPalette(ManualTestColorPaletteModel model)
 		{
-			var testResult = new CreateNormalTestResultModel
+			var testResult = new CreateManualTestResultModel
 			{
 				UserId = int.Parse(User.FindFirst("UserId")!.Value),
 				SelectedColors = model.SelectedColors,

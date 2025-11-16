@@ -1,5 +1,6 @@
 ﻿using PerHue.Application.Basic;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Color;
 
 namespace PerHue.Application.IServices
 {

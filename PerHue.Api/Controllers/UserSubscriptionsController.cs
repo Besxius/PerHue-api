@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
-using PerHue.Application.Models;
+using PerHue.Application.Models.Payment;
+using PerHue.Application.Models.UserSubscription;
 using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Api.Controllers
