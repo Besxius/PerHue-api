@@ -15,6 +15,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using PerHue.Application.Models.TestRequest;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -39,29 +40,31 @@ namespace PerHue.Infrastructure.Services
 				// Tạo prompt chi tiết cho Gemini
 				var prompt = BuildAnalysisPrompt(request);
 
-				// Download và chuyển đổi ảnh thành base64
-				var imageParts = new List<object>();
+				// Tạo list các Part objects
+				var parts = new List<GenerativeAI.Types.Part>();
+
+				// Thêm text prompt
+				parts.Add(new GenerativeAI.Types.Part { Text = prompt });
+
+				// Download và thêm ảnh
 				using var httpClient = new HttpClient();
 
 				foreach (var imageUrl in request.ImageUrls)
 				{
 					var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
-					var base64Image = Convert.ToBase64String(imageBytes);
-					imageParts.Add(new
+
+					parts.Add(new GenerativeAI.Types.Part
 					{
-						inline_data = new
+						InlineData = new GenerativeAI.Types.Blob
 						{
-							mime_type = "image/jpeg",
-							data = base64Image
+							MimeType = "image/jpeg",
+							Data = Convert.ToBase64String(imageBytes)
 						}
 					});
 				}
 
-				// Gọi Gemini API với ảnh và prompt
-				var contents = new List<object> { prompt };
-				contents.AddRange(imageParts);
-
-				var response = await model.GenerateContentAsync((IEnumerable<GenerativeAI.Types.Part>)contents.ToArray());
+				// Gọi Gemini API
+				var response = await model.GenerateContentAsync(parts);
 				var resultText = response.Text;
 
 				// Parse kết quả JSON từ Gemini
@@ -88,15 +91,15 @@ User Information:
 - Skin Color: {request.SkinColor ?? "Not specified"}
 
 Based on the images and information provided, determine:
-1. The seasonal color type (Spring, Summer, Autumn, or Winter)
-2. The corresponding ColorTypeId (1=Spring, 2=Summer, 3=Autumn, 4=Winter)
+1. The seasonal color type (Spring Warm, Summer Cool, Autumn Warm, Winter Cool, Soft Neutral,Deep Neutral)
+2. The corresponding ColorTypeId (1=Spring Warm, 2=SummSummer Cooler, 3=Autumn Warm, 4=Winter Cool, 5=Soft Neutral, 6=Deep Neutral)
 3. A list of 5-7 suggested colors that complement this color type
 4. A list of 5-7 colors to avoid
 
 Return ONLY a valid JSON object with this exact structure (no additional text):
 {{
-  ""ColorType"": ""Spring/Summer/Autumn/Winter"",
-  ""ColorTypeId"": 1-4,
+  ""ColorType"": ""Spring Warm/Summer Cool/Autumn Warm/Winter Cool/Soft Neutral/Deep Neutral"",
+  ""ColorTypeId"": 1-6,
   ""SuggestedColor"": [""color1"", ""color2"", ...],
   ""AvoidedColor"": [""color1"", ""color2"", ...]
 }}

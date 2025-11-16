@@ -12,6 +12,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
+using PerHue.Application.Models.TestRequest;
+
 
 namespace PerHue.Infrastructure.Services
 {
@@ -86,6 +88,8 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				await ProcessAiTestAsync(testRequest.Id);
+				// Reload testRequest with all navigation properties
+				testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequest.Id);
 			}
 			catch (Exception ex)
 			{
@@ -98,7 +102,14 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = testRequest.Id,
 				Status = testRequest.Status,
-				CreatedDate = testRequest.CreatedDate.Value
+				CreatedDate = testRequest.CreatedDate.Value,
+				Result = testRequest.AiTestResult != null ? new AiTestResultModel
+				{
+					ColorType = testRequest.AiTestResult.ColorType.Name,
+					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
+					SuggestedColor = testRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+					AvoidedColor = testRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
+				} : null
 			};
 		}
 
@@ -135,9 +146,9 @@ namespace PerHue.Infrastructure.Services
 				{
 					Id = testRequest.Id,
 					Date = DateTime.UtcNow,
+					ColorTypeId = analysisResult.ColorTypeId,
 					SuggestedColor = string.Join(", ", analysisResult.SuggestedColor),
 					AvoidedColor = string.Join(", ", analysisResult.AvoidedColor),
-					ColorTypeId = analysisResult.ColorTypeId,
 					Note = "Analysis completed by AI"
 				};
 
