@@ -108,5 +108,11 @@ namespace PerHue.Api.Controllers
 				? Ok(token)
 				: BadRequest("Failed to get token.");
 		}
+
+		[HttpPost("logout")]
+		public async Task<IActionResult> Logout()
+		{
+			return Ok(new { Message = "Đăng xuất thành công. Token đã được client loại bỏ." });
+		}
 	}
 }
