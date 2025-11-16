@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PerHue.Domain.Entities;
+using System;
+using System.Collections.Generic;
 
 namespace PerHue.Infrastructure.Persistence;
 
@@ -56,7 +57,16 @@ public partial class PerHueDbContext : DbContext
 
     public virtual DbSet<VerifyInformation> VerifyInformations { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+	{
+		if (!optionsBuilder.IsConfigured)
+		{
+			var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+			optionsBuilder.UseSqlServer(config.GetConnectionString("DefaultConnection"));
+		}
+	}
+
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AiPicture>(entity =>
         {
