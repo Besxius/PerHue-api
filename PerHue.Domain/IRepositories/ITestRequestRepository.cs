@@ -9,9 +9,12 @@ using PerHue.Domain.Entities;
 
 namespace PerHue.Domain.IRepositories
 {
-    public interface ITestRequestRepository : IGenericRepository<TestRequest>
-    {
-        Task<TestRequest> GetByIdWithDetailsAsync(int id);
-        Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
-    }
+	public interface ITestRequestRepository : IGenericRepository<TestRequest>
+	{
+		Task<TestRequest> GetByIdWithDetailsAsync(int id);
+		Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
+
+		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync();
+		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsForUserAsync(int userId);
+	}
 }

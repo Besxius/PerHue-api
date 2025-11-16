@@ -6,6 +6,8 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.Authentication;
 using PerHue.Infrastructure.Utils;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using PerHue.Application.Models;
 
@@ -141,7 +143,7 @@ namespace PerHue.Infrastructure.Services
 			return entity is not null;
 		}
 
-		public async Task<string> ValidateUserAsync(LoginRequestModel model)
+		/*public async Task<string> ValidateUserAsync(LoginRequestModel model)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
 			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
@@ -150,6 +152,35 @@ namespace PerHue.Infrastructure.Services
 
 			var token = _jwtProvider.GenerateToken(entity);
 			return token;
+		}*/
+
+		public async Task<LoginResponseModel> ValidateUserAsync(LoginRequestModel model)
+		{
+			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
+			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
+			if (entity == null || entity.Password != HashPass)
+				throw new SecurityTokenException("Invalid email or password");
+
+			// Generate tokens
+			var accessToken = _jwtProvider.GenerateToken(entity);
+			var refreshToken = _jwtProvider.GenerateRefreshToken();
+
+			// Save Refresh Token to DB
+			var refreshTokenEntity = new RefreshToken
+			{
+				Token = refreshToken,
+				ExpireDate = DateTime.UtcNow.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				UserAccountId = entity.Id
+			};
+
+			await _unitOfWork.RefreshTokenRepository.CreateAsync(refreshTokenEntity);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			return new LoginResponseModel
+			{
+				AccessToken = accessToken,
+				RefreshToken = refreshToken
+			};
 		}
 
 		public async Task<string> ValidateUserAsync(string email)
@@ -174,6 +205,9 @@ namespace PerHue.Infrastructure.Services
 
 			return token;
 		}
+		
+		
+
 
 		public async Task<UserModel> CreateOrLinkGoogleUserAsync(string email, string name, string picture)
 		{
@@ -207,6 +241,42 @@ namespace PerHue.Infrastructure.Services
 			var userModel = _mapper.Map<UserModel>(newUser);
 
 			return userModel;
+		}
+		public async Task<LoginResponseModel> RefreshTokenAsync(RefreshTokenRequestModel model)
+		{
+			var principal = _jwtProvider.GetPrincipalFromExpiredToken(model.AccessToken);
+			var userIdString = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+			if (!int.TryParse(userIdString, out var userId))
+				throw new SecurityTokenException("Invalid token claims");
+
+			var storedRefreshToken = await _unitOfWork.RefreshTokenRepository.GetByTokenAsync(model.RefreshToken);
+
+			if (storedRefreshToken == null)
+				throw new SecurityTokenException("Refresh token not found");
+
+			if (storedRefreshToken.UserAccountId != userId)
+				throw new SecurityTokenException("Refresh token mismatch");
+
+			if (storedRefreshToken.ExpireDate <= DateTime.UtcNow)
+				throw new SecurityTokenException("Refresh token expired");
+
+			// All checks passed. Generate new tokens.
+			var user = storedRefreshToken.UserAccount;
+			var newAccessToken = _jwtProvider.GenerateToken(user);
+			var newRefreshToken = _jwtProvider.GenerateRefreshToken();
+
+			// Rotate the refresh token: update the old one with the new value and expiry
+			storedRefreshToken.Token = newRefreshToken;
+			storedRefreshToken.ExpireDate = DateTime.UtcNow.AddDays(7);
+			await _unitOfWork.RefreshTokenRepository.UpdateAsync(storedRefreshToken);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			return new LoginResponseModel
+			{
+				AccessToken = newAccessToken,
+				RefreshToken = newRefreshToken
+			};
 		}
 		public string GenerateTokenForUser(UserModel model)
 		{
