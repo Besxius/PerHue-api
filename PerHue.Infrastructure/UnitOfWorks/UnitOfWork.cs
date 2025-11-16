@@ -27,7 +27,7 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public IExpertTestRequestRepository ExpertTestRequestRepository { get; private set; }
 
 		public IAiPictureRepository AiPictureRepository { get; private set; }
-		public IAiTestResultRepository AiTestResultRepository { get; private set; }
+		public IRefreshTokenRepository RefreshTokenRepository { get; private set; }
 
 
 		public UnitOfWork(
@@ -51,7 +51,7 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			IExpertTestRequestRepository expertTestRequestRepository,
 
 			IAiPictureRepository aiPictureRepository,
-			IAiTestResultRepository aiTestResultRepository
+			IRefreshTokenRepository refreshTokenRepository
 			)
 		{
 			_context = context;
@@ -74,7 +74,7 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			ExpertTestRequestRepository = expertTestRequestRepository;
 
 			AiPictureRepository = aiPictureRepository;
-			AiTestResultRepository = aiTestResultRepository;
+			RefreshTokenRepository = refreshTokenRepository;
 		}
 
 		public int SaveChangesWithTransaction()

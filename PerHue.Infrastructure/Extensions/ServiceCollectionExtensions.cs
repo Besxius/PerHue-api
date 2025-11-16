@@ -49,6 +49,7 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IExpertTestRequestRepository, ExpertTestRequestRepository>();
 
 			services.AddScoped<IAiPictureRepository, AiPictureRepository>();
+			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 			services.AddScoped<IAiTestResultRepository, AiTestResultRepository>();
 			#endregion
 
