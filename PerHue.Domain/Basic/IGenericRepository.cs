@@ -1,4 +1,6 @@
-﻿namespace PerHue.Domain.Basic
+﻿using System.Linq;
+
+namespace PerHue.Domain.Basic
 {
 	public interface IGenericRepository<T> where T : class
 	{
@@ -21,6 +23,7 @@
 		Task<int> SaveAsync();
 		void Update(T entity);
 		Task<int> UpdateAsync(T entity);
+		IQueryable<T> GetQueryable();
 	}
 
 }
