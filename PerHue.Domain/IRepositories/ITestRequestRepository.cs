@@ -9,14 +9,16 @@ using PerHue.Domain.Entities;
 
 namespace PerHue.Domain.IRepositories
 {
-    public interface ITestRequestRepository : IGenericRepository<TestRequest>
-    {
-        Task<TestRequest> GetByIdWithDetailsAsync(int id);
-        Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
+	public interface ITestRequestRepository : IGenericRepository<TestRequest>
+	{
+		Task<TestRequest> GetByIdWithDetailsAsync(int id);
+		Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
+
+		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync();
+		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsForUserAsync(int userId);
 
 		Task<TestRequest> CreateTestRequestAsync(int userAccountId, string typeOfTest);
 		Task<AiPicture> AddAiPictureAsync(int testRequestId, string imageUrl, string note);
 		Task<AiTestResult> AddAiTestResultAsync(int testRequestId, string suggestedColor, string avoidedColor, int colorTypeId, string note);
-
 	}
 }

@@ -5,6 +5,7 @@ using PerHue.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace PerHue.Infrastructure.Authentication
 {
@@ -44,6 +45,42 @@ namespace PerHue.Infrastructure.Authentication
 			var accessToken = jwtTokenHandler.WriteToken(token);
 
 			return accessToken;
+		}
+
+		public string GenerateRefreshToken()
+		{
+			var randomNumber = new byte[64];
+			using var rng = RandomNumberGenerator.Create();
+			rng.GetBytes(randomNumber);
+			return Convert.ToBase64String(randomNumber);
+		}
+
+		public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+		{
+			var secretKeyBytes = Encoding.UTF8.GetBytes(_jwtSetting.Key);
+
+			var tokenValidationParameters = new TokenValidationParameters
+			{
+				ValidateIssuer = true,
+				ValidateAudience = true,
+				ValidateLifetime = false, // <-- This is the key: we don't validate the token's expiry date
+				ValidateIssuerSigningKey = true,
+				ValidIssuer = _jwtSetting.Issuer,
+				ValidAudience = _jwtSetting.Audience,
+				IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
+				ClockSkew = TimeSpan.Zero
+			};
+
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+
+			if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+				!jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+			{
+				throw new SecurityTokenException("Invalid token");
+			}
+
+			return principal;
 		}
 
 	}
