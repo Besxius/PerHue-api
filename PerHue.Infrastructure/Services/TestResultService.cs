@@ -2,11 +2,15 @@
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -141,33 +145,40 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestRequestModel>(testRequest);
 		}*/
-		public async Task<TestRequestModel> CreateExpertTestRequestAsync(int userId, string imageUrl)
+		public async Task<TestRequestModel> CreateExpertTestRequestAsync(ExpertTestCreationParameters parameters)
 		{
-			_logger.LogInformation($"Creating expert test request for user {userId} with image {imageUrl}");
+			_logger.LogInformation($"Creating expert test request for user {parameters.UserId} with image {parameters.ImageUrl}");
 
-			// 1. Create the TestRequest (Node 22)
+			// 1. Create the TestRequest from the parameters object
 			var testRequest = new TestRequest
 			{
-				SkinColor = null, // This will be filled by experts
-				HairColor = null, // This will be filled by experts
-				Status = "Pending", // Pending expert review
+				SkinColor = parameters.SkinColor,
+				HairColor = parameters.HairColor,
+				EyesColor = parameters.EyesColor,
+				LipsColor = parameters.LipsColor,
+				Status = "Pending",
 				CreatedDate = DateTime.Now,
 				TypeOfTest = "Expert",
-				UserAccountId = userId
+				UserAccountId = parameters.UserId
 			};
 
 			// 2. Add the user's uploaded picture
-			testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = "Original Photo" });
+			testRequest.AiPictures.Add(new AiPicture { Source = parameters.ImageUrl, Note = "Original Photo" });
+			testRequest.Pictures.Add(new Picture { Source = parameters.ImageUrl });
 
 			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
-			await _unitOfWork.SaveChangesWithTransactionAsync(); // Save to get TestRequest.Id
+			await _unitOfWork.SaveChangesWithTransactionAsync();
 			_logger.LogInformation($"Created TestRequest with ID {testRequest.Id}");
 
-			// 3. Send to Experts (Node 44)
-			// Find 3 experts to send this to.
+			// 3. Send to Experts
 			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
-			var expertsToRequest = allExperts.Take(3); // Simple logic. 
-													   // TODO: Improve this logic (e.g., random, least busy, skip self)
+			// Create a single instance of Random
+			var random = new Random();
+
+			// Filter out the user, then use random.Next() to get a random order
+			var expertsToRequest = allExperts.Where(e => e.Id != parameters.UserId)
+											 .OrderBy(e => random.Next())
+											 .Take(3);
 
 			foreach (var expert in expertsToRequest)
 			{

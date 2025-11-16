@@ -21,8 +21,16 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<IEnumerable<TestResponse>> GetResponsesForRequestAsync(int testRequestId)
 		{
 			return await _context.TestResponses
+				.Include(r => r.ColorType) // Include ColorType to map the name
 				.Where(resp => resp.TestRequestId == testRequestId)
 				.ToListAsync();
 		}
+		public async Task<IEnumerable<TestResponse>> GetAllByExpertIdAsync(int expertId)
+		{
+			return await _context.TestResponses
+				.Where(r => r.ExpertId == expertId && r.Rating != null) // Only get rated responses
+				.ToListAsync();
+		}
+
 	}
 }

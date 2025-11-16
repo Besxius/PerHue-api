@@ -88,5 +88,27 @@ namespace PerHue.Infrastructure.Repositories
 			await _context.SaveChangesAsync();
 			return aiTestResult;
 		}
+
+		public async Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync()
+		{
+			return await _context.TestRequests
+				.Include(tr => tr.UserAccount) // For mapping to TestRequestModel
+				.Include(tr => tr.AiPictures)   // For mapping to TestRequestModel
+				.Where(tr => tr.Status == "Completed" && tr.TypeOfTest == "Expert")
+				.OrderByDescending(tr => tr.CreatedDate)
+				.ToListAsync();
+		}
+		public async Task<IEnumerable<TestRequest>> GetCompletedExpertTestsForUserAsync(int userId)
+		{
+			return await _context.TestRequests
+				.Include(tr => tr.UserAccount)
+				.Include(tr => tr.AiPictures)
+				// We check for both "Completed" and "Failed" as they are both part of the user's history
+				.Where(tr => tr.UserAccountId == userId &&
+							 (tr.Status == "Completed" || tr.Status == "Failed") &&
+							 tr.TypeOfTest == "Expert")
+				.OrderByDescending(tr => tr.CreatedDate)
+				.ToListAsync();
+		}
 	}
 }
