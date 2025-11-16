@@ -13,5 +13,10 @@ namespace PerHue.Domain.IRepositories
     {
         Task<TestRequest> GetByIdWithDetailsAsync(int id);
         Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
-    }
+
+		Task<TestRequest> CreateTestRequestAsync(int userAccountId, string typeOfTest);
+		Task<AiPicture> AddAiPictureAsync(int testRequestId, string imageUrl, string note);
+		Task<AiTestResult> AddAiTestResultAsync(int testRequestId, string suggestedColor, string avoidedColor, int colorTypeId, string note);
+
+	}
 }
