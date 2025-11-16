@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PerHue.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PerHue.Infrastructure.Persistence;
 namespace PerHue.Infrastructure.Migrations
 {
     [DbContext(typeof(PerHueDbContext))]
-    partial class PerHueDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251113160829_dbV2")]
+    partial class dbV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
