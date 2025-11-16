@@ -2,11 +2,13 @@
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
+using Microsoft.EntityFrameworkCore;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -141,24 +143,26 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestRequestModel>(testRequest);
 		}*/
-		public async Task<TestRequestModel> CreateExpertTestRequestAsync(int userId, string imageUrl)
+		public async Task<TestRequestModel> CreateExpertTestRequestAsync(ExpertTestCreationParameters parameters)
 		{
-			_logger.LogInformation($"Creating expert test request for user {userId} with image {imageUrl}");
+			_logger.LogInformation($"Creating expert test request for user {parameters.UserId} with image {parameters.ImageUrl}");
 
-			// 1. Create the TestRequest
+			// 1. Create the TestRequest from the parameters object
 			var testRequest = new TestRequest
 			{
-				SkinColor = null,
-				HairColor = null,
+				SkinColor = parameters.SkinColor,
+				HairColor = parameters.HairColor,
+				EyesColor = parameters.EyesColor,
+				LipsColor = parameters.LipsColor,
 				Status = "Pending",
 				CreatedDate = DateTime.Now,
 				TypeOfTest = "Expert",
-				UserAccountId = userId
+				UserAccountId = parameters.UserId
 			};
 
 			// 2. Add the user's uploaded picture
-			testRequest.AiPictures.Add(new AiPicture { Source = imageUrl, Note = "Original Photo" });
-			testRequest.Pictures.Add(new Picture { Source = imageUrl });
+			testRequest.AiPictures.Add(new AiPicture { Source = parameters.ImageUrl, Note = "Original Photo" });
+			testRequest.Pictures.Add(new Picture { Source = parameters.ImageUrl });
 
 			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -166,7 +170,7 @@ namespace PerHue.Infrastructure.Services
 
 			// 3. Send to Experts
 			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
-			var expertsToRequest = allExperts.Where(e => e.Id != userId).Take(3);
+			var expertsToRequest = allExperts.Where(e => e.Id != parameters.UserId).Take(3);
 
 			foreach (var expert in expertsToRequest)
 			{
@@ -181,7 +185,6 @@ namespace PerHue.Infrastructure.Services
 				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
 			}
 
-			
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			return _mapper.Map<TestRequestModel>(testRequest);

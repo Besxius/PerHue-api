@@ -131,5 +131,56 @@ namespace PerHue.Infrastructure.Services
 
 			return results;
 		}
+		public async Task RateExpertResponseAsync(RateExpertResponseModel model, int userId)
+		{
+			// 1. Get the TestResponse and its parent TestRequest
+			var testResponse = await _unitOfWork.TestResponseRepository.GetByIdAsync(model.TestResponseId);
+			if (testResponse == null)
+			{
+				throw new Exception("Test response not found.");
+			}
+
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(testResponse.TestRequestId);
+			if (testRequest == null)
+			{
+				throw new Exception("Parent test request not found.");
+			}
+
+			// 2. Security Check: Ensure the user rating this is the one who created the test
+			if (testRequest.UserAccountId != userId)
+			{
+				throw new UnauthorizedAccessException("You are not authorized to rate this response.");
+			}
+
+			// 3. Check if already rated
+			if (testResponse.Rating != null)
+			{
+				throw new InvalidOperationException("This response has already been rated.");
+			}
+
+			// 4. Save the rating to the TestResponse
+			testResponse.Rating = model.Rating;
+			await _unitOfWork.TestResponseRepository.UpdateAsync(testResponse);
+
+			// 5. Recalculate the Expert's average rating
+			var expert = await _unitOfWork.ExpertRepository.GetByIdAsync(testResponse.ExpertId);
+			if (expert == null)
+			{
+				// This shouldn't happen, but good to check
+				throw new Exception("Expert not found.");
+			}
+
+			// Get all *rated* responses for this expert
+			var allRatedResponses = await _unitOfWork.TestResponseRepository.GetAllByExpertIdAsync(expert.Id);
+
+			// Calculate new average
+			var newAverage = allRatedResponses.Average(r => r.Rating);
+			expert.Rating = (decimal)newAverage;
+
+			await _unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+			// 6. Save all changes in one transaction
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+		}
 	}
 }
