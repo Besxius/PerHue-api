@@ -73,6 +73,10 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<INotificationService, NotificationService>();
 
 			services.AddScoped<IExpertTestService, ExpertTestService>();
+
+			services.AddScoped<IAIImageAnalysisService, AiImageAnalysisService>();
+			services.AddScoped<IAiTestService, AiTestService>();
+
 			#endregion
 
 			#region Other Services
