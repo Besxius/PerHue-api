@@ -18,7 +18,6 @@ namespace PerHue.Application.Models
 		public DateTime? CreatedDate { get; set; }
 		public string TypeOfTest { get; set; } = null!;
 		public int UserAccountId { get; set; }
-		public string UserEmail { get; set; } = null!;
 		public virtual ICollection<AiPictureModel> AiPictures { get; set; } = new List<AiPictureModel>();
 	}
 

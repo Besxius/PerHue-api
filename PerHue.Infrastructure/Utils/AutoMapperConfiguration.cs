@@ -45,8 +45,7 @@ namespace PerHue.Infrastructure.Utils
 				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
 
 			CreateMap<AiPicture, AiPictureModel>().ReverseMap();
-			CreateMap<TestRequest, TestRequestModel>()
-				.ForMember(dest => dest.UserEmail, opt => opt.MapFrom(src => src.UserAccount.Email));
+			CreateMap<TestRequest, TestRequestModel>().ReverseMap();
 
 			CreateMap<TestResponse, TestResponseModel>()
 				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name));
