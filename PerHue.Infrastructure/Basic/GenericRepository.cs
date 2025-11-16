@@ -125,6 +125,11 @@ namespace PerHue.Infrastructure.Basic
 			return await _context.SaveChangesAsync();
 		}
 
+		public IQueryable<T> GetQueryable()
+		{
+			return _context.Set<T>().AsQueryable();
+		}
+
 		#endregion Separating asign entity and save operators
 	}
 }

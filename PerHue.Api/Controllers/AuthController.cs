@@ -4,6 +4,11 @@ using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.User;
 
+using Microsoft.AspNetCore.Authorization; 
+using System.Security.Claims; 
+using Microsoft.IdentityModel.Tokens;
+using static Org.BouncyCastle.Math.EC.ECCurve;
+
 namespace PerHue.Api.Controllers
 {
 	[Route("api/[controller]")]
@@ -19,7 +24,7 @@ namespace PerHue.Api.Controllers
 			_configuration = configuration;
 		}
 
-		[HttpPost("login")]
+		/*[HttpPost("login")]
 		public async Task<IActionResult> Login(LoginRequestModel model)
 		{
 			if (!ModelState.IsValid)
@@ -43,6 +48,49 @@ namespace PerHue.Api.Controllers
 				expiresIn = 120,
 				// refresh_token = "..." // (Tùy chọn) Nếu bạn dùng refresh token
 			});
+		}*/
+		[HttpPost("login")]
+		public async Task<IActionResult> Login(LoginRequestModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			// 1. Get user and check active status
+			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
+			if (account is null)
+			{
+				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
+			}
+
+			if (account.Isactive == false)
+			{
+				return StatusCode(403, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
+			}
+
+			try
+			{
+				// 2. Validate user and get tokens
+				var loginResponse = await _servicesProvider.UserService.ValidateUserAsync(model);
+
+				// 3. Get expiration time from config (e.g., 30) and convert to seconds (e.g., 1800)
+				var expiresInMinutes = _configuration.GetValue<int>("Jwt:DurationInMinutes");
+				//var expiresInSeconds = expiresInMinutes * 60;
+
+				// 4. Return the new object with all fields
+				return Ok(new
+				{
+					accessToken = loginResponse.AccessToken,
+					refreshToken = loginResponse.RefreshToken,
+					tokenType = "Bearer",
+					expiresIn = expiresInMinutes
+				});
+			}
+			catch (SecurityTokenException ex)
+			{
+				return Unauthorized(ex.Message);
+			}
 		}
 
 		[HttpPost("register")]
@@ -113,6 +161,40 @@ namespace PerHue.Api.Controllers
 		public async Task<IActionResult> Logout()
 		{
 			return Ok(new { Message = "Đăng xuất thành công. Token đã được client loại bỏ." });
+		}
+
+		[HttpPost("refresh")]
+		public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			try
+			{
+				var loginResponse = await _servicesProvider.UserService.RefreshTokenAsync(model);
+
+				// Get expiration time from config
+				var expiresInMinutes = _configuration.GetValue<int>("Jwt:DurationInMinutes");
+				//var expiresInSeconds = expiresInMinutes * 60;
+
+				return Ok(new
+				{
+					accessToken = loginResponse.AccessToken,
+					refreshToken = loginResponse.RefreshToken,
+					tokenType = "Bearer",
+					expiresIn = expiresInMinutes
+				});
+			}
+			catch (SecurityTokenException ex)
+			{
+				return Unauthorized(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
+			}
 		}
 	}
 }
