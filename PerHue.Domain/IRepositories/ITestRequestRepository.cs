@@ -16,5 +16,9 @@ namespace PerHue.Domain.IRepositories
 
 		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync();
 		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsForUserAsync(int userId);
+
+		Task<TestRequest> CreateTestRequestAsync(int userAccountId, string typeOfTest);
+		Task<AiPicture> AddAiPictureAsync(int testRequestId, string imageUrl, string note);
+		Task<AiTestResult> AddAiTestResultAsync(int testRequestId, string suggestedColor, string avoidedColor, int colorTypeId, string note);
 	}
 }

@@ -146,9 +146,9 @@ namespace PerHue.Infrastructure.Services
 		/*public async Task<string> ValidateUserAsync(LoginRequestModel model)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
-			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
-			if (entity.Password != HashPass)
-				return string.Empty;
+			//var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
+			//if (entity.Password != HashPass)
+			//	return string.Empty;
 
 			var token = _jwtProvider.GenerateToken(entity);
 			return token;
