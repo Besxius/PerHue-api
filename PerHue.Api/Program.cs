@@ -72,6 +72,7 @@ builder.Services.AddCors(options =>
 			.WithOrigins(
 				"http://localhost:5009",
 				"https://localhost:7092",
+				"http://localhost:3333",
 				"http://10.0.2.2:5009",
 				"https://10.0.2.2:7092",
 				"https://perhue16-b4hadyg9c5avfsa5.southeastasia-01.azurewebsites.net"
