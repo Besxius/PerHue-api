@@ -28,7 +28,7 @@ namespace PerHue.Api.Controllers
 			var user = User.Identity;
 			var testResult = new CreateManualTestResultModel
 			{
-				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				SelectedColors = model.SelectedColors,
 			};
 			var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
@@ -50,7 +50,7 @@ namespace PerHue.Api.Controllers
 		{
 			var testResult = new CreateManualTestResultModel
 			{
-				UserId = int.Parse(User.FindFirst("UserId")!.Value),
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				SelectedColors = model.SelectedColors,
 				ColorType = model.ColorType
 			};
