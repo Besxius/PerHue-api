@@ -12,5 +12,6 @@ namespace PerHue.Domain.IRepositories
 	public interface ITestResponseRepository : IGenericRepository<TestResponse>
 	{
 		Task<IEnumerable<TestResponse>> GetResponsesForRequestAsync(int testRequestId);
+		Task<IEnumerable<TestResponse>> GetAllByExpertIdAsync(int expertId);
 	}
 }
