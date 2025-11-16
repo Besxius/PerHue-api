@@ -36,6 +36,59 @@ namespace PerHue.Infrastructure.Repositories
 				.ToListAsync();
 		}
 
+		public async Task<TestRequest> CreateTestRequestAsync(int userAccountId, string typeOfTest)
+		{
+			var testRequest = new TestRequest
+			{
+				UserAccountId = userAccountId,
+				TypeOfTest = typeOfTest,
+				CreatedDate = DateTime.Now,
+				Status = "Pending"
+			};
+
+			_context.TestRequests.Add(testRequest);
+			await _context.SaveChangesAsync();
+			return testRequest;
+		}
+
+		public async Task<AiPicture> AddAiPictureAsync(int testRequestId, string imageUrl, string note)
+		{
+			var aiPicture = new AiPicture
+			{
+				TestRequestId = testRequestId,
+				Source = imageUrl,
+				Note = note
+			};
+
+			_context.AiPictures.Add(aiPicture);
+			await _context.SaveChangesAsync();
+			return aiPicture;
+		}
+
+		public async Task<AiTestResult> AddAiTestResultAsync(int testRequestId, string suggestedColor, string avoidedColor, int colorTypeId, string note)
+		{
+			var testRequest = await _context.TestRequests.FindAsync(testRequestId);
+			if (testRequest == null)
+			{
+				throw new ArgumentException($"TestRequest with id {testRequestId} not found.");
+			}
+
+			var aiTestResult = new AiTestResult
+			{
+				//IdNavigation = testRequestId //loi testRequéstId la int khong phai TestRequest
+				IdNavigation = testRequest, // FIX: assign the TestRequest entity, not the int
+				SuggestedColor = suggestedColor,
+				AvoidedColor = avoidedColor,
+				ColorTypeId = colorTypeId,
+				Note = note,
+				Date = DateTime.Now
+			};
+
+			_context.AiTestResults.Add(aiTestResult);
+			await _context.SaveChangesAsync();
+			return aiTestResult;
+		}
+
 		public async Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync()
 		{
 			return await _context.TestRequests

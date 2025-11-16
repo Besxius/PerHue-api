@@ -10,6 +10,8 @@
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="CloudinaryDotNet" Version="1.27.8" />
 		<PackageReference Include="dotenv.net" Version="4.0.0" />
+		<PackageReference Include="Google.GenAI" Version="0.5.0" />
+		<PackageReference Include="Google_GenerativeAI" Version="3.4.1" />
 		<PackageReference Include="MailKit" Version="4.13.0" />
 		
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
@@ -29,6 +31,7 @@
 		</PackageReference>
 		
 		<PackageReference Include="MimeKit" Version="4.13.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 
 		<PackageReference Include="payOS" Version="1.0.9" />
 
