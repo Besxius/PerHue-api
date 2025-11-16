@@ -9,6 +9,8 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -170,7 +172,13 @@ namespace PerHue.Infrastructure.Services
 
 			// 3. Send to Experts
 			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
-			var expertsToRequest = allExperts.Where(e => e.Id != parameters.UserId).Take(3);
+			// Create a single instance of Random
+			var random = new Random();
+
+			// Filter out the user, then use random.Next() to get a random order
+			var expertsToRequest = allExperts.Where(e => e.Id != parameters.UserId)
+											 .OrderBy(e => random.Next())
+											 .Take(3);
 
 			foreach (var expert in expertsToRequest)
 			{
