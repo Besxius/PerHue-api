@@ -1,4 +1,5 @@
 ﻿using PerHue.Application.Basic;
+using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.User;
 using PerHue.Domain.Entities;
@@ -19,6 +20,7 @@ namespace PerHue.Application.IServices
 		//Task<string> ValidateUserAsync(LoginRequestModel model);
 		Task<string> ValidateUserAsync(string email);
 		Task CreateAsync(CreateUserByEmailModel model);
+		Task<UserInfoModel?> GetUserInfoAsync(int userId);
 		Task<UserModel> CreateOrLinkGoogleUserAsync(string email, string name, string picture);
 
 		string GenerateTokenForUser(UserModel model);
