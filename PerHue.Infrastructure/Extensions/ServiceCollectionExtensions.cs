@@ -50,6 +50,7 @@ namespace PerHue.Infrastructure.Extensions
 
 			services.AddScoped<IAiPictureRepository, AiPictureRepository>();
 			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+			services.AddScoped<IAiTestResultRepository, AiTestResultRepository>();
 			#endregion
 
 			#region Services
@@ -70,6 +71,10 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<INotificationService, NotificationService>();
 
 			services.AddScoped<IExpertTestService, ExpertTestService>();
+
+			services.AddScoped<IAIImageAnalysisService, AiImageAnalysisService>();
+			services.AddScoped<IAiTestService, AiTestService>();
+
 			#endregion
 
 			#region Other Services
