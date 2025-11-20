@@ -223,5 +223,45 @@ namespace PerHue.Infrastructure.Services
 				} : null
 			}).ToList();
 		}
+
+		public async Task<PaginatedResultV2<AiTestResponseModel>> GetAiTestsWithFilterAsync(AiTestSearchModel searchModel)
+		{
+			var (testRequests, totalCount) = await _aiTestRepository.GetFilteredTestRequestsAsync(
+				searchModel.PageIndex,
+				searchModel.PageSize,
+				searchModel.UserId,
+				searchModel.Status,
+				searchModel.TypeOfTest,
+				searchModel.Fullname,
+				searchModel.StartDate,
+				searchModel.EndDate,
+				(int?)searchModel.SortBy,
+				(int?)searchModel.SortOrder
+			);
+
+			var aiTestResponses = testRequests.Select(t => new AiTestResponseModel
+			{
+				TestRequestId = t.Id,
+				Status = t.Status ?? "Unknown",
+				CreatedDate = t.CreatedDate ?? DateTime.UtcNow,
+				Fullname = t.UserAccount.Fullname,
+				UserAccountId = t.UserAccount.Id,
+				TypeOfTest = t.TypeOfTest,
+				Result = t.AiTestResult != null ? new AiTestResultModel
+				{
+					ColorType = t.AiTestResult.ColorType.Name,
+					ColorTypeId = t.AiTestResult.ColorTypeId,
+					SuggestedColor = [.. t.AiTestResult.SuggestedColor.Split(", ")],
+					AvoidedColor = [.. t.AiTestResult.AvoidedColor.Split(", ")]
+				} : null
+			}).ToList();
+
+			return new PaginatedResultV2<AiTestResponseModel>
+			{
+				List = aiTestResponses,
+				Total = totalCount,
+				Current = searchModel.PageIndex
+			};
+		}
 	}
 }
