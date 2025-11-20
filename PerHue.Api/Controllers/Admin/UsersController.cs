@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using NuGet.Common;
 using PerHue.Application.IServices;
@@ -246,39 +245,27 @@ namespace PerHue.Api.Controllers.Admin
 			{
 				return BadRequest(ModelState);
 			}
-
-			// 1. Get user and check active status
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null)
+			if (account is null) return NotFound("Tên đăng nhập hoặc mật khẩu không đúng.");
+			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
+
+			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
+			if (string.IsNullOrEmpty(token))
 			{
 				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
 			}
 
-			if (account.Isactive == false)
+			return Ok(new
 			{
-				return StatusCode(403, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
-			}
-
-			try
-			{
-				// 2. Validate user and get tokens
-				var loginResponse = await _servicesProvider.UserService.ValidateUserAsync(model);
-				return Ok(new
+				code = 200,
+				result = new
 				{
-					code = 200,
-					result = new
-					{
-						token = loginResponse.AccessToken,
-						refreshToken = loginResponse.RefreshToken,
-					},
-					message = "Login successful",
-					success = true,
-				});
-			}
-			catch (SecurityTokenException ex)
-			{
-				return Unauthorized(ex.Message);
-			}
+					token,
+					refreshToken = "",
+				},
+				message = "Login successful",
+				success = true,
+			});
 		}
 
 		/// <summary>
