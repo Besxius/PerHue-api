@@ -26,7 +26,7 @@ namespace PerHue.Infrastructure.Extensions
 		public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 		{
 			var connectionString = configuration.GetConnectionString("DefaultConnection");
-			services.AddDbContext<PerHueDbContext>(options => options.UseSqlServer(connectionString));
+			services.AddDbContext<PerHueDbContext>(options => options.UseSqlServer(connectionString).EnableSensitiveDataLogging());
 
 			#region Repositories
 			services.AddScoped<IUnitOfWork, UnitOfWork>();
