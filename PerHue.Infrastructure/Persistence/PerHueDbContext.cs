@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PerHue.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -63,6 +64,8 @@ public partial class PerHueDbContext : DbContext
 		{
 			var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 			optionsBuilder.UseSqlServer(config.GetConnectionString("DefaultConnection"));
+			optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information);
+			optionsBuilder.EnableSensitiveDataLogging();
 		}
 	}
 
