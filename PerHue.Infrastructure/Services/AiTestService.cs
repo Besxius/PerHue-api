@@ -263,5 +263,18 @@ namespace PerHue.Infrastructure.Services
 				Current = searchModel.PageIndex
 			};
 		}
+
+		public async Task<bool> MarkTestAsCompletedAsync(int testId)
+		{
+			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testId) ?? throw new Exception("Test request not found");
+			if (testRequest.Status == "completed")
+			{
+				return false; // Already completed
+			}
+
+			testRequest.Status = "completed";
+			await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+			return true;
+		}
 	}
 }
