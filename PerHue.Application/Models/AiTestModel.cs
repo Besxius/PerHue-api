@@ -24,9 +24,6 @@ namespace PerHue.Application.Models
 			public int TestRequestId { get; set; }
 			public string Status { get; set; }
 			public DateTime CreatedDate { get; set; }
-			public int? UserAccountId { get; set; }
-			public string? Fullname { get; set; }
-			public string TypeOfTest { get; set; } = null!;
 			public AiTestResultModel? Result { get; set; }
 		}
 
