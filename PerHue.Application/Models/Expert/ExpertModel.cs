@@ -18,7 +18,8 @@ namespace PerHue.Application.Models.Expert
         public string? InstagramAccount { get; set; }
         public string Email { get; set; }
         public string Username { get; set; }
-    }
+		public string? ProfilePicture { get; set; }
+	}
     
     public class UpdateExpertModel
     {
