@@ -8,6 +8,7 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.Role;
 using System.Security.Claims;
+using PerHue.Application.Models;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -31,7 +32,7 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="searchModel">Search and pagination parameters</param>
 		/// <returns>Paginated list of users</returns>
 		[HttpGet("user-list")]
-		public async Task<ServiceResponse<PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
+		public async Task<ServiceResponse<	PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
 		{
 			var result = await _adminUserService.GetUsersAsync(searchModel);
 			return ServiceResponse<PaginatedResultV2<AdminUserModel>>.Ok(result, "Users retrieved successfully");
@@ -234,38 +235,6 @@ namespace PerHue.Api.Controllers.Admin
 			{
 				return StatusCode(500, new { message = "An error occurred while retrieving roles", error = ex.Message });
 			}
-		}
-
-		[HttpPost]
-		[Route("login")]
-		[AllowAnonymous]
-		public async Task<IActionResult> Login(LoginRequestModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null) return NotFound("Tên đăng nhập hoặc mật khẩu không đúng.");
-			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
-
-			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-			if (string.IsNullOrEmpty(token))
-			{
-				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
-			}
-
-			return Ok(new
-			{
-				code = 200,
-				result = new
-				{
-					token,
-					refreshToken = "",
-				},
-				message = "Login successful",
-				success = true,
-			});
 		}
 
 		/// <summary>
