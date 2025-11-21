@@ -24,6 +24,7 @@ namespace PerHue.Domain.UnitOfWork
 		IExpertTestRequestRepository ExpertTestRequestRepository { get; }
 
 		IAiPictureRepository AiPictureRepository { get; }
+		IAiTestResultRepository AiTestResultRepository { get; }
 
 		IRefreshTokenRepository RefreshTokenRepository { get; }
 

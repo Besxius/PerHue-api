@@ -22,9 +22,11 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public IOtpService OtpService { get; private set; }
 
 		public IExpertTestService ExpertTestService { get; private set; }
+		public IExpertService ExpertService { get; private set; }
 
 		public IAIImageAnalysisService AIImageAnalysisService { get; private set; }
 		public IAiTestService AiTestService { get; private set; }
+		
 		public ServicesProvider(
 			IUnitOfWork unitOfWork,
 			IUserService userService,
@@ -40,8 +42,10 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IOtpService otpService,
 
 			IExpertTestService expertTestService,
+			IExpertService expertService,
 			IAIImageAnalysisService aIImageAnalysisService,
 			IAiTestService aiTestService
+
 
 			)
 		{
@@ -59,6 +63,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			OtpService = otpService;
 
 			ExpertTestService = expertTestService;
+			ExpertService = expertService;
 			AIImageAnalysisService = aIImageAnalysisService;
 			AiTestService = aiTestService;
 		}
