@@ -183,31 +183,28 @@ namespace PerHue.Infrastructure.Services
 			};
 		}
 
-		public async Task<string> ValidateUserAsync(string email)
+		public async Task<LoginResponseModel> ValidateUserAsync(string email)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
 
-			//if (entity is null)
-			//{
-			//	entity = new UserAccount
-			//	{
-			//		Email = email,
-			//		Password = "PerHuedefaultPassword166203", 
-			//		Username = GenerateUserName(email),
-			//		IsActive = true,
-			//		IsAitested = false,
-			//		RoleId = 2,
-			//		Role = await _unitOfWork.RoleRepository.GetByIdAsync(2),
-			//	};
-			//	await _unitOfWork.UserRepository.CreateAsync(entity);
-			//}
-			var token = _jwtProvider.GenerateToken(entity);
+			var accessToken = _jwtProvider.GenerateToken(entity);
+			var refreshToken = _jwtProvider.GenerateRefreshToken();
+			var refreshTokenEntity = new RefreshToken
+			{
+				Token = refreshToken,
+				ExpireDate = DateTime.UtcNow.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				UserAccountId = entity.Id
+			};
 
-			return token;
+			await _unitOfWork.RefreshTokenRepository.CreateAsync(refreshTokenEntity);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			return new LoginResponseModel
+			{
+				AccessToken = accessToken,
+				RefreshToken = refreshToken
+			};
 		}
-		
-		
-
 
 		public async Task<UserModel> CreateOrLinkGoogleUserAsync(string email, string name, string picture)
 		{
