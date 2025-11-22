@@ -112,7 +112,7 @@ namespace PerHue.Api.Controllers
 			{
 				var settings = new GoogleJsonWebSignature.ValidationSettings
 				{
-					Audience = new List<string> { _configuration["Authentication:Google:ClientId"] }
+					Audience = new List<string> { _configuration["Google:ClientId"] }
 				};
 
 				payload = await GoogleJsonWebSignature.ValidateAsync(tokenDto.IdToken, settings);
@@ -133,28 +133,27 @@ namespace PerHue.Api.Controllers
 			if (account is null) return StatusCode(500, "Không thể tạo hoặc tìm thấy tài khoản người dùng.");
 			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
 
-			var token = _servicesProvider.UserService.GenerateTokenForUser(account);
+			var loginResponse = await _servicesProvider.UserService.ValidateUserAsync(userEmail);
+			var expiresInMinutes = _configuration.GetValue<int>("Jwt:DurationInMinutes");
 
-			if (string.IsNullOrEmpty(token))
+			if (string.IsNullOrEmpty(loginResponse.AccessToken))
 			{
 				return StatusCode(500, "Lỗi khi tạo token truy cập.");
 			}
 
 			return Ok(new
 			{
-				accessToken = token,
+				accessToken = loginResponse.AccessToken,
+				refreshToken = loginResponse.RefreshToken,
 				tokenType = "Bearer",
+				expiresIn = expiresInMinutes
 			});
 		}
 
-		[HttpPost("get-token")]
-		public async Task<IActionResult> GetToken(string email)
+		[HttpPost("logout")]
+		public async Task<IActionResult> Logout()
 		{
-			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
-
-			return await _servicesProvider.UserService.ValidateUserAsync(email) is string token
-				? Ok(token)
-				: BadRequest("Failed to get token.");
+			return Ok(new { Message = "Đăng xuất thành công. Token đã được client loại bỏ." });
 		}
 
 		[HttpPost("refresh")]

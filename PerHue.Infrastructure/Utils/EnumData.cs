@@ -40,4 +40,16 @@
 		AiTestUploadImage,          // Kiểm tra AI
 	}
 
+	public enum ResponseTypeEnum
+	{
+		Normal,
+		Review
+	}
+	public enum PhotoTypeEnum
+	{
+		Identity,
+		Certification,
+		Face
+	}
+
 }

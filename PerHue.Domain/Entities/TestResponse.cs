@@ -17,6 +17,8 @@ public partial class TestResponse
 
     public string WorstColor { get; set; } = null!;
 
+    public string Type { get; set; } = null!;
+
     public int ColorTypeId { get; set; }
 
     public int ExpertId { get; set; }
