@@ -28,11 +28,11 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<IEnumerable<ColorModel>>(entities);
 		}
 
-		public async Task<PaginatedResult<ColorModel>> GetAllAsync(int pageIndex , int pageSize, string? searchTerm)
+		public async Task<PaginatedResult<ColorModel>> GetAllAsync(int pageIndex, int pageSize, string? searchTerm)
 		{
 			var entities = await _unitOfWork.ColorRepository.GetAllAsync(pageIndex, pageSize, searchTerm);
 			var totalCount = entities.Count();
-			
+
 			if (searchTerm.Length == 0)
 			{
 				totalCount = _unitOfWork.ColorRepository.GetAllAsync().Result.Count();
@@ -58,6 +58,34 @@ namespace PerHue.Infrastructure.Services
 		public async Task<IEnumerable<ColorModel>> GetRelativeColors(List<string> selectedColors)
 		{
 			var entities = await _unitOfWork.ColorRepository.GetRelativeColors(selectedColors);
+			return _mapper.Map<IEnumerable<ColorModel>>(entities);
+		}
+		public async Task<IEnumerable<ColorModel>> GetColorsByColorTypeNormalAsync(int colorTypeId)
+		{
+			var entities = await _unitOfWork.ColorRepository.GetByColorTypeIdAsync(colorTypeId);
+			return _mapper.Map<IEnumerable<ColorModel>>(entities);
+		}
+
+		public async Task<PaginatedResult<ColorModel>> GetColorsByColorTypePagingAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm)
+		{
+			var entities = await _unitOfWork.ColorRepository.GetByColorTypeIdAsync(colorTypeId, pageIndex, pageSize, searchTerm);
+			var totalCount = await _unitOfWork.ColorRepository.CountByColorTypeIdAsync(colorTypeId, searchTerm);
+			var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+			return new PaginatedResult<ColorModel>
+			{
+				Items = _mapper.Map<IEnumerable<ColorModel>>(entities),
+				PageSize = pageSize,
+				PageIndex = pageIndex,
+				TotalCount = totalCount,
+				TotalPages = totalPages
+			};
+		}
+
+		public async Task<IEnumerable<ColorModel>> GetAllBySpectrumAsync()
+		{
+			// Clean and simple!
+			var entities = await _unitOfWork.ColorRepository.GetAllBySpectrumAsync();
 			return _mapper.Map<IEnumerable<ColorModel>>(entities);
 		}
 	}

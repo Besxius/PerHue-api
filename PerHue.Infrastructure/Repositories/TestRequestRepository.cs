@@ -23,6 +23,9 @@ namespace PerHue.Infrastructure.Repositories
 			return await _context.TestRequests
 				.Include(tr => tr.UserAccount)
 				.Include(tr => tr.AiPictures)
+				.Include(tr => tr.Pictures)
+				.Include(tr => tr.AiTestResult)
+					.ThenInclude(atr => atr.ColorType)
 				.FirstOrDefaultAsync(tr => tr.Id == id);
 		}
 
@@ -98,17 +101,36 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(tr => tr.CreatedDate)
 				.ToListAsync();
 		}
-		public async Task<IEnumerable<TestRequest>> GetCompletedExpertTestsForUserAsync(int userId)
+		public async Task<(IEnumerable<TestRequest> Items, int TotalCount)> GetCompletedExpertTestsForUserAsync(int userId, int pageIndex, int pageSize, DateTime? date)
 		{
-			return await _context.TestRequests
+			var query = _context.TestRequests
 				.Include(tr => tr.UserAccount)
-				.Include(tr => tr.AiPictures)
-				// We check for both "Completed" and "Failed" as they are both part of the user's history
+				.Include(tr => tr.AiPictures)   
+				.Include(tr => tr.Pictures)
+				.Include(tr => tr.AiTestResult)         
+					.ThenInclude(atr => atr.ColorType)
 				.Where(tr => tr.UserAccountId == userId &&
-							 (tr.Status == "Completed" || tr.Status == "Failed") &&
-							 tr.TypeOfTest == "Expert")
+							 tr.Status == "Completed" && 
+							 tr.TypeOfTest == "Expert");
+
+			// Apply Date Filter if provided
+			if (date.HasValue)
+			{
+				// Compare only the Date part (ignoring time)
+				query = query.Where(tr => tr.CreatedDate.HasValue && tr.CreatedDate.Value.Date == date.Value.Date);
+			}
+
+			// Get Total Count for Pagination
+			var totalCount = await query.CountAsync();
+
+			// Get Paged Data
+			var items = await query
 				.OrderByDescending(tr => tr.CreatedDate)
+				.Skip((pageIndex - 1) * pageSize)
+				.Take(pageSize)
 				.ToListAsync();
+
+			return (items, totalCount);
 		}
 	}
 }
