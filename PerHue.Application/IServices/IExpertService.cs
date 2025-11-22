@@ -10,6 +10,7 @@ namespace PerHue.Application.IServices
         Task<IEnumerable<ExpertModel>> GetAllAsync();
         Task<bool> UpdateAsync(int id, UpdateExpertModel model);
         Task<bool> DeleteAsync(int id);
-        Task<bool> ExistsAsync(int id);
-    }
+		Task<bool> ExistsAsync(int id);
+		Task<IEnumerable<ExpertModel>> GetAllByRatingDescendingAsync();
+	}
 }

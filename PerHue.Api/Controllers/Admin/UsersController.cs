@@ -9,6 +9,7 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.Role;
 using System.Security.Claims;
+using PerHue.Application.Models;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -32,7 +33,7 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="searchModel">Search and pagination parameters</param>
 		/// <returns>Paginated list of users</returns>
 		[HttpGet("user-list")]
-		public async Task<ServiceResponse<PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
+		public async Task<ServiceResponse<	PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
 		{
 			var result = await _adminUserService.GetUsersAsync(searchModel);
 			return ServiceResponse<PaginatedResultV2<AdminUserModel>>.Ok(result, "Users retrieved successfully");
@@ -234,50 +235,6 @@ namespace PerHue.Api.Controllers.Admin
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = "An error occurred while retrieving roles", error = ex.Message });
-			}
-		}
-
-		[HttpPost]
-		[Route("login")]
-		[AllowAnonymous]
-		public async Task<IActionResult> Login(LoginRequestModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
-			// 1. Get user and check active status
-			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null)
-			{
-				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
-			}
-
-			if (account.Isactive == false)
-			{
-				return StatusCode(403, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
-			}
-
-			try
-			{
-				// 2. Validate user and get tokens
-				var loginResponse = await _servicesProvider.UserService.ValidateUserAsync(model);
-				return Ok(new
-				{
-					code = 200,
-					result = new
-					{
-						token = loginResponse.AccessToken,
-						refreshToken = loginResponse.RefreshToken,
-					},
-					message = "Login successful",
-					success = true,
-				});
-			}
-			catch (SecurityTokenException ex)
-			{
-				return Unauthorized(ex.Message);
 			}
 		}
 
