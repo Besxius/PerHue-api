@@ -21,6 +21,8 @@ public partial class Expert
 
     public string Certification { get; set; } = null!;
 
+    public DateTime CreatedDate { get; set; }
+
     public string? Introduction { get; set; }
 
     public string? FacebookAccount { get; set; }

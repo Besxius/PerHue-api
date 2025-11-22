@@ -27,6 +27,8 @@ public partial class UserAccount
 
     public bool IsAitested { get; set; }
 
+    public DateTime CreatedDate { get; set; }
+
     public int RoleId { get; set; }
 
     public virtual Expert? Expert { get; set; }
