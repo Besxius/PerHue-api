@@ -59,34 +59,44 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestResponseModel>(testResponse);
 		}
-		public async Task<IEnumerable<TestResponseModel>> GetExpertResponsesForUserAsync(int testRequestId, int userId)
+
+		public async Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId)
 		{
-			// 1. Get the main test request
-			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(testRequestId);
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
 
-			if (testRequest == null)
-			{
-				throw new Exception("Test request not found.");
-			}
+			if (testRequest == null) throw new Exception("Test request not found.");
+			if (testRequest.UserAccountId != userId) throw new UnauthorizedAccessException("You are not authorized.");
+			if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
 
-			// 2. Security Check: Ensure the user asking for the test is the one who created it
-			if (testRequest.UserAccountId != userId)
-			{
-				throw new UnauthorizedAccessException("You are not authorized to view this test result.");
-			}
-
-			// 3. Check if the test is actually finished
-			if (testRequest.Status != "Completed")
-			{
-				throw new Exception("Your test is still being processed by our experts.");
-			}
-
-			// 4. Get the individual responses
 			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
 
-			return _mapper.Map<IEnumerable<TestResponseModel>>(responses);
+			// --- CHECK FOR AI RESULT ---
+			// Since GetByIdWithDetailsAsync now Includes AiTestResult, we can use it directly
+			if (testRequest.AiTestResult != null)
+			{
+				var aiResponseModel = new TestResponseModel
+				{
+					Id = 0,
+					TestRequestId = testRequestId,
+					ExpertId = 0,
+					Note = testRequest.AiTestResult.Note,
+					CreatedDate = testRequest.AiTestResult.Date,
+					Rating = null,
+					BestColor = testRequest.AiTestResult.SuggestedColor,
+					WorstColor = testRequest.AiTestResult.AvoidedColor,
+					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
+					ColorTypeName = testRequest.AiTestResult.ColorType?.Name ?? "Unknown"
+				};
+				responseModels.Add(aiResponseModel);
+			}
+
+			return new ExpertTestResultModel
+			{
+				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
+				Responses = responseModels
+			};
 		}
-
 		public async Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync()
 		{
 			var completedTests = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsAsync();
@@ -107,29 +117,55 @@ namespace PerHue.Infrastructure.Services
 
 			return results;
 		}
-		public async Task<IEnumerable<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId)
+		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? date)
 		{
-			var completedTests = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsForUserAsync(userId);
-			var results = new List<ExpertTestResultModel>();
+			// 1. Get Paged Test Requests
+			var (testRequests, totalCount) = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsForUserAsync(userId, pageIndex, pageSize, date);
 
-			foreach (var test in completedTests)
+			var resultItems = new List<ExpertTestResultModel>();
+
+			// 2. Loop through requests
+			foreach (var test in testRequests)
 			{
-				// We only fetch responses for tests that actually completed (not failed)
-				IEnumerable<TestResponseModel> mappedResponses = new List<TestResponseModel>();
-				if (test.Status == "Completed")
+				// Get Expert responses
+				var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(test.Id);
+				var mappedResponses = _mapper.Map<List<TestResponseModel>>(responses);
+
+				// --- NEW LOGIC: Check for AI Result ---
+				if (test.AiTestResult != null)
 				{
-					var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(test.Id);
-					mappedResponses = _mapper.Map<IEnumerable<TestResponseModel>>(responses);
+					var aiResponseModel = new TestResponseModel
+					{
+						Id = 0, // Indicator for AI
+						TestRequestId = test.Id,
+						ExpertId = 0, // 0 = AI/System
+						Note = test.AiTestResult.Note,
+						CreatedDate = test.AiTestResult.Date,
+						Rating = null,
+						BestColor = test.AiTestResult.SuggestedColor,
+						WorstColor = test.AiTestResult.AvoidedColor,
+						ColorTypeId = test.AiTestResult.ColorTypeId,
+						ColorTypeName = test.AiTestResult.ColorType?.Name ?? "Unknown"
+					};
+					mappedResponses.Add(aiResponseModel);
 				}
 
-				results.Add(new ExpertTestResultModel
+				resultItems.Add(new ExpertTestResultModel
 				{
 					TestRequest = _mapper.Map<TestRequestModel>(test),
 					Responses = mappedResponses
 				});
 			}
 
-			return results;
+			// 3. Return Paginated Result
+			return new PaginatedResult<ExpertTestResultModel>
+			{
+				Items = resultItems,
+				TotalCount = totalCount,
+				PageIndex = pageIndex,
+				PageSize = pageSize,
+				TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+			};
 		}
 		public async Task RateExpertResponseAsync(RateExpertResponseModel model, int userId)
 		{
@@ -184,3 +220,110 @@ namespace PerHue.Infrastructure.Services
 		}
 	}
 }
+
+
+/*public async Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId)
+		{
+			// 1. Get the main test request, now with all details
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
+
+			if (testRequest == null)
+			{
+				throw new Exception("Test request not found.");
+			}
+
+			// 2. Security Check: Ensure the user asking for the test is the one who created it
+			if (testRequest.UserAccountId != userId)
+			{
+				throw new UnauthorizedAccessException("You are not authorized to view this test result.");
+			}
+
+			// 3. Check if the test is finished
+			if (testRequest.Status != "Completed")
+			{
+				throw new Exception("Your test is still being processed by our experts.");
+			}
+
+			// 4. Get the individual responses
+			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+
+			// 5. Build the complete response DTO
+			var result = new ExpertTestResultModel
+			{
+				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
+				Responses = _mapper.Map<IEnumerable<TestResponseModel>>(responses)
+			};
+
+			return result;
+		}*/
+/*public async Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId)
+{
+	// 1. Get the main test request
+	var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
+
+	if (testRequest == null)
+	{
+		throw new Exception("Test request not found.");
+	}
+
+	// 2. Security Check
+	if (testRequest.UserAccountId != userId)
+	{
+		throw new UnauthorizedAccessException("You are not authorized to view this test result.");
+	}
+
+	// 3. Check status
+	if (testRequest.Status != "Completed")
+	{
+		throw new Exception("Your test is still being processed.");
+	}
+
+	// 4. Get EXPERT responses
+	var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+	var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
+
+	// 5. CHECK FOR AI RESULT (The Fallback)
+	// Assuming specific repository method exists or using FindAsync
+	// Since AiTestResult ID is Shared PK with TestRequest:
+	var aiResult = await _unitOfWork.AiTestResultRepository.GetByIdAsync(testRequestId);
+
+	if (aiResult != null)
+	{
+		// Map AI Result to a "Fake" TestResponseModel so it fits in the list
+		var aiResponseModel = new TestResponseModel
+		{
+			Id = 0, // Or some indicator that it's AI
+			TestRequestId = testRequestId,
+			ExpertId = 0, // 0 indicates System/AI
+						  // You might want to fetch "AI" expert Name in frontend or hardcode logic here
+						  // Note: ExpertName is not in TestResponseModel currently, but if you added it:
+						  // ExpertName = "PerHue AI Assistant", 
+
+			Note = aiResult.Note,
+			CreatedDate = aiResult.Date,
+			Rating = null, // User can't rate AI? Or maybe they can.
+			BestColor = aiResult.SuggestedColor,
+			WorstColor = aiResult.AvoidedColor,
+			ColorTypeId = aiResult.ColorTypeId,
+			ColorTypeName = aiResult.ColorType?.Name ?? "Unknown" // Ensure ColorType is included in repo query
+		};
+
+		// If ColorType was null in aiResult, fetch name manually
+		if (aiResult.ColorType == null && aiResult.ColorTypeId > 0)
+		{
+			var ct = await _unitOfWork.ColorTypeRepository.GetByIdAsync(aiResult.ColorTypeId);
+			aiResponseModel.ColorTypeName = ct?.Name ?? "Unknown";
+		}
+
+		responseModels.Add(aiResponseModel);
+	}
+
+	// 6. Build Final Result
+	var result = new ExpertTestResultModel
+	{
+		TestRequest = _mapper.Map<TestRequestModel>(testRequest),
+		Responses = responseModels
+	};
+
+	return result;
+}*/
