@@ -11,8 +11,6 @@ public partial class VerifyInformation
 
     public string? Nickname { get; set; }
 
-    public string IdentityPhoto { get; set; } = null!;
-
     public string Specialization { get; set; } = null!;
 
     public string Bio { get; set; } = null!;
@@ -21,7 +19,11 @@ public partial class VerifyInformation
 
     public string? Languages { get; set; }
 
-    public string Certification { get; set; } = null!;
+    public string? Requirement { get; set; }
+
+    public string Status { get; set; } = null!;
 
     public virtual UserAccount IdNavigation { get; set; } = null!;
+
+    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
 }

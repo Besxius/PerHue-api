@@ -11,7 +11,6 @@ namespace PerHue.Application.Models.User
 		public string Username { get; set; } = null!;
 
 		public string? Fullname { get; set; }
-		public string Password { get; set; } = string.Empty;
 
 		public string? Phone { get; set; }
 
@@ -22,8 +21,6 @@ namespace PerHue.Application.Models.User
 		public bool Isactive { get; set; }
 
 		public string? Profilepicture { get; set; }
-
-		public bool Isaitested { get; set; }
 
 		public int RoleId { get; set; }
 
