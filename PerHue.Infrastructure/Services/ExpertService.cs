@@ -71,5 +71,10 @@ namespace PerHue.Infrastructure.Services
         {
             return await _unitOfWork.ExpertRepository.ExistsAsync(id);
         }
-    }
+		public async Task<IEnumerable<ExpertModel>> GetAllByRatingDescendingAsync()
+		{
+			var experts = await _unitOfWork.ExpertRepository.GetAllByRatingDescendingAsync();
+			return _mapper.Map<IEnumerable<ExpertModel>>(experts);
+		}
+	}
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using NuGet.Common;
 using PerHue.Application.IServices;
@@ -8,6 +9,7 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.Role;
 using System.Security.Claims;
+using PerHue.Application.Models;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -31,7 +33,7 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="searchModel">Search and pagination parameters</param>
 		/// <returns>Paginated list of users</returns>
 		[HttpGet("user-list")]
-		public async Task<ServiceResponse<PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
+		public async Task<ServiceResponse<	PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
 		{
 			var result = await _adminUserService.GetUsersAsync(searchModel);
 			return ServiceResponse<PaginatedResultV2<AdminUserModel>>.Ok(result, "Users retrieved successfully");

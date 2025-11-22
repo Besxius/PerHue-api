@@ -17,6 +17,7 @@ namespace PerHue.Application.IServicesProvider
 		IOtpService OtpService { get; }
 
 		IExpertTestService ExpertTestService { get; }
+		IExpertService ExpertService { get; }
 
 	}
 }

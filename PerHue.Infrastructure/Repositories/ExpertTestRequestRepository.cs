@@ -23,6 +23,8 @@ namespace PerHue.Infrastructure.Repositories
 			return await _context.ExpertTestRequests
 				.Include(etr => etr.TestRequest)
 					.ThenInclude(tr => tr.AiPictures)
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.Pictures)
 				.Where(etr => etr.ExpertId == expertId && etr.Status == "Pending")
 				.ToListAsync();
 		}
