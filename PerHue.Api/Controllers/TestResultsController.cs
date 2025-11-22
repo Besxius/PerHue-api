@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using PerHue.Application.IServicesProvider;
 using System.Security.Claims;
 using PerHue.Application.Models;
+using PerHue.Application.Models.ExpertTestResult;
 
 namespace PerHue.Api.Controllers
 {
@@ -20,7 +21,7 @@ namespace PerHue.Api.Controllers
 			_services = services;
 		}
 
-		[HttpGet("expert-test/{testRequestId}")]
+		/*[HttpGet("expert-test/{testRequestId}")]
 		[Authorize(Roles = "User,Admin")]
 		public async Task<IActionResult> GetExpertTestResult(int testRequestId)
 		{
@@ -34,6 +35,31 @@ namespace PerHue.Api.Controllers
 			{
 				var responses = await _services.ExpertTestService.GetExpertResponsesForUserAsync(testRequestId, userId);
 				return Ok(responses);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}*/
+		[HttpGet("expert-test/{testRequestId}")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int testRequestId) // <-- Changed return type
+		{
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var userId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			try
+			{
+				// This now returns the complete object
+				var result = await _services.ExpertTestService.GetExpertResponsesForUserAsync(testRequestId, userId);
+				return Ok(result);
 			}
 			catch (UnauthorizedAccessException ex)
 			{
@@ -62,10 +88,12 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("expert-tests/my-history")]
-		[Authorize(Roles = "User,Admin")] // Secured for the logged-in user
-		public async Task<IActionResult> GetMyExpertTestHistory()
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetMyExpertTestHistory(
+			[FromQuery] int pageIndex = 1,
+			[FromQuery] int pageSize = 10,
+			[FromQuery] DateTime? date = null)
 		{
-			// Get User ID from the token, just like in [HttpGet("information")]
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
 			{
@@ -74,7 +102,8 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
-				var results = await _services.ExpertTestService.GetMyCompletedExpertTestsAsync(userId);
+				// Call the service with pagination parameters
+				var results = await _services.ExpertTestService.GetMyCompletedExpertTestsAsync(userId, pageIndex, pageSize, date);
 				return Ok(results);
 			}
 			catch (Exception ex)
