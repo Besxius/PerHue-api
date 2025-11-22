@@ -142,6 +142,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 1,
 				},
 				new()
@@ -156,6 +157,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -170,6 +172,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -184,6 +187,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -198,6 +202,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -212,6 +217,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -226,6 +232,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -240,6 +247,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -254,6 +262,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
 				new()
@@ -268,6 +277,7 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					IsAitested = false,
+					CreatedDate = DateTime.Now,
 					RoleId = 3,
 					Expert = new Expert
 					{
@@ -278,6 +288,7 @@ namespace PerHue.Infrastructure.Utils
 						Languages = "Vietnamese, English",
 						Rating = (decimal?)5.0,
 						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
+						CreatedDate = DateTime.Now,
 						Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion. She is not just an analyst; she is a confidence architect who builds dazzling looks starting with the perfect color palette.\r\n\r\nHe is Besxius, and she has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections. Today, she will share the secrets to ensure you always glow instead of just... get dressed.\r\n\r\nPlease join me in giving a warm welcome to Personal Color Expert, Besxius!\"",
 						FacebookAccount = "https://www.facebook.com/trong.le.26298/"
 					}
@@ -855,7 +866,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc dịu nhẹ, tươi sáng nhưng có sắc lạnh nhẹ (tím, xanh). Phù hợp với Cool Summer.
         // Chọn: Cool Summer (4) - do sự kết hợp của tông tím xám, hồng cam nhạt và xanh nhạt.
         new(){
-			ColorTypeId = 4, // Cool Summer
+			ColorTypeId = 6, // Cool Summer
             Colors = allColors.Where(c => c.HexCode == "#8E6C90" ||
 										c.HexCode == "#FCD8CC" ||
 										c.HexCode == "#FFF7EC" ||
@@ -1035,7 +1046,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc đậm, ấm áp (đỏ, nâu) kết hợp với màu trung tính và xanh đen. Phù hợp với Deep Autumn hoặc Deep Winter.
         // Chọn: Deep Autumn (9) - sự ấm áp của nâu và đỏ đậm là nổi bật.
         new(){
-			ColorTypeId = 9, // Deep Autumn
+			ColorTypeId = 8, // Soft Autumn
             Colors = allColors.Where(c => c.HexCode == "#721B29" ||
 										c.HexCode == "#9D653F" ||
 										c.HexCode == "#DFD8CB" ||
@@ -1175,7 +1186,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc sáng, nhẹ nhàng, với tông xanh mint, be vàng và hồng nhạt. Phù hợp với Light Spring.
         // Chọn: Warm Spring (10) - do tính chất nhẹ nhàng, sáng và thanh thoát.
         new(){
-			ColorTypeId = 10, // Warm Spring
+			ColorTypeId = 6, // Warm Spring
             Colors = allColors.Where(c => c.HexCode == "#51C9C2" ||
 										c.HexCode == "#EEE9CF" ||
 										c.HexCode == "#FCFFF5" ||
@@ -1285,7 +1296,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc dịu nhẹ, tươi sáng nhưng có sắc lạnh nhẹ, tông hồng tím và hồng nhạt. Phù hợp với Cool Summer.
         // Chọn: Cool Summer (4) - do sự mềm mại và sắc lạnh.
         new(){
-			ColorTypeId = 4, // Cool Summer
+			ColorTypeId = 6, // Cool Summer
             Colors = allColors.Where(c => c.HexCode == "#AA6890" ||
 										c.HexCode == "#FCACC7" ||
 										c.HexCode == "#F9EDED" ||
@@ -1345,7 +1356,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc ấm áp, tông vàng đất, xanh olive và nâu quế. Phù hợp với Warm Autumn.
         // Chọn: Warm Autumn (7) - do tính chất ấm áp và màu đất.
         new(){
-			ColorTypeId = 7, // Warm Autumn
+			ColorTypeId = 8, // Soft Autumn
             Colors = allColors.Where(c => c.HexCode == "#9C7627" ||
 										c.HexCode == "#C9BA86" ||
 										c.HexCode == "#E8E3CC" ||
@@ -1445,7 +1456,7 @@ namespace PerHue.Infrastructure.Utils
         // Phân tích: Màu sắc đậm, ấm áp (tím nâu) kết hợp với màu trung tính ấm (be, xanh lá). Phù hợp với Deep Autumn.
         // Chọn: Deep Autumn (9) - do tính chất đậm và màu đất.
         new(){
-			ColorTypeId = 9, // Deep Autumn
+			ColorTypeId = 8, // Soft Autumn
             Colors = allColors.Where(c => c.HexCode == "#452B30" ||
 										c.HexCode == "#74404C" ||
 										c.HexCode == "#F3ECD8" ||

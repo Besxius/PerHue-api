@@ -1,9 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using PerHue.Domain.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using PerHue.Domain.Entities;
 
 namespace PerHue.Infrastructure.Persistence;
 
@@ -38,6 +36,8 @@ public partial class PerHueDbContext : DbContext
 
     public virtual DbSet<PaymentLog> PaymentLogs { get; set; }
 
+    public virtual DbSet<Photo> Photos { get; set; }
+
     public virtual DbSet<Picture> Pictures { get; set; }
 
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -58,22 +58,11 @@ public partial class PerHueDbContext : DbContext
 
     public virtual DbSet<VerifyInformation> VerifyInformations { get; set; }
 
-	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-	{
-		if (!optionsBuilder.IsConfigured)
-		{
-			var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-			optionsBuilder.UseSqlServer(config.GetConnectionString("DefaultConnection"));
-			optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information);
-			optionsBuilder.EnableSensitiveDataLogging();
-		}
-	}
-
-	protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AiPicture>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AiPictur__3214EC07AE7B38FA");
+            entity.HasKey(e => e.Id).HasName("PK__AiPictur__3214EC0753852338");
 
             entity.ToTable("AiPicture");
 
@@ -87,7 +76,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<AiTestResult>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AiTestRe__3214EC071B4BE6DB");
+            entity.HasKey(e => e.Id).HasName("PK__AiTestRe__3214EC07A0B8B4B6");
 
             entity.ToTable("AiTestResult");
 
@@ -109,7 +98,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<CapsulePalette>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__CapsuleP__3214EC075C14A32F");
+            entity.HasKey(e => e.Id).HasName("PK__CapsuleP__3214EC07EC35BA21");
 
             entity.ToTable("CapsulePalette");
 
@@ -131,20 +120,20 @@ public partial class PerHueDbContext : DbContext
                         .HasConstraintName("FKCapsulePal722223"),
                     j =>
                     {
-                        j.HasKey("CapsulePaletteId", "ColorId").HasName("PK__CapsuleP__797C104513E70E3C");
+                        j.HasKey("CapsulePaletteId", "ColorId").HasName("PK__CapsuleP__797C10450BECD48A");
                         j.ToTable("CapsulePalette_Color");
                     });
         });
 
         modelBuilder.Entity<Color>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Color__3214EC07E36B66DC");
+            entity.HasKey(e => e.Id).HasName("PK__Color__3214EC07132156AE");
 
             entity.ToTable("Color");
 
-            entity.HasIndex(e => e.Name, "UQ__Color__737584F6909CB759").IsUnique();
+            entity.HasIndex(e => e.Name, "UQ__Color__737584F6543E7123").IsUnique();
 
-            entity.HasIndex(e => e.HexCode, "UQ__Color__A7CAA840740075F6").IsUnique();
+            entity.HasIndex(e => e.HexCode, "UQ__Color__A7CAA840D0704792").IsUnique();
 
             entity.Property(e => e.HexCode)
                 .HasMaxLength(20)
@@ -166,14 +155,14 @@ public partial class PerHueDbContext : DbContext
                         .HasConstraintName("FKColor_Test74218"),
                     j =>
                     {
-                        j.HasKey("ColorId", "TestResultId").HasName("PK__Color_Te__E383041598B1D152");
+                        j.HasKey("ColorId", "TestResultId").HasName("PK__Color_Te__E383041552AB6F1E");
                         j.ToTable("Color_TestResult");
                     });
         });
 
         modelBuilder.Entity<ColorType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ColorTyp__3214EC071EC0A38D");
+            entity.HasKey(e => e.Id).HasName("PK__ColorTyp__3214EC077862FF54");
 
             entity.ToTable("ColorType");
 
@@ -184,13 +173,14 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<Expert>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Expert__3214EC07F1596FE6");
+            entity.HasKey(e => e.Id).HasName("PK__Expert__3214EC07416E8404");
 
             entity.ToTable("Expert");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Bio).IsUnicode(false);
             entity.Property(e => e.Certification).IsUnicode(false);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.FacebookAccount).IsUnicode(false);
             entity.Property(e => e.InstagramAccount).IsUnicode(false);
             entity.Property(e => e.Languages)
@@ -211,7 +201,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<ExpertTestRequest>(entity =>
         {
-            entity.HasKey(e => new { e.ExpertId, e.TestRequestId }).HasName("PK__Expert_T__0B386C703BAF4E1B");
+            entity.HasKey(e => new { e.ExpertId, e.TestRequestId }).HasName("PK__Expert_T__0B386C7087ABE309");
 
             entity.ToTable("Expert_TestRequest");
 
@@ -233,7 +223,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC0706E4EFA3");
+            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC076E2A1B04");
 
             entity.ToTable("Notification");
 
@@ -257,7 +247,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Payment__3214EC07075A3817");
+            entity.HasKey(e => e.Id).HasName("PK__Payment__3214EC072DA92E69");
 
             entity.ToTable("Payment");
 
@@ -285,7 +275,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<PaymentLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PaymentL__3214EC07F48B03B3");
+            entity.HasKey(e => e.Id).HasName("PK__PaymentL__3214EC079F71E989");
 
             entity.ToTable("PaymentLog");
 
@@ -306,9 +296,24 @@ public partial class PerHueDbContext : DbContext
                 .HasConstraintName("FKPaymentLog793082");
         });
 
+        modelBuilder.Entity<Photo>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Photo__3214EC07D67632DF");
+
+            entity.ToTable("Photo");
+
+            entity.Property(e => e.PhotoUrl).IsUnicode(false);
+            entity.Property(e => e.Type).HasMaxLength(255);
+
+            entity.HasOne(d => d.VerifyInformation).WithMany(p => p.Photos)
+                .HasForeignKey(d => d.VerifyInformationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FKPhoto777996");
+        });
+
         modelBuilder.Entity<Picture>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Picture__3214EC076080BF44");
+            entity.HasKey(e => e.Id).HasName("PK__Picture__3214EC075C1B89F1");
 
             entity.ToTable("Picture");
 
@@ -322,7 +327,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RefreshT__3214EC0753600E4A");
+            entity.HasKey(e => e.Id).HasName("PK__RefreshT__3214EC075E30541D");
 
             entity.ToTable("RefreshToken");
 
@@ -337,7 +342,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Role__3214EC074010C1AB");
+            entity.HasKey(e => e.Id).HasName("PK__Role__3214EC07AD32FFED");
 
             entity.ToTable("Role");
 
@@ -348,7 +353,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<ServicePackage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ServiceP__3214EC078C39A6F6");
+            entity.HasKey(e => e.Id).HasName("PK__ServiceP__3214EC07CA271E5B");
 
             entity.ToTable("ServicePackage");
 
@@ -362,7 +367,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<TestRequest>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TestRequ__3214EC075F8180AD");
+            entity.HasKey(e => e.Id).HasName("PK__TestRequ__3214EC07DF6568E7");
 
             entity.ToTable("TestRequest");
 
@@ -394,12 +399,15 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<TestResponse>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TestResp__3214EC07F693B863");
+            entity.HasKey(e => e.Id).HasName("PK__TestResp__3214EC07B5971E6A");
 
             entity.ToTable("TestResponse");
 
             entity.Property(e => e.BestColor).IsUnicode(false);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Type)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.WorstColor).IsUnicode(false);
 
             entity.HasOne(d => d.ColorType).WithMany(p => p.TestResponses)
@@ -420,7 +428,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<TestResult>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TestResu__3214EC07E1E743F4");
+            entity.HasKey(e => e.Id).HasName("PK__TestResu__3214EC074E6EE77E");
 
             entity.ToTable("TestResult");
 
@@ -434,10 +442,11 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<UserAccount>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__UserAcco__3214EC076ED9788D");
+            entity.HasKey(e => e.Id).HasName("PK__UserAcco__3214EC07CC81D93D");
 
             entity.ToTable("UserAccount");
 
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.Email)
                 .HasMaxLength(255)
                 .IsUnicode(false);
@@ -460,7 +469,7 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<UserSubscription>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__UserSubs__3214EC07C52CFB30");
+            entity.HasKey(e => e.Id).HasName("PK__UserSubs__3214EC076596D7EF");
 
             entity.ToTable("UserSubscription");
 
@@ -481,17 +490,15 @@ public partial class PerHueDbContext : DbContext
 
         modelBuilder.Entity<VerifyInformation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__VerifyIn__3214EC07659C21D7");
+            entity.HasKey(e => e.Id).HasName("PK__VerifyIn__3214EC07D303D038");
 
             entity.ToTable("VerifyInformation");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Bio).IsUnicode(false);
-            entity.Property(e => e.Certification).IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.IdentityPhoto).IsUnicode(false);
             entity.Property(e => e.Languages)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -499,6 +506,9 @@ public partial class PerHueDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Specialization).IsUnicode(false);
+            entity.Property(e => e.Status)
+                .HasMaxLength(100)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.IdNavigation).WithOne(p => p.VerifyInformation)
                 .HasForeignKey<VerifyInformation>(d => d.Id)
