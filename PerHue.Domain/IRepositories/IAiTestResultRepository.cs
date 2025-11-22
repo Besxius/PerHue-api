@@ -17,5 +17,8 @@ namespace PerHue.Domain.IRepositories
 		Task UpdateTestRequestAsync(TestRequest testRequest);
 		Task<AiTestResult> CreateAiTestResultAsync(AiTestResult result);
 		Task<List<AiPicture>> CreateAiPicturesAsync(List<AiPicture> pictures);
+		Task<(List<TestRequest> tests, int totalCount)> GetFilteredTestRequestsAsync(
+			int pageIndex, int pageSize, int? userId, string? status, string? typeOfTest, string? fullname,
+			DateTime? startDate, DateTime? endDate, int? sortBy, int? sortOrder);
 	}
 }

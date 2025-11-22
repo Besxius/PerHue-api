@@ -14,10 +14,11 @@ namespace PerHue.Application.IServices
 		Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId);
 		Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId);
 
-		Task<IEnumerable<TestResponseModel>> GetExpertResponsesForUserAsync(int testRequestId, int userId);
+		//Task<IEnumerable<TestResponseModel>> GetExpertResponsesForUserAsync(int testRequestId, int userId);
+		Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId);
 
 		Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync();
-		Task<IEnumerable<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId);
+		Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? date);
 		Task RateExpertResponseAsync(RateExpertResponseModel model, int userId);
 	}
 }

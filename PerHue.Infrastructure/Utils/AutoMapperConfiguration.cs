@@ -40,11 +40,13 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<TestResult, TestResultModel>().ReverseMap();
 			CreateMap<Expert, ExpertModel>()
 				.ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.IdNavigation.Email))
-				.ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.IdNavigation.Username));
+				.ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.IdNavigation.Username))
+				.ForMember(dest => dest.ProfilePicture, opt => opt.MapFrom(src => src.IdNavigation.ProfilePicture));
 			CreateMap<Notification, NotificationModel>()
 				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
 
 			CreateMap<AiPicture, AiPictureModel>().ReverseMap();
+			CreateMap<Picture, PictureModel>().ReverseMap();
 			CreateMap<TestRequest, TestRequestModel>().ReverseMap();
 
 			CreateMap<TestResponse, TestResponseModel>()

@@ -11,6 +11,7 @@ namespace PerHue.Domain.IRepositories
         Task CreateAsync(Expert expert);
         Task UpdateAsync(Expert expert);
         Task<bool> DeleteAsync(int id);
-        Task<bool> ExistsAsync(int id);
-    }
+		Task<bool> ExistsAsync(int id);
+		Task<IEnumerable<Expert>> GetAllByRatingDescendingAsync();
+	}
 }
