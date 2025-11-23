@@ -8,11 +8,6 @@ namespace PerHue.Infrastructure.Basic
 	{
 		protected PerHueDbContext _context;
 
-		public GenericRepository()
-		{
-			_context ??= new PerHueDbContext();
-		}
-
 		public GenericRepository(PerHueDbContext context)
 		{
 			_context = context;
