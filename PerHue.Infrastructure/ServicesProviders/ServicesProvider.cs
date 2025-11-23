@@ -29,6 +29,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 
 		public IAdminColorService AdminColorService { get; private set; }
 		public IAdminCapsulePaletteService AdminCapsulePaletteService { get; private set; }
+		public IAdminDashboardService AdminDashboardService { get; private set; }
 
 		public ServicesProvider(
 			IUnitOfWork unitOfWork,
@@ -49,7 +50,8 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IAIImageAnalysisService aIImageAnalysisService,
 			IAiTestService aiTestService,
 			IAdminColorService adminColorService,
-			IAdminCapsulePaletteService adminCapsulePaletteService
+			IAdminCapsulePaletteService adminCapsulePaletteService,
+			IAdminDashboardService adminDashboardService
 			)
 		{
 			_unitOfWork = unitOfWork;
@@ -71,6 +73,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			AiTestService = aiTestService;
 			AdminColorService = adminColorService;
 			AdminCapsulePaletteService = adminCapsulePaletteService;
+			AdminDashboardService = adminDashboardService;
 		}
 
 	}
