@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu ảnh xác minh (chứng chỉ, giấy tờ) kèm theo hồ sơ xác minh chuyên gia.
+/// </summary>
 public partial class Photo
 {
     public int Id { get; set; }
