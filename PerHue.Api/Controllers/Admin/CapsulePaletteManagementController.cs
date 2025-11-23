@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
@@ -8,6 +9,7 @@ namespace PerHue.Api.Controllers.Admin
 {
 	[Route("api/admin/[controller]")]
 	[ApiController]
+	[Authorize(Roles = "admin")]
 	public class CapsulePaletteManagementController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;

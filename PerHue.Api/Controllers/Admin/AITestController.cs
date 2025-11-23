@@ -9,7 +9,7 @@ namespace PerHue.Api.Controllers.Admin
 {
 	[Route("api/admin/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "admin")] // Assuming you have role-based authorization
+	[Authorize(Roles = "admin")]
 	public class AITestController : ControllerBase
 	{
 		private readonly IAiTestService _aiTestService;
