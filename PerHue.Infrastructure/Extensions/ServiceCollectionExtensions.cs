@@ -54,10 +54,12 @@ namespace PerHue.Infrastructure.Extensions
 			#endregion
 
 			#region Services
-			services.AddScoped<IServicesProvider, ServicesProvider>();
-			services.AddScoped<IUserService, UserService>();
-			services.AddScoped<IAdminUserService, AdminUserService>();
-			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
+		services.AddScoped<IServicesProvider, ServicesProvider>();
+		services.AddScoped<IUserService, UserService>();
+		services.AddScoped<IAdminUserService, AdminUserService>();
+		services.AddScoped<IAdminColorService, AdminColorService>();
+		services.AddScoped<IAdminCapsulePaletteService, AdminCapsulePaletteService>();
+		services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
 			services.AddScoped<IPaymentLogService, PaymentLogService>();
