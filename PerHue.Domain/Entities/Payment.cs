@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu thông tin giao dịch thanh toán của người dùng, bao gồm số tiền, mô tả, trạng thái, mã giao dịch và liên kết với đăng ký dịch vụ.
+/// </summary>
 public partial class Payment
 {
     public int Id { get; set; }

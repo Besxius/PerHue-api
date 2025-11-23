@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu thông tin chi tiết về các chuyên gia tư vấn màu sắc, bao gồm nickname, 
+/// chuyên môn, tiểu sử, kinh nghiệm, ngôn ngữ, đánh giá, chứng chỉ và các tài khoản mạng xã hội.
+/// </summary>
 public partial class Expert
 {
     public int Id { get; set; }

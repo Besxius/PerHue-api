@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu kết quả test màu sắc của người dùng, bao gồm ảnh và người dùng liên quan.
+/// </summary>
 public partial class TestResult
 {
     public int Id { get; set; }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Tạo bộ sưu tập màu capsule (bảng màu tối giản) cho từng loại màu.
+/// </summary>
 public partial class CapsulePalette
 {
     public int Id { get; set; }
