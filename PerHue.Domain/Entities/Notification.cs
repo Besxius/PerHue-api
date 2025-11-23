@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Quản lý thông báo gửi đến người dùng về các yêu cầu test, kết quả và các sự kiện khác trong hệ thống.
+/// </summary>
 public partial class Notification
 {
     public int Id { get; set; }

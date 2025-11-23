@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu trữ thông tin xác minh cho các chuyên gia đang chờ phê duyệt, bao gồm thông tin chuyên môn và trạng thái xét duyệt.
+/// </summary>
 public partial class VerifyInformation
 {
     public int Id { get; set; }
