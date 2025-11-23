@@ -13,10 +13,8 @@ namespace PerHue.Infrastructure.Repositories
 {
 	public class AiTestResultRepository : GenericRepository<AiTestResult>, IAiTestResultRepository
 	{
-		private readonly PerHueDbContext _dbContext;
-		public AiTestResultRepository(PerHueDbContext dbContext)
+		public AiTestResultRepository(PerHueDbContext context) : base(context)
 		{
-			_dbContext = dbContext;
 		}
 
 		public async Task<TestRequest> CreateTestRequestAsync(TestRequest testRequest)
