@@ -43,14 +43,16 @@ namespace PerHue.Infrastructure.Utils
 				.ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.IdNavigation.Username))
 				.ForMember(dest => dest.ProfilePicture, opt => opt.MapFrom(src => src.IdNavigation.ProfilePicture));
 			CreateMap<Notification, NotificationModel>()
-				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username));
+				.ForMember(dest => dest.ReceiverUsername, opt => opt.MapFrom(src => src.ReceiverNavigation.Username))
+				.ForMember(dest => dest.Time, opt => opt.MapFrom(src => src.ReceivedTime));
 
 			CreateMap<AiPicture, AiPictureModel>().ReverseMap();
 			CreateMap<Picture, PictureModel>().ReverseMap();
 			CreateMap<TestRequest, TestRequestModel>().ReverseMap();
 
 			CreateMap<TestResponse, TestResponseModel>()
-				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name));
+				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name))
+				.ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type));
 			CreateMap<CreateTestResponseModel, TestResponse>();
 		}
 	}

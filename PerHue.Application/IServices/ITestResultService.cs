@@ -10,6 +10,8 @@ namespace PerHue.Application.IServices
 	public interface ITestResultService : IGenericService<TestResultModel>
 	{
 		Task<TestRequestModel> CreateExpertTestRequestAsync(ExpertTestCreationParameters parameters);
+		Task RequestReviewAsync(int testRequestId, int userId);
+
 		Task<TestResultModel> CreateNormalTestCapsulePaletteResult(TestResultModel model);
 		Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model);
 		Task<string> GetAiTestUploadImageResult(AiTestUploadImageModel model);
