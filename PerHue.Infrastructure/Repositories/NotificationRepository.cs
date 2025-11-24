@@ -34,7 +34,8 @@ namespace PerHue.Infrastructure.Repositories
         public async Task<IEnumerable<Notification>> GetByReceiverAsync(int receiverId)
         {
             return await _context.Notifications
-                .Where(n => n.Receiver == receiverId)
+				.Include(n => n.ReceiverNavigation)
+				.Where(n => n.Receiver == receiverId)
                 .OrderByDescending(n => n.ReceivedTime)
                 .ToListAsync();
         }
@@ -42,7 +43,8 @@ namespace PerHue.Infrastructure.Repositories
         public async Task<IEnumerable<Notification>> GetUnreadByReceiverAsync(int receiverId)
         {
             return await _context.Notifications
-                .Where(n => n.Receiver == receiverId && !n.IsRead)
+				.Include(n => n.ReceiverNavigation)
+				.Where(n => n.Receiver == receiverId && !n.IsRead)
                 .OrderByDescending(n => n.ReceivedTime)
                 .ToListAsync();
         }

@@ -22,6 +22,8 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.ExpertTestRequests
 				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.UserAccount)
+				.Include(etr => etr.TestRequest)
 					.ThenInclude(tr => tr.AiPictures)
 				.Include(etr => etr.TestRequest)
 					.ThenInclude(tr => tr.Pictures)
@@ -43,5 +45,30 @@ namespace PerHue.Infrastructure.Repositories
 										&& etr.TestRequestId == testRequestId
 										&& etr.Status == "Pending");
 		}
+		public async Task<IEnumerable<ExpertTestRequest>> GetPendingReviewRequestsForExpertAsync(int expertId)
+		{
+			return await _context.ExpertTestRequests
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.UserAccount)
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.AiPictures)
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.Pictures)
+				// Crucially, we also include the existing responses so the expert can see them!
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.TestResponses)
+						.ThenInclude(resp => resp.ColorType) // Include details for the response
+				.Where(etr => etr.ExpertId == expertId && etr.Status == "PendingReview") // Strict check
+				.ToListAsync();
+		}
+		public async Task<ExpertTestRequest> GetPendingReviewRequestAsync(int expertId, int testRequestId)
+		{
+			// This finds "PendingReview"
+			return await _context.ExpertTestRequests
+				.FirstOrDefaultAsync(etr => etr.ExpertId == expertId
+										&& etr.TestRequestId == testRequestId
+										&& etr.Status == "PendingReview"); 
+		}
+
 	}
 }
