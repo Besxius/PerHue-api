@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu kết quả phân tích màu sắc tự động bởi AI, bao gồm màu nên dùng, màu nên tránh, loại màu phù hợp và ghi chú.
+/// </summary>
 public partial class AiTestResult
 {
     public int Id { get; set; }

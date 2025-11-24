@@ -48,11 +48,18 @@ namespace PerHue.Infrastructure.Repositories
 
             _context.Experts.Remove(expert);
             return true;
-        }
+		}
 
-        public async Task<bool> ExistsAsync(int id)
-        {
-            return await _context.Experts.AnyAsync(e => e.Id == id);
-        }
-    }
+		public async Task<bool> ExistsAsync(int id)
+		{
+			return await _context.Experts.AnyAsync(e => e.Id == id);
+		}
+		public async Task<IEnumerable<Expert>> GetAllByRatingDescendingAsync()
+		{
+			return await _context.Experts
+				.Include(e => e.IdNavigation)
+				.OrderByDescending(e => e.Rating)
+				.ToListAsync();
+		}
+	}
 }

@@ -1,0 +1,79 @@
+### Dashboard API Tests
+
+@baseUrl = https://localhost:7081/api/admin/dashboard
+
+### Get Dashboard Metrics
+GET {{baseUrl}}/metrics
+Authorization: Bearer {{token}}
+
+### Get Dashboard Metrics with Date Range
+GET {{baseUrl}}/metrics?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{token}}
+
+### Get Account Counts
+GET {{baseUrl}}/accounts/count
+Authorization: Bearer {{token}}
+
+### Get Account Counts with Date Range
+GET {{baseUrl}}/accounts/count?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{token}}
+
+### Get Account List (Paginated)
+GET {{baseUrl}}/accounts?pageIndex=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Account List with Search
+GET {{baseUrl}}/accounts?pageIndex=1&pageSize=10&email=test&isActive=true&sortBy=CreatedDate&sortOrder=Descending
+Authorization: Bearer {{token}}
+
+### Get Account Detail
+GET {{baseUrl}}/accounts/1
+Authorization: Bearer {{token}}
+
+### Get Expert Penalties
+GET {{baseUrl}}/experts/penalties?pageIndex=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Expert Penalties with Search
+GET {{baseUrl}}/experts/penalties?pageIndex=1&pageSize=10&expertName=John&fromDate=2024-01-01&toDate=2024-12-31
+Authorization: Bearer {{token}}
+
+### Get Revenue Statistics
+GET {{baseUrl}}/revenue?startDate=2024-01-01&endDate=2024-12-31&groupBy=day
+Authorization: Bearer {{token}}
+
+### Get Revenue Statistics by Week
+GET {{baseUrl}}/revenue?startDate=2024-01-01&endDate=2024-12-31&groupBy=week
+Authorization: Bearer {{token}}
+
+### Get Revenue Statistics by Month
+GET {{baseUrl}}/revenue?startDate=2024-01-01&endDate=2024-12-31&groupBy=month
+Authorization: Bearer {{token}}
+
+### Get Test Count Statistics
+GET {{baseUrl}}/tests/count?startDate=2024-01-01&endDate=2024-12-31&groupBy=day
+Authorization: Bearer {{token}}
+
+### Get Test Count Statistics by Week
+GET {{baseUrl}}/tests/count?startDate=2024-01-01&endDate=2024-12-31&groupBy=week
+Authorization: Bearer {{token}}
+
+### Get Test Count Statistics with Test Type
+GET {{baseUrl}}/tests/count?startDate=2024-01-01&endDate=2024-12-31&groupBy=day&testType=ai
+Authorization: Bearer {{token}}
+
+### Get Penalty Statistics
+GET {{baseUrl}}/penalties/statistics?startDate=2024-01-01&endDate=2024-12-31&groupBy=day
+Authorization: Bearer {{token}}
+
+### Get Penalty Statistics by Week
+GET {{baseUrl}}/penalties/statistics?startDate=2024-01-01&endDate=2024-12-31&groupBy=week
+Authorization: Bearer {{token}}
+
+### Get Expert Activity
+GET {{baseUrl}}/experts/activity?pageIndex=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Get Expert Activity with Search
+GET {{baseUrl}}/experts/activity?pageIndex=1&pageSize=10&expertName=John&fromDate=2024-01-01&toDate=2024-12-31&sortBy=Date
+Authorization: Bearer {{token}}

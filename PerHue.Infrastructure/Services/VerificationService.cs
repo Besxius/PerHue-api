@@ -67,7 +67,6 @@ namespace PerHue.Infrastructure.Services
                 Bio = model.Bio,
                 YearsOfExperience = model.YearsOfExperience,
                 Languages = model.Languages,
-                Certification = model.Certification
             };
 
             await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
@@ -90,7 +89,6 @@ namespace PerHue.Infrastructure.Services
                 Bio = verifyInfo.Bio,
                 YearsOfExperience = verifyInfo.YearsOfExperience,
                 Languages = verifyInfo.Languages,
-                Certification = verifyInfo.Certification,
                 Rating = 0,
                 Introduction = null,
                 FacebookAccount = null,
@@ -156,7 +154,6 @@ namespace PerHue.Infrastructure.Services
                 Bio = verifyInformation.Bio,
                 YearsOfExperience = verifyInformation.YearsOfExperience,
                 Languages = verifyInformation.Languages,
-                Certification = verifyInformation.Certification
             };
         }
     }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Ghi lại lịch sử thay đổi trạng thái thanh toán, theo dõi các sự kiện và metadata liên quan.
+/// </summary>
 public partial class PaymentLog
 {
     public int Id { get; set; }
