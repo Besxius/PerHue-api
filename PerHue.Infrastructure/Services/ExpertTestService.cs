@@ -10,6 +10,7 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -46,6 +47,7 @@ namespace PerHue.Infrastructure.Services
 			var testResponse = _mapper.Map<TestResponse>(model);
 			testResponse.ExpertId = expertId;
 			testResponse.CreatedDate = DateTime.Now;
+			testResponse.Type = ResponseTypeEnum.Normal.ToString();
 
 			// 3. Save the response
 			await _unitOfWork.TestResponseRepository.CreateAsync(testResponse);
@@ -117,10 +119,10 @@ namespace PerHue.Infrastructure.Services
 
 			return results;
 		}
-		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? date)
+		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate)
 		{
 			// 1. Get Paged Test Requests
-			var (testRequests, totalCount) = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsForUserAsync(userId, pageIndex, pageSize, date);
+			var (testRequests, totalCount) = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsForUserAsync(userId, pageIndex, pageSize, fromDate, toDate);
 
 			var resultItems = new List<ExpertTestResultModel>();
 
@@ -217,6 +219,110 @@ namespace PerHue.Infrastructure.Services
 
 			// 6. Save all changes in one transaction
 			await _unitOfWork.SaveChangesWithTransactionAsync();
+		}
+		public async Task<IEnumerable<ReviewTestRequestModel>> GetPendingReviewRequestsAsync(int expertId)
+		{
+			// 1. Fetch requests with "PendingReview" status
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetPendingReviewRequestsForExpertAsync(expertId);
+
+			var result = new List<ReviewTestRequestModel>();
+
+			foreach (var req in expertRequests)
+			{
+				// 2. Map the TestRequest
+				var requestModel = _mapper.Map<TestRequestModel>(req.TestRequest);
+
+				// 3. Map the Responses (The 3 initial ones)
+				// Note: We filter out any potential 'Review' type responses to be safe, showing only the original work.
+				var previousResponses = req.TestRequest.TestResponses
+					.Where(r => r.Type != ResponseTypeEnum.Review.ToString())
+					.ToList();
+
+				var responseModels = _mapper.Map<IEnumerable<TestResponseModel>>(previousResponses);
+
+				result.Add(new ReviewTestRequestModel
+				{
+					ExpertTestRequestId = req.ExpertId, // Or the composite ID if needed, usually TestRequestId is enough context
+					TestRequest = requestModel,
+					PreviousResponses = responseModels
+				});
+			}
+
+			return result;
+		}
+
+		// --- IMPLEMENT VOTING ---
+		public async Task<TestResponseModel> VoteForResponseAsync(VoteResponseModel model, int expertId)
+		{
+			// 1. Verify the expert has a pending request for this test
+			var pendingRequest = await _unitOfWork.ExpertTestRequestRepository.GetPendingReviewRequestAsync(expertId, model.TestRequestId);
+
+			if (pendingRequest == null)
+			{
+				throw new InvalidOperationException("No pending review request found for this expert.");
+			}
+
+			// 2. Get the response the expert voted for
+			var votedResponse = await _unitOfWork.TestResponseRepository.GetByIdAsync(model.VotedResponseId);
+			if (votedResponse == null || votedResponse.TestRequestId != model.TestRequestId)
+			{
+				throw new ArgumentException("Invalid response selected.");
+			}
+
+			// 3. Create the Review Response (Copying data)
+			var reviewResponse = new TestResponse
+			{
+				TestRequestId = model.TestRequestId,
+				ExpertId = expertId,
+				CreatedDate = DateTime.Now,
+				Type = ResponseTypeEnum.Review.ToString(), // Set Type to Review
+
+				// Copy core analysis data
+				BestColor = votedResponse.BestColor,
+				WorstColor = votedResponse.WorstColor,
+				ColorTypeId = votedResponse.ColorTypeId,
+
+				// Add note indicating it's a review/vote
+				Note = string.IsNullOrWhiteSpace(model.Note)
+					? $"Reviewed and agreed with Expert {votedResponse.ExpertId}."
+					: model.Note
+			};
+
+			await _unitOfWork.TestResponseRepository.CreateAsync(reviewResponse);
+
+			// 4. Mark request as completed
+			pendingRequest.Status = "Completed";
+			await _unitOfWork.ExpertTestRequestRepository.UpdateAsync(pendingRequest);
+
+			// --- STATUS CHANGE: Mark main request back to Completed ---
+			var mainRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(model.TestRequestId);
+			if (mainRequest != null)
+			{
+				mainRequest.Status = "Completed";
+				await _unitOfWork.TestRequestRepository.UpdateAsync(mainRequest);
+
+				// --- NOTIFICATION: For the User ---
+				var notification = new Notification
+				{
+					Title = "Review Completed",
+					Content = "The expert review you requested has been completed.",
+					Receiver = mainRequest.UserAccountId,
+					TestRequestId = model.TestRequestId,
+					ReceivedTime = DateTime.Now,
+					IsRead = false,
+					Type = "ReviewResult"
+				};
+				await _unitOfWork.NotificationRepository.CreateAsync(notification);
+			}
+
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			// 5. Return mapped model (Fetching color type name handled by mapper if entity loaded, or we rely on lazy loading/repo include)
+			// To be safe, let's load the ColorType for mapping
+			var colorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(reviewResponse.ColorTypeId);
+			reviewResponse.ColorType = colorType;
+
+			return _mapper.Map<TestResponseModel>(reviewResponse);
 		}
 	}
 }
