@@ -250,7 +250,7 @@ namespace PerHue.Api.Controllers.Admin
 			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
 
 			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-			if (string.IsNullOrEmpty(token))
+			if (string.IsNullOrEmpty(token.RefreshToken) || string.IsNullOrEmpty(token.AccessToken))
 			{
 				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
 			}

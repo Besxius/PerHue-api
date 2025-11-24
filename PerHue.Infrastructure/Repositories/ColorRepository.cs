@@ -90,5 +90,96 @@ namespace PerHue.Infrastructure.Repositories
 			}
 			return colorsList;
 		}
+
+		public async Task<List<Color>> GetAllColorsAsync()
+		{
+			return await _context.Colors
+				.ToListAsync();
+		}
+
+		public async Task<Color?> GetColorByHexCodeAsync(string hexCode)
+		{
+			hexCode = NormalizeHexCode(hexCode);
+			return await _context.Colors
+				.FirstOrDefaultAsync(c => c.HexCode.ToLower() == hexCode.ToLower());
+		}
+
+		public async Task<List<Color>> GetColorsByColorTypeIdAsync(int colorTypeId)
+		{
+			return await _context.Colors
+				.ToListAsync();
+		}
+
+		public async Task<Color?> FindClosestColorByHexAsync(string hexCode)
+		{
+			hexCode = NormalizeHexCode(hexCode);
+			var allColors = await GetAllColorsAsync();
+
+			if (!allColors.Any())
+				return null;
+
+			var targetRgb = HexToRgb(hexCode);
+			if (targetRgb == null)
+				return null;
+
+			Color? closestColor = null;
+			double minDistance = double.MaxValue;
+
+			foreach (var color in allColors)
+			{
+				var colorRgb = HexToRgb(color.HexCode);
+				if (colorRgb == null)
+					continue;
+
+				var distance = CalculateColorDistance(targetRgb.Value, colorRgb.Value);
+				if (distance < minDistance)
+				{
+					minDistance = distance;
+					closestColor = color;
+				}
+			}
+
+			return closestColor;
+		}
+
+		private string NormalizeHexCode(string hexCode)
+		{
+			hexCode = hexCode.Trim().TrimStart('#');
+			if (hexCode.Length == 3)
+			{
+				hexCode = string.Concat(hexCode.Select(c => $"{c}{c}"));
+			}
+			return $"#{hexCode}";
+		}
+
+		private (int R, int G, int B)? HexToRgb(string hexCode)
+		{
+			try
+			{
+				hexCode = hexCode.TrimStart('#');
+				if (hexCode.Length != 6)
+					return null;
+
+				int r = Convert.ToInt32(hexCode.Substring(0, 2), 16);
+				int g = Convert.ToInt32(hexCode.Substring(2, 2), 16);
+				int b = Convert.ToInt32(hexCode.Substring(4, 2), 16);
+
+				return (r, g, b);
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		private double CalculateColorDistance((int R, int G, int B) color1, (int R, int G, int B) color2)
+		{
+			// Sử dụng công thức Euclidean distance trong không gian RGB
+			double rDiff = color1.R - color2.R;
+			double gDiff = color1.G - color2.G;
+			double bDiff = color1.B - color2.B;
+
+			return Math.Sqrt((rDiff * rDiff) + (gDiff * gDiff) + (bDiff * bDiff));
+		}
 	}
 }

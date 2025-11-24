@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
 using PerHue.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -7,14 +8,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
+using AiTestResponseModel = PerHue.Application.Models.AiTest.AiTestResponseModel;
+using CreateAiTestRequestModel = PerHue.Application.Models.AiTest.CreateAiTestRequestModel;
+using GeminiAnalysisRequest = PerHue.Application.Models.AiTest.GeminiAnalysisRequest;
 
 namespace PerHue.Application.IServices
 {
 	public interface IAiTestService
 	{
-		Task<AiTestResponseModel> CreateAiTestRequestAsync(int userId, CreateAiTestRequestModel model);
-		Task<AiTestResponseModel> ProcessAiTestAsync(int testRequestId);
-		Task<AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId);
-		Task<List<AiTestResponseModel>> GetUserAiTestsAsync(int userId);
+		Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model);
+		Task<AiTestModel.AiTestResponseModel> ProcessAiTestAsync(int testRequestId);
+		Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId);
+		Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId);
+
+		Task<AiTestCompleteResponse> ProcessAiTestAsync2(AiTestCompleteRequest request);
+		Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(int testRequestId, GeminiAnalysisRequest request);
+		Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(int testRequestId, VirtualTryOnRequest request);
 	}
 }
