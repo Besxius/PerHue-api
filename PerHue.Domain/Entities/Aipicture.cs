@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu ảnh phân tích bởi AI kèm ghi chú cho yêu cầu test.
+/// </summary>
 public partial class AiPicture
 {
     public int Id { get; set; }

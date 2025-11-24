@@ -26,7 +26,7 @@ namespace PerHue.Infrastructure.Extensions
 		public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 		{
 			var connectionString = configuration.GetConnectionString("DefaultConnection");
-			services.AddDbContext<PerHueDbContext>(options => options.UseSqlServer(connectionString));
+			services.AddDbContext<PerHueDbContext>(options => options.UseSqlServer(connectionString).EnableSensitiveDataLogging());
 
 			#region Repositories
 			services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -54,10 +54,13 @@ namespace PerHue.Infrastructure.Extensions
 			#endregion
 
 			#region Services
-			services.AddScoped<IServicesProvider, ServicesProvider>();
-			services.AddScoped<IUserService, UserService>();
-			services.AddScoped<IAdminUserService, AdminUserService>();
-			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
+		services.AddScoped<IServicesProvider, ServicesProvider>();
+		services.AddScoped<IUserService, UserService>();
+		services.AddScoped<IAdminUserService, AdminUserService>();
+		services.AddScoped<IAdminColorService, AdminColorService>();
+		services.AddScoped<IAdminCapsulePaletteService, AdminCapsulePaletteService>();
+		services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+		services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
 			services.AddScoped<IPaymentLogService, PaymentLogService>();

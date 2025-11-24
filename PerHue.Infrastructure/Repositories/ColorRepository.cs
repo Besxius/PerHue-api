@@ -91,6 +91,140 @@ namespace PerHue.Infrastructure.Repositories
 			return colorsList;
 		}
 
+		public async Task<IEnumerable<Color>> GetByColorTypeIdAsync(int colorTypeId)
+		{
+			// FIX: Query CapsulePalette directly and flatten the Colors collection
+			return await _context.Set<CapsulePalette>()
+				.Where(cp => cp.ColorTypeId == colorTypeId)
+				.SelectMany(cp => cp.Colors) // Selects all colors from the matching palettes
+				.Distinct() // Removes duplicates if a color appears in multiple palettes
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<Color>> GetByColorTypeIdAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm)
+		{
+			// FIX: Query CapsulePalette directly
+			var query = _context.Set<CapsulePalette>()
+				.Where(cp => cp.ColorTypeId == colorTypeId)
+				.SelectMany(cp => cp.Colors)
+				.Distinct();
+
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				query = query.Where(c => c.Name.Contains(searchTerm) || c.HexCode.Contains(searchTerm));
+			}
+
+			return await query
+				.Skip((pageIndex - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+		}
+
+		public async Task<int> CountByColorTypeIdAsync(int colorTypeId, string? searchTerm)
+		{
+			// FIX: Query CapsulePalette directly
+			var query = _context.Set<CapsulePalette>()
+				.Where(cp => cp.ColorTypeId == colorTypeId)
+				.SelectMany(cp => cp.Colors)
+				.Distinct();
+
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				query = query.Where(c => c.Name.Contains(searchTerm) || c.HexCode.Contains(searchTerm));
+			}
+
+			return await query.CountAsync();
+		}
+
+		public async Task<IEnumerable<Color>> GetAllBySpectrumAsync()
+		{
+			// 1. Fetch all colors into memory first
+			var entities = await _context.Colors.ToListAsync();
+
+			// 2. Perform the complex sorting in memory
+			return entities
+				.Select(c =>
+				{
+					var hsl = GetHslFromHex(c.HexCode);
+					// Assign a bucket index (0=Red, 1=Orange... 9=Gray)
+					int familyIndex = GetColorFamilyIndex(hsl.H, hsl.S, hsl.L);
+					return new { Color = c, HSL = hsl, Family = familyIndex };
+				})
+				// 3. Group by Color Family (Red -> Orange -> ... -> Pink -> Gray)
+				.OrderBy(x => x.Family)
+				// 4. Sort by Lightness DESC (Lightest Tints -> Darkest Shades)
+				.ThenByDescending(x => x.HSL.L)
+				.Select(x => x.Color)
+				.ToList();
+		}
+
+		// --- PRIVATE HELPER METHODS (Moved from Service) ---
+
+		private int GetColorFamilyIndex(float h, float s, float l)
+		{
+			// 1. Filter Neutrals (Grayscale)
+			if (s < 0.12f || l > 0.98f || l < 0.05f)
+			{
+				return 100; // Grays at the end
+			}
+
+			// 2. Map Hue (0-360) to Families
+			if (h >= 345 || h < 15) return 0;  // Red
+			if (h >= 15 && h < 45) return 1;  // Orange
+			if (h >= 45 && h < 70) return 2;  // Yellow / Amber
+			if (h >= 70 && h < 150) return 3;  // Green / Lime
+			if (h >= 150 && h < 200) return 4; // Teal / Cyan
+			if (h >= 200 && h < 260) return 5; // Blue
+			if (h >= 260 && h < 300) return 6; // Purple / Violet
+			return 7;                          // Pink / Rose
+		}
+
+		private (float H, float S, float L) GetHslFromHex(string hex)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(hex)) return (0, 0, 0);
+				hex = hex.TrimStart('#');
+				if (hex.Length == 3) hex = string.Join("", hex.Select(c => new string(c, 2)));
+				if (hex.Length != 6) return (0, 0, 0);
+
+				int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+				int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+				int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+
+				float rf = r / 255f;
+				float gf = g / 255f;
+				float bf = b / 255f;
+
+				float max = Math.Max(rf, Math.Max(gf, bf));
+				float min = Math.Min(rf, Math.Min(gf, bf));
+				float delta = max - min;
+
+				float h = 0;
+				float s = 0;
+				float l = (max + min) / 2;
+
+				if (delta != 0)
+				{
+					s = l < 0.5 ? (delta / (max + min)) : (delta / (2.0f - max - min));
+
+					if (max == rf) h = (gf - bf) / delta + (gf < bf ? 6 : 0);
+					else if (max == gf) h = (bf - rf) / delta + 2;
+					else h = (rf - gf) / delta + 4;
+
+					h *= 60;
+				}
+
+				if (h < 0) h += 360;
+
+				return (h, s, l);
+			}
+			catch
+			{
+				return (0, 0, 0);
+			}
+		}
+
 		public async Task<List<Color>> GetAllColorsAsync()
 		{
 			return await _context.Colors

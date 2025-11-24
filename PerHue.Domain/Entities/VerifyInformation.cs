@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Lưu trữ thông tin xác minh cho các chuyên gia đang chờ phê duyệt, bao gồm thông tin chuyên môn và trạng thái xét duyệt.
+/// </summary>
 public partial class VerifyInformation
 {
     public int Id { get; set; }
@@ -10,8 +13,6 @@ public partial class VerifyInformation
     public string Email { get; set; } = null!;
 
     public string? Nickname { get; set; }
-
-    public string IdentityPhoto { get; set; } = null!;
 
     public string Specialization { get; set; } = null!;
 
@@ -21,7 +22,11 @@ public partial class VerifyInformation
 
     public string? Languages { get; set; }
 
-    public string Certification { get; set; } = null!;
+    public string? Requirement { get; set; }
+
+    public string Status { get; set; } = null!;
 
     public virtual UserAccount IdNavigation { get; set; } = null!;
+
+    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
 }

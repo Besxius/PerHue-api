@@ -17,6 +17,11 @@ namespace PerHue.Application.IServicesProvider
 		IOtpService OtpService { get; }
 
 		IExpertTestService ExpertTestService { get; }
+		IExpertService ExpertService { get; }
 
+		// Admin Services
+		IAdminColorService AdminColorService { get; }
+		IAdminCapsulePaletteService AdminCapsulePaletteService { get; }
+		IAdminDashboardService AdminDashboardService { get; }
 	}
 }

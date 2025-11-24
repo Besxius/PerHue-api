@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
+/// <summary>
+/// Danh mục các màu sắc với tên và mã hex code duy nhất.
+/// </summary>
 public partial class Color
 {
     public int Id { get; set; }

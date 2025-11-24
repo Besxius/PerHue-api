@@ -18,7 +18,7 @@ namespace PerHue.Application.IServices
 		Task<string> GetUserPasswordAsync(string email);
 
 		//Task<string> ValidateUserAsync(LoginRequestModel model);
-		Task<string> ValidateUserAsync(string email);
+		Task<LoginResponseModel> ValidateUserAsync(string email);
 		Task CreateAsync(CreateUserByEmailModel model);
 		Task<UserInfoModel?> GetUserInfoAsync(int userId);
 		Task<UserModel> CreateOrLinkGoogleUserAsync(string email, string name, string picture);
