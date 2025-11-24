@@ -8,12 +8,14 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Repositories;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
+using PerHue.Infrastructure.Utils;
 
 
 namespace PerHue.Infrastructure.Services
@@ -291,20 +293,13 @@ namespace PerHue.Infrastructure.Services
 
 		//================================================================
 
-		public async Task<AiTestCompleteResponse> ProcessAiTestAsync2(AiTestCompleteRequest request)
+		public async Task<AiTestCompleteResponse> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
 		{
 			try
 			{
-				_logger.LogInformation("Starting AI Test processing for TestRequestId: {TestRequestId}", request.TestRequestId);
+				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
-				// 1. Verify test request exists and belongs to user
-				var testRequest = await _testRequestRepository.GetByIdAsync(request.TestRequestId);
-				if (testRequest == null)
-				{
-					throw new Exception($"Test request {request.TestRequestId} not found");
-				}
-
-				// 2. Validate images
+				// Validate images
 				if (request.FaceImages == null || request.FaceImages.Count == 0)
 				{
 					throw new ArgumentException("At least one face image is required");
@@ -315,119 +310,147 @@ namespace PerHue.Infrastructure.Services
 					throw new ArgumentException("Maximum 5 images allowed");
 				}
 
-				// 3. Upload images to Cloudinary
+				// Tạo TestRequest mới
+				var testRequest = new TestRequest
+				{
+					HairColor = request.HairColor,
+					EyesColor = request.EyesColor,
+					LipsColor = request.LipsColor,
+					SkinColor = request.SkinColor,
+					Status = TestStatus.Processing.ToString(),
+					CreatedDate = DateTime.UtcNow,
+					TypeOfTest = "AI Test",
+					UserAccountId = userId
+				};
+
+				testRequest = await _aiTestRepository.CreateTestRequestAsync(testRequest);
+				_logger.LogInformation("Created TestRequest with Id: {TestRequestId}", testRequest.Id);
+
+				// Upload user images và lưu vào bảng Picture
 				var imageUrls = new List<string>();
+				var pictures = new List<Picture>();
+
 				foreach (var image in request.FaceImages)
 				{
 					var imageUrl = await _imageUploadService.UploadImageAsync(image);
 					imageUrls.Add(imageUrl);
-					_logger.LogInformation("Uploaded image: {ImageUrl}", imageUrl);
+					_logger.LogInformation("Uploaded user image: {ImageUrl}", imageUrl);
+
+					pictures.Add(new Picture
+					{
+						Source = imageUrl,
+						TestRequestId = testRequest.Id
+					});
 				}
 
-				// 4. Analyze colors from images using Gemini
-				var analysisRequest = new Application.Models.AiTest.GeminiAnalysisRequest
+				// Lưu ảnh người dùng vào bảng Picture
+				await _aiTestRepository.CreatePicturesAsync(pictures);
+				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
+
+				// Xử lý AI analysis
+				try
 				{
-					ImageUrls = imageUrls,
-					HairColor = request.HairColor,
-					EyesColor = request.EyesColor,
-					LipsColor = request.LipsColor,
-					SkinColor = request.SkinColor
-				};
-
-				var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(analysisRequest);
-				_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
-
-				// 5. Match hex codes to database colors
-				var matchedSuggestedColors = await _colorMatchingService
-					.MatchColorsFromHexCodesAsync(colorAnalysis.SuggestedColorHexCodes);
-
-				var matchedAvoidedColors = await _colorMatchingService
-					.MatchColorsFromHexCodesAsync(colorAnalysis.AvoidedColorHexCodes);
-
-				_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
-					matchedSuggestedColors.Count, matchedAvoidedColors.Count);
-
-				// 6. Generate virtual try-on images if requested
-				VirtualTryOnResponse? virtualTryOnResults = null;
-				if (request.GenerateVirtualTryOn && imageUrls.Count > 0)
-				{
-					var tryOnRequest = new VirtualTryOnRequest
+					// Analyze colors với Gemini
+					var analysisRequest = new Application.Models.AiTest.GeminiAnalysisRequest
 					{
-						UserImageUrl = imageUrls[0], // Use first uploaded image
-						SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
+						ImageUrls = imageUrls,
+						HairColor = request.HairColor,
+						EyesColor = request.EyesColor,
+						LipsColor = request.LipsColor,
+						SkinColor = request.SkinColor
 					};
 
-					virtualTryOnResults = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
-					_logger.LogInformation("Virtual try-on generation completed: {Count} images",
-						virtualTryOnResults.GeneratedImages.Count);
+					var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(analysisRequest);
+					_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
+
+					// Match colors
+					var matchedSuggestedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(colorAnalysis.SuggestedColorHexCodes);
+
+					var matchedAvoidedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(colorAnalysis.AvoidedColorHexCodes);
+
+					_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
+						matchedSuggestedColors.Count, matchedAvoidedColors.Count);
+
+					// Generate virtual try-on và lưu vào bảng AiPicture
+					VirtualTryOnResponse? virtualTryOnResults = null;
+					if (request.GenerateVirtualTryOn && imageUrls.Count > 0)
+					{
+						var tryOnRequest = new VirtualTryOnRequest
+						{
+							UserImageUrl = imageUrls[0],
+							SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
+						};
+
+						virtualTryOnResults = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
+						_logger.LogInformation("Virtual try-on generation completed: {Count} images",
+							virtualTryOnResults.GeneratedImages.Count);
+
+						// Lưu ảnh AI tạo ra vào bảng AiPicture
+						if (virtualTryOnResults.GeneratedImages.Count > 0)
+						{
+							var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
+							{
+								Source = img.ImageUrl,
+								Note = $"{PictureNotes.AiGeneratedImage} - {img.Environment} - {img.ClothingType} - {img.ColorHex}",
+								TestRequestId = testRequest.Id
+							}).ToList();
+
+							await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
+							_logger.LogInformation("Saved {Count} AI-generated images to AiPicture table", aiPictures.Count);
+						}
+					}
+
+					// Lưu kết quả test vào AiTestResult
+					var aiTestResult = new AiTestResult
+					{
+						Id = testRequest.Id,
+						Date = DateTime.UtcNow,
+						ColorTypeId = colorAnalysis.ColorTypeId,
+						SuggestedColor = string.Join(", ", matchedSuggestedColors
+							.Where(c => c.MatchedColor != null)
+							.Select(c => c.MatchedColor!.Name)),
+						AvoidedColor = string.Join(", ", matchedAvoidedColors
+							.Where(c => c.MatchedColor != null)
+							.Select(c => c.MatchedColor!.Name)),
+						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}"
+					};
+
+					await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
+
+					// Update status thành Completed
+					testRequest.Status = TestStatus.Completed.ToString();
+					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+
+					var response = new AiTestCompleteResponse
+					{
+						TestRequestId = testRequest.Id,
+						ColorAnalysis = colorAnalysis,
+						MatchedSuggestedColors = matchedSuggestedColors,
+						MatchedAvoidedColors = matchedAvoidedColors,
+						VirtualTryOnResults = virtualTryOnResults,
+						Status = TestStatus.Completed.ToString()
+					};
+
+					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
+						testRequest.Id);
+
+					return response;
 				}
-
-				// 7. Save AiPictures to database
-				var aiPictures = imageUrls.Select(url => new AiPicture
+				catch (Exception ex)
 				{
-					Source = url,
-					Note = "AI Test Face Image",
-					TestRequestId = request.TestRequestId
-				}).ToList();
+					_logger.LogError(ex, "Error processing AI test for request {TestRequestId}", testRequest.Id);
 
-				await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
-
-				// 8. Save AI Test Result
-				var aiTestResult = new AiTestResult
-				{
-					Id = request.TestRequestId,
-					Date = DateTime.UtcNow,
-					ColorTypeId = colorAnalysis.ColorTypeId,
-					SuggestedColor = string.Join(", ", matchedSuggestedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => c.MatchedColor!.Name)),
-					AvoidedColor = string.Join(", ", matchedAvoidedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => c.MatchedColor!.Name)),
-					Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}"
-				};
-
-				await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
-
-				// 9. Update test request status
-				testRequest.Status = "Completed";
-				await _testRequestRepository.UpdateAsync(testRequest);
-
-				// 10. Build response
-				var response = new AiTestCompleteResponse
-				{
-					TestRequestId = request.TestRequestId,
-					ColorAnalysis = colorAnalysis,
-					MatchedSuggestedColors = matchedSuggestedColors,
-					MatchedAvoidedColors = matchedAvoidedColors,
-					VirtualTryOnResults = virtualTryOnResults,
-					Status = "Completed"
-				};
-
-				_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
-					request.TestRequestId);
-
-				return response;
+					// Update status thành Failed nếu có lỗi
+					testRequest.Status = TestStatus.Failed.ToString();
+					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+					throw;
+				}
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error processing AI Test for TestRequestId: {TestRequestId}", request.TestRequestId);
-
-				// Update test request status to failed
-				try
-				{
-					var testRequest = await _testRequestRepository.GetByIdAsync(request.TestRequestId);
-					if (testRequest != null)
-					{
-						testRequest.Status = "Failed";
-						await _testRequestRepository.UpdateAsync(testRequest);
-					}
-				}
-				catch (Exception updateEx)
-				{
-					_logger.LogError(updateEx, "Failed to update test request status");
-				}
-
+				_logger.LogError(ex, "Error creating AI Test for UserId: {UserId}", userId);
 				throw;
 			}
 		}

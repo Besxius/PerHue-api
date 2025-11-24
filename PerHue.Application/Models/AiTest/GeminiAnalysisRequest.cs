@@ -99,7 +99,6 @@ namespace PerHue.Application.Models.AiTest
 
 	public class AiTestCompleteRequest
 	{
-		public int TestRequestId { get; set; }
 		public List<IFormFile> FaceImages { get; set; } = new();
 		public string? HairColor { get; set; }
 		public string? EyesColor { get; set; }
