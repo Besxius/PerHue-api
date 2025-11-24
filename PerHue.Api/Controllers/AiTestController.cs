@@ -113,26 +113,19 @@ namespace PerHue.Api.Controllers
 		}
 
 		/// <summary>
-		/// Xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)
+		/// Tạo và xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)
 		/// </summary>
-		[HttpPost("process-complete")]
+		[HttpPost("create-and-process")]
 		[Consumes("multipart/form-data")]
-		public async Task<IActionResult> ProcessCompleteAiTest([FromForm] AiTestCompleteRequest requestDto)
+		public async Task<IActionResult> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-				// Verify test request belongs to current user
-				var testRequest = await _testRequestRepository.GetByIdAsync(requestDto.TestRequestId);
-				if (testRequest == null)
+		
+				if (userId == 0)
 				{
-					return NotFound(new { message = "Test request not found" });
-				}
-
-				if (testRequest.UserAccountId != userId)
-				{
-					return Forbid();
+					return Unauthorized(new { message = "User not authenticated" });
 				}
 
 				// Validate images
@@ -169,10 +162,9 @@ namespace PerHue.Api.Controllers
 					}
 				}
 
-				// Map DTO to request model
+				// Map DTO to request model (không còn TestRequestId)
 				var request = new AiTestCompleteRequest
 				{
-					TestRequestId = requestDto.TestRequestId,
 					FaceImages = requestDto.FaceImages,
 					HairColor = requestDto.HairColor,
 					EyesColor = requestDto.EyesColor,
@@ -181,13 +173,14 @@ namespace PerHue.Api.Controllers
 					GenerateVirtualTryOn = requestDto.GenerateVirtualTryOn
 				};
 
-				var result = await _aiTestService.ProcessAiTestAsync2(request);
+				// Gọi service với userId
+				var result = await _aiTestService.ProcessAiTestAsync2(userId, request);
 
 				return Ok(new
 				{
 					success = true,
 					data = result,
-					message = "AI Test processing completed successfully"
+					message = "AI Test created and processed successfully"
 				});
 			}
 			catch (ArgumentException ex)

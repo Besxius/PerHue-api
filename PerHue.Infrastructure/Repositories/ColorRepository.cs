@@ -234,20 +234,23 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<Color?> GetColorByHexCodeAsync(string hexCode)
 		{
 			hexCode = NormalizeHexCode(hexCode);
-			return await _context.Colors
+			return await _dbSet
+				//.Include(c => c.ColorType)
 				.FirstOrDefaultAsync(c => c.HexCode.ToLower() == hexCode.ToLower());
 		}
 
 		public async Task<List<Color>> GetColorsByColorTypeIdAsync(int colorTypeId)
 		{
-			return await _context.Colors
+			return await _dbSet
+				//.Include(c => c.ColorType)
+				//.Where(c => c.ColorTypeId == colorTypeId)
 				.ToListAsync();
 		}
 
 		public async Task<Color?> FindClosestColorByHexAsync(string hexCode)
 		{
 			hexCode = NormalizeHexCode(hexCode);
-			var allColors = await GetAllColorsAsync();
+			var allColors = await GetAllAsync();
 
 			if (!allColors.Any())
 				return null;
@@ -308,7 +311,6 @@ namespace PerHue.Infrastructure.Repositories
 
 		private double CalculateColorDistance((int R, int G, int B) color1, (int R, int G, int B) color2)
 		{
-			// Sử dụng công thức Euclidean distance trong không gian RGB
 			double rDiff = color1.R - color2.R;
 			double gDiff = color1.G - color2.G;
 			double bDiff = color1.B - color2.B;

@@ -29,17 +29,15 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				var client = new GoogleAi(_apiKey);
-				var model = client.CreateGenerativeModel("gemini-2.0-flash-exp");
+				var model = client.CreateGenerativeModel("gemini-2.5-flash");
 
 				var response = new VirtualTryOnResponse();
 				using var httpClient = new HttpClient();
 
-				// Tạo ảnh cho mỗi tổ hợp environment và clothing type
 				foreach (var environment in request.Environments)
 				{
 					foreach (var clothingType in request.ClothingTypes)
 					{
-						// Chọn 2-3 màu ngẫu nhiên từ danh sách gợi ý
 						var selectedColors = request.SuggestedColorHexCodes
 							.OrderBy(x => Guid.NewGuid())
 							.Take(Math.Min(3, request.SuggestedColorHexCodes.Count))
@@ -52,11 +50,10 @@ namespace PerHue.Infrastructure.Services
 							try
 							{
 								var parts = new List<GenerativeAI.Types.Part>
-								{
-									new GenerativeAI.Types.Part { Text = prompt }
-								};
+						{
+							new GenerativeAI.Types.Part { Text = prompt }
+						};
 
-								// Thêm ảnh người dùng
 								var userImageBytes = await httpClient.GetByteArrayAsync(request.UserImageUrl);
 								parts.Add(new GenerativeAI.Types.Part
 								{
@@ -69,12 +66,16 @@ namespace PerHue.Infrastructure.Services
 
 								var geminiResponse = await model.GenerateContentAsync(parts);
 
-								// Note: Gemini 2.0 có thể không trả về ảnh trực tiếp
-								// Bạn có thể cần sử dụng Imagen hoặc API khác để generate ảnh
-								// Đây là placeholder logic
+								// TODO: Extract image from Gemini response if available
+								// For now, using placeholder
+								var generatedImageUrl = $"https://placeholder.com/generated_{Guid.NewGuid()}.jpg";
+
+								// If Gemini returns image data, upload to Cloudinary
+								// var uploadedUrl = await _imageUploadService.UploadImageAsync(imageStream);
+
 								response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
 								{
-									ImageUrl = $"generated_{Guid.NewGuid()}.jpg", // Placeholder
+									ImageUrl = generatedImageUrl,
 									Environment = environment,
 									ClothingType = clothingType,
 									ColorHex = colorHex,
