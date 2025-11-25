@@ -18,6 +18,7 @@ namespace PerHue.Application.IServicesProvider
 
 		IExpertTestService ExpertTestService { get; }
 		IExpertService ExpertService { get; }
+		INotificationService NotificationService { get; }
 
 		// Admin Services
 		IAdminColorService AdminColorService { get; }

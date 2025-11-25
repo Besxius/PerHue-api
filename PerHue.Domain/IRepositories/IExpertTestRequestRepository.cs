@@ -14,5 +14,10 @@ namespace PerHue.Domain.IRepositories
 		Task<IEnumerable<ExpertTestRequest>> GetPendingRequestsForExpertAsync(int expertId);
 		Task<IEnumerable<ExpertTestRequest>> GetRequestsByTestIdAsync(int testRequestId);
 		Task<ExpertTestRequest> GetPendingRequestAsync(int expertId, int testRequestId);
+
+		// Fetches requests specifically waiting for "Review"
+		Task<IEnumerable<ExpertTestRequest>> GetPendingReviewRequestsForExpertAsync(int expertId);
+		Task<ExpertTestRequest> GetPendingReviewRequestAsync(int expertId, int testRequestId);
+
 	}
 }

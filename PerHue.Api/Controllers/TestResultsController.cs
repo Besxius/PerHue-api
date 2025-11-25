@@ -92,7 +92,8 @@ namespace PerHue.Api.Controllers
 		public async Task<IActionResult> GetMyExpertTestHistory(
 			[FromQuery] int pageIndex = 1,
 			[FromQuery] int pageSize = 10,
-			[FromQuery] DateTime? date = null)
+			[FromQuery] DateTime? fromDate = null,  
+			[FromQuery] DateTime? toDate = null)
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
@@ -103,7 +104,7 @@ namespace PerHue.Api.Controllers
 			try
 			{
 				// Call the service with pagination parameters
-				var results = await _services.ExpertTestService.GetMyCompletedExpertTestsAsync(userId, pageIndex, pageSize, date);
+				var results = await _services.ExpertTestService.GetMyCompletedExpertTestsAsync(userId, pageIndex, pageSize, fromDate, toDate);
 				return Ok(results);
 			}
 			catch (Exception ex)
@@ -139,6 +140,31 @@ namespace PerHue.Api.Controllers
 			catch (InvalidOperationException ex)
 			{
 				return BadRequest(new { message = ex.Message }); // e.g., "Already rated"
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
+
+		[HttpPost("request-review/{testRequestId}")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> RequestReview(int testRequestId)
+		{
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var userId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			try
+			{
+				await _services.TestResultService.RequestReviewAsync(testRequestId, userId);
+				return Ok(new { message = "Review request sent to a new expert successfully." });
+			}
+			catch (InvalidOperationException ex)
+			{
+				return BadRequest(new { message = ex.Message });
 			}
 			catch (Exception ex)
 			{
