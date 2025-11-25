@@ -41,6 +41,23 @@ namespace PerHue.Api.Controllers
 				return StatusCode(500, $"Internal server error: {ex.Message}");
 			}
 		}
+
+		[HttpGet("by-spectrum-paging")]
+		public async Task<ActionResult<PaginatedResult<ColorModel>>> GetColorsBySpectrumPaged(
+			[FromQuery] int pageIndex = 1,
+			[FromQuery] int pageSize = 10,
+			[FromQuery] string? searchTerm = "")
+		{
+			try
+			{
+				var result = await _servicesProvider.ColorService.GetAllBySpectrumPagedAsync(pageIndex, pageSize, searchTerm);
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
 		// Normal API (No Paging)
 		[HttpGet("by-type/{colorTypeId}/all")]
 		public async Task<ActionResult<IEnumerable<ColorModel>>> GetColorsByColorTypeAll(int colorTypeId)
