@@ -157,6 +157,43 @@ namespace PerHue.Infrastructure.Repositories
 				.Select(x => x.Color)
 				.ToList();
 		}
+		public async Task<(IEnumerable<Color> Items, int TotalCount)> GetAllBySpectrumPagedAsync(int pageIndex, int pageSize, string? searchTerm)
+		{
+			// 1. Fetch all colors into memory first
+			var entities = await _context.Colors.ToListAsync();
+
+			// 2. Apply Search Filter (In-Memory)
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				searchTerm = searchTerm.ToLower();
+				entities = entities.Where(c =>
+					(c.Name != null && c.Name.ToLower().Contains(searchTerm)) ||
+					c.HexCode.ToLower().Contains(searchTerm)
+				).ToList();
+			}
+
+			// 3. Perform the complex sorting in memory
+			var sortedEntities = entities
+				.Select(c =>
+				{
+					var hsl = GetHslFromHex(c.HexCode);
+					int familyIndex = GetColorFamilyIndex(hsl.H, hsl.S, hsl.L);
+					return new { Color = c, HSL = hsl, Family = familyIndex };
+				})
+				.OrderBy(x => x.Family)
+				.ThenByDescending(x => x.HSL.L)
+				.Select(x => x.Color)
+				.ToList();
+
+			// 4. Apply Pagination
+			var totalCount = sortedEntities.Count;
+			var pagedItems = sortedEntities
+				.Skip((pageIndex - 1) * pageSize)
+				.Take(pageSize)
+				.ToList();
+
+			return (pagedItems, totalCount);
+		}
 
 		// --- PRIVATE HELPER METHODS (Moved from Service) ---
 
