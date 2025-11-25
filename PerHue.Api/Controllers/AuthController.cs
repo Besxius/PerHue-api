@@ -1,13 +1,10 @@
 ﻿using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.User;
-
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace PerHue.Api.Controllers
 {
