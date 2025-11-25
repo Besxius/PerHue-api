@@ -1,3 +1,4 @@
+using PerHue.Application.Models.User;
 using System;
 
 namespace PerHue.Application.Models.Expert
@@ -19,6 +20,7 @@ namespace PerHue.Application.Models.Expert
         public string Email { get; set; }
         public string Username { get; set; }
 		public string? ProfilePicture { get; set; }
+		public UserModel IdNavigation { get; set; }
 	}
     
     public class UpdateExpertModel
