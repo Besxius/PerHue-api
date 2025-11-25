@@ -28,7 +28,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly ILogger<ExpertTestMonitor> _logger;
 		private const int MaxRetries = 2;
 		private const int RequiredResponses = 3;
-		private const int DaysToWait = 2;
+		private const int DaysToWait = 0;
 
 		public ExpertTestMonitor(IServiceScopeFactory scopeFactory, ILogger<ExpertTestMonitor> logger)
 		{
@@ -141,6 +141,32 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			if (expiredCount > MaxRetries && pendingCount == 0)
 			{
 				_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {completedResponses.Count()}/{RequiredResponses}");
+
+				// --- REFUND LOGIC ---
+				// Since experts failed to fulfill the request, we refund the user.
+				var subscription = await unitOfWork.UserSubscriptionRepository.GetSubscriptionForRefundAsync(testRequest.UserAccountId);
+				if (subscription != null)
+				{
+					subscription.RemainingUses++;
+					if (subscription.RemainingUses > 0 && !subscription.Status)
+					{
+						subscription.Status = true; // Reactivate if it was closed
+					}
+					await unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
+					// --- NOTIFICATION HERE ---
+					var refundNotification = new Notification
+					{
+						Title = "Service Credit Refunded",
+						Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
+						Receiver = testRequest.UserAccountId,
+						TestRequestId = testRequest.Id,
+						ReceivedTime = DateTime.Now,
+						IsRead = false,
+						Type = "Refund"
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(refundNotification);
+					_logger.LogInformation($"Refunded 1 use to User {testRequest.UserAccountId}.");
+				}
 
 				try
 				{

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
+using PerHue.Application.Models.ExpertTestResult;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -44,6 +45,32 @@ namespace PerHue.Api.Controllers
 			var expertId = await GetCurrentExpertId();
 			var response = await _services.ExpertTestService.SubmitResponseAsync(model, expertId);
 			return Ok(response);
+		}
+		[HttpGet("review-requests")]
+		public async Task<IActionResult> GetPendingReviewRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _services.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+		[HttpPost("vote")]
+		public async Task<IActionResult> VoteForResponse([FromBody] VoteResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			try
+			{
+				var expertId = await GetCurrentExpertId();
+				var response = await _services.ExpertTestService.VoteForResponseAsync(model, expertId);
+				return Ok(response);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 	}
 }
