@@ -152,5 +152,42 @@ namespace PerHue.Infrastructure.Repositories
 				.ToList();
 			return result;
 		}
+		public async Task<IEnumerable<CapsulePalette>> GetByColorTypeIdAsync(int colorTypeId)
+		{
+			return await _context.CapsulePalettes
+				.Include(cp => cp.Colors)     // Include colors in the palette
+				.Include(cp => cp.ColorType)  // Include the type details
+				.Where(cp => cp.ColorTypeId == colorTypeId)
+				.ToListAsync();
+		}
+
+		public async Task<(IEnumerable<CapsulePalette> Items, int TotalCount)> GetByColorTypeIdPagedAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm)
+		{
+			var query = _context.CapsulePalettes
+				.Include(cp => cp.Colors)
+				.Include(cp => cp.ColorType)
+				.Where(cp => cp.ColorTypeId == colorTypeId);
+
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				// Search Logic:
+				// 1. Match ColorType Name (e.g., "Winter")
+				// 2. Match ANY Color Name inside the palette (e.g., "Red")
+				// 3. Match ANY Color HexCode inside the palette (e.g., "#FF0000")
+				query = query.Where(cp =>
+					cp.ColorType.Name.Contains(searchTerm) ||
+					cp.Colors.Any(c => c.Name.Contains(searchTerm) || c.HexCode.Contains(searchTerm))
+				);
+			}
+
+			var totalCount = await query.CountAsync();
+
+			var items = await query
+				.Skip((pageIndex - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return (items, totalCount);
+		}
 	}
 }
