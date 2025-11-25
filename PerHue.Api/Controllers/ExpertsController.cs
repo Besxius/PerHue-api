@@ -68,5 +68,17 @@ namespace PerHue.Api.Controllers
 				return StatusCode(500, $"Internal server error: {ex.Message}");
 			}
 		}
+
+		[HttpGet("information")]
+		public async Task<ActionResult<ExpertModel>> GetExpertInformation()
+		{
+			var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var expert = await _servicesProvider.ExpertService.GetByIdAsync(int.Parse(id));
+			if (expert == null)
+			{
+				return NotFound();
+			}
+			return Ok(expert);
+		}
 	}
 }
