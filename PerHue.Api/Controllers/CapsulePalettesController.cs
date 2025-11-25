@@ -25,5 +25,39 @@ namespace PerHue.Api.Controllers
 		{
 			return await _servicesProvider.CapsulePaletteService.GetByIdAsync(id);
 		}
+
+		//Get All by ColorType (No Paging)
+		[HttpGet("by-type/{colorTypeId}/all")]
+		public async Task<ActionResult<IEnumerable<CapsulePaletteModel>>> GetByColorTypeAll(int colorTypeId)
+		{
+			try
+			{
+				var palettes = await _servicesProvider.CapsulePaletteService.GetByColorTypeIdAsync(colorTypeId);
+				return Ok(palettes);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
+
+		//Get by ColorType (Paged and Search)
+		[HttpGet("by-type/{colorTypeId}")]
+		public async Task<ActionResult<PaginatedResult<CapsulePaletteModel>>> GetByColorTypePaged(
+			int colorTypeId,
+			[FromQuery] int pageIndex = 1,
+			[FromQuery] int pageSize = 10,
+			[FromQuery] string? searchTerm = "")
+		{
+			try
+			{
+				var result = await _servicesProvider.CapsulePaletteService.GetByColorTypeIdPagedAsync(colorTypeId, pageIndex, pageSize, searchTerm);
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
 	}
 }
