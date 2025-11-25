@@ -4,8 +4,8 @@ using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.User;
 
-using Microsoft.AspNetCore.Authorization; 
-using System.Security.Claims; 
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
@@ -187,6 +187,65 @@ namespace PerHue.Api.Controllers
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
+			}
+		}
+
+		/// <summary>
+		/// Get current logged-in user information (stateless)
+		/// </summary>
+		/// <returns>Current user information</returns>
+		[HttpGet]
+		[Route("user-info")]
+		public async Task<IActionResult> GetCurrentUserInfo()
+		{
+			try
+			{
+				// Extract user ID from JWT token claims
+				var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+				if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+				{
+					return Unauthorized(new { message = "Invalid or missing user ID in token" });
+				}
+
+				// Get user information from database
+				var userInfo = await _servicesProvider.UserService.GetUserInfoAsync(userId);
+
+				if (userInfo == null)
+				{
+					return NotFound(new { message = "User not found" });
+				}
+
+				// Check if user is still active
+				if (!userInfo.Isactive)
+				{
+					return StatusCode(403, new { message = "User account is deactivated" });
+				}
+
+				return Ok(new
+				{
+					code = 200,
+					result = new
+					{
+						id = userId,
+						avatar = userInfo.Profilepicture,
+						username = userInfo.Username,
+						email = userInfo.Email,
+						phoneNumber = userInfo.Phone,
+						roles = new List<string> { userInfo.RoleName }
+					},
+					success = true,
+					message = "User information retrieved successfully"
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new
+				{
+					success = false,
+					message = "An error occurred while retrieving user information",
+					error = ex.Message
+				});
 			}
 		}
 	}
