@@ -58,5 +58,27 @@ namespace PerHue.Infrastructure.Services
 			var entities = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(selectedColors);
 			return _mapper.Map<IEnumerable<CapsulePaletteModel>>(entities);
 		}
+
+		public async Task<IEnumerable<CapsulePaletteModel>> GetByColorTypeIdAsync(int colorTypeId)
+		{
+			var entities = await _unitOfWork.CapsulePaletteRepository.GetByColorTypeIdAsync(colorTypeId);
+			return _mapper.Map<IEnumerable<CapsulePaletteModel>>(entities);
+		}
+
+		public async Task<PaginatedResult<CapsulePaletteModel>> GetByColorTypeIdPagedAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm)
+		{
+			var (entities, totalCount) = await _unitOfWork.CapsulePaletteRepository.GetByColorTypeIdPagedAsync(colorTypeId, pageIndex, pageSize, searchTerm);
+
+			var items = _mapper.Map<IEnumerable<CapsulePaletteModel>>(entities);
+
+			return new PaginatedResult<CapsulePaletteModel>
+			{
+				Items = items,
+				PageIndex = pageIndex,
+				PageSize = pageSize,
+				TotalCount = totalCount,
+				TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+			};
+		}
 	}
 }
