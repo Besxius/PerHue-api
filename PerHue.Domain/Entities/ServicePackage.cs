@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-/// <summary>
-/// Định nghĩa các gói dịch vụ với tên, mô tả, giá, thời hạn và số lần sử dụng.
-/// </summary>
 public partial class ServicePackage
 {
     public int Id { get; set; }

@@ -70,6 +70,7 @@ namespace PerHue.Infrastructure.Services
 			entity.IsActive = true;
 			entity.IsAitested = false;
 			entity.RoleId = 2;
+			entity.CreatedDate = DateTime.UtcNow;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}

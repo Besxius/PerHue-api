@@ -73,13 +73,15 @@ namespace PerHue.Infrastructure.Utils
 					Price = 69000,
 					Description = "Three times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
 					Duration = 3,
+					Uses = 3,
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "AI Test 2",
 					Price = 129000,
 					Description = "Ten times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 10,
+					Duration = 5,
+					Uses = 5,
 					CreatedDate = DateTime.Now
 				},
 				new() {
@@ -87,6 +89,7 @@ namespace PerHue.Infrastructure.Utils
 					Price = 229000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 10,
+					Uses = 10,
 					CreatedDate = DateTime.Now
 				},
 				new() {
@@ -94,20 +97,23 @@ namespace PerHue.Infrastructure.Utils
 					Price = 199000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 3,
+					Uses = 1,
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "Expert Suggestion 2",
 					Price = 299000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 5,
+					Duration = 3,
+					Uses = 5,
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "Expert Suggestion 3",
 					Price = 499000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 10,
+					Duration = 5,
+					Uses = 10,
 					CreatedDate = DateTime.Now
 				},
 				new() {
@@ -115,6 +121,7 @@ namespace PerHue.Infrastructure.Utils
 					Price = 5000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 10,
+					Uses = 10,
 					CreatedDate = DateTime.Now
 				},
 				new() {
@@ -122,6 +129,7 @@ namespace PerHue.Infrastructure.Utils
 					Price = 100000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 10,
+					Uses = 10,
 					CreatedDate = DateTime.Now
 				},
 				

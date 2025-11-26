@@ -7,5 +7,7 @@ namespace PerHue.Domain.IRepositories
 	{
 		Task<UserSubscription> GetCurrentUserSubscriptionByUserIdAsync(int userId);
 		Task<IEnumerable<UserSubscription>> GetHistoryUserSubscriptionsByUserIdAsync(int userId);
+		Task<UserSubscription?> GetActiveByUserIdAsync(int userId);
+		Task<UserSubscription?> GetSubscriptionForRefundAsync(int userId);
 	}
 }
