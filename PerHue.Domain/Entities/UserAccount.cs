@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-/// <summary>
-/// Lưu trữ thông tin tài khoản người dùng bao gồm email, username, mật khẩu, thông tin cá nhân
-/// (họ tên, điện thoại, giới tính, ngày sinh), ảnh đại diện, trạng thái tài khoản và vai trò của người dùng trong hệ thống.
-/// </summary>
 public partial class UserAccount
 {
     public int Id { get; set; }
