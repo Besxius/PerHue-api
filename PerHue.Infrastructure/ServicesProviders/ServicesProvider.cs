@@ -23,6 +23,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 
 		public IExpertTestService ExpertTestService { get; private set; }
 		public IExpertService ExpertService { get; private set; }
+		public INotificationService NotificationService { get; private set; }
 
 		public IAIImageAnalysisService AIImageAnalysisService { get; private set; }
 		public IAiTestService AiTestService { get; private set; }
@@ -47,6 +48,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 
 			IExpertTestService expertTestService,
 			IExpertService expertService,
+			INotificationService notificationService,
 			IAIImageAnalysisService aIImageAnalysisService,
 			IAiTestService aiTestService,
 			IAdminColorService adminColorService,
@@ -69,6 +71,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 
 			ExpertTestService = expertTestService;
 			ExpertService = expertService;
+			NotificationService = notificationService;
 			AIImageAnalysisService = aIImageAnalysisService;
 			AiTestService = aiTestService;
 			AdminColorService = adminColorService;

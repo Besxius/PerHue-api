@@ -8,5 +8,8 @@ namespace PerHue.Application.IServices
 	{
 		Task<PaginatedResult<CapsulePaletteModel>> GetAllAsync(int pageIndex, int pageSize, string? searchTerm);
 		Task<IEnumerable<CapsulePaletteModel>> GetRelativeCapsulePalettes(List<string> selectedColors);
+
+		Task<IEnumerable<CapsulePaletteModel>> GetByColorTypeIdAsync(int colorTypeId);
+		Task<PaginatedResult<CapsulePaletteModel>> GetByColorTypeIdPagedAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm);
 	}
 }

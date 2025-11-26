@@ -27,6 +27,7 @@ namespace PerHue.Application.Models
 		public int? Rating { get; set; }
 		public string BestColor { get; set; } = null!;
 		public string WorstColor { get; set; } = null!;
+		public string Type { get; set; } = null!;
 		public int ColorTypeId { get; set; }
 		public string ColorTypeName { get; set; } = null!;
 	}
