@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-/// <summary>
-/// Quản lý đăng ký gói dịch vụ của người dùng, theo dõi thời gian bắt đầu/kết thúc, trạng thái và số lần sử dụng còn lại.
-/// </summary>
 public partial class UserSubscription
 {
     public int Id { get; set; }

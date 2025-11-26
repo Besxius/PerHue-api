@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-/// <summary>
-/// Phân loại các nhóm màu (ví dụ: Spring, Summer, Autumn, Winter trong phân tích màu theo mùa).
-/// </summary>
 public partial class ColorType
 {
     public int Id { get; set; }
