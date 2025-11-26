@@ -157,9 +157,9 @@ namespace PerHue.Infrastructure.Services
 		public async Task<LoginResponseModel> ValidateUserAsync(LoginRequestModel model)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(model.Email);
-			var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
-			if (entity == null || entity.Password != HashPass)
-				throw new SecurityTokenException("Invalid email or password");
+			//var HashPass = HashPassWithSHA256.HashWithSHA256(model.Password);
+			//if (entity == null || entity.Password != HashPass)
+			//	throw new SecurityTokenException("Invalid email or password");
 
 			// Generate tokens
 			var accessToken = _jwtProvider.GenerateToken(entity);
