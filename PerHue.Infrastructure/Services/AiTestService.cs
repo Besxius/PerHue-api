@@ -473,6 +473,11 @@ namespace PerHue.Infrastructure.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "Error creating AI Test for UserId: {UserId}", userId);
+				var refunded = await _subscriptionService.RefundUsageAsync(userId);
+				if (refunded)
+				{
+					_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
+				}
 				throw;
 			}
 		}
