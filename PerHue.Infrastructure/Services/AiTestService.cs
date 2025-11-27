@@ -26,10 +26,10 @@ namespace PerHue.Infrastructure.Services
 		private readonly IAIImageAnalysisService _geminiService;
 		private readonly IImageUploadService _imageUploadService;
 		private readonly ILogger<AiTestService> _logger;
-
 		private readonly IColorMatchingService _colorMatchingService;
 		private readonly IVirtualTryOnService _virtualTryOnService;
 		private readonly ITestRequestRepository _testRequestRepository;
+		private readonly IUserSubscriptionService _subscriptionService;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -38,7 +38,8 @@ namespace PerHue.Infrastructure.Services
 			ILogger<AiTestService> logger,
 			IColorMatchingService colorMatchingService,
 			IVirtualTryOnService virtualTryOnService,
-			ITestRequestRepository testRequestRepository)
+			ITestRequestRepository testRequestRepository,
+			IUserSubscriptionService subscriptionService)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -47,6 +48,7 @@ namespace PerHue.Infrastructure.Services
 			_colorMatchingService = colorMatchingService;
 			_virtualTryOnService = virtualTryOnService;
 			_testRequestRepository = testRequestRepository;
+			_subscriptionService = subscriptionService;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model)
@@ -299,6 +301,15 @@ namespace PerHue.Infrastructure.Services
 			{
 				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
+				// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
+				var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId);
+				if (!hasRemaining)
+				{
+					var remaining = await _subscriptionService.GetRemainingUsageAsync(userId);
+					_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
+					throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
+				}
+
 				// Validate images
 				if (request.FaceImages == null || request.FaceImages.Count == 0)
 				{
@@ -347,6 +358,26 @@ namespace PerHue.Infrastructure.Services
 				await _aiTestRepository.CreatePicturesAsync(pictures);
 				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
 
+				//TRỪ LƯỢT SAU KHI UPLOAD THÀNH CÔNG
+				bool isFromExpertTest = request.IsFromExpertTest;
+
+				var deducted = await _subscriptionService.DeductUsageAsync(userId, isFromExpertTest);
+
+				if (!deducted && !isFromExpertTest)
+				{
+					_logger.LogError($"Failed to deduct usage for user {userId}");
+					testRequest.Status = TestStatus.Failed.ToString();
+					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+					throw new InvalidOperationException("Failed to deduct usage. Please try again.");
+				}
+
+				if (!isFromExpertTest)
+				{
+					var newRemaining = await _subscriptionService.GetRemainingUsageAsync(userId);
+					_logger.LogInformation($"Successfully deducted 1 AI test usage for user {userId}. New remaining: {newRemaining}");
+				}
+
+
 				// Xử lý AI analysis
 				try
 				{
@@ -373,13 +404,14 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
 						matchedSuggestedColors.Count, matchedAvoidedColors.Count);
 
-					// Generate virtual try-on và lưu vào bảng AiPicture
+					// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
-					if (request.GenerateVirtualTryOn && imageUrls.Count > 0)
+					if (request.GenerateVirtualTryOn && request.FaceImages.Count > 0)
 					{
+						// SỬ DỤNG IFormFile TRỰC TIẾP
 						var tryOnRequest = new VirtualTryOnRequest
 						{
-							UserImageUrl = imageUrls[0],
+							UserImage = request.FaceImages[0],
 							SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
 						};
 
@@ -393,7 +425,7 @@ namespace PerHue.Infrastructure.Services
 							var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
 							{
 								Source = img.ImageUrl,
-								Note = $"{PictureNotes.AiGeneratedImage} - {img.Environment} - {img.ClothingType} - {img.ColorHex}",
+								Note = $"{PictureNotes.AiGeneratedImage} - {img.Environment} - {img.ClothingType} - Colors: {img.ColorHex}",
 								TestRequestId = testRequest.Id
 							}).ToList();
 
@@ -445,6 +477,16 @@ namespace PerHue.Infrastructure.Services
 					// Update status thành Failed nếu có lỗi
 					testRequest.Status = TestStatus.Failed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+
+					//HOÀN TRẢ LƯỢT NẾU CÓ LỖI
+					if (!isFromExpertTest)
+					{
+						var refunded = await _subscriptionService.RefundUsageAsync(userId);
+						if (refunded)
+						{
+							_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
+						}
+					}
 					throw;
 				}
 			}
