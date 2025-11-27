@@ -140,5 +140,240 @@ namespace PerHue.Api.Controllers
 			return dateTime.ToString("yyyyMMddHHmmss");
 		}
 
+		// ============== CÁC API MỚI BỔ SUNG ==============
+
+
+		/// <summary>
+		/// Lấy số lượt sử dụng còn lại của user hiện tại
+		/// </summary>
+		[HttpGet("remaining-usage-by-userId")]
+		[Authorize]
+		public async Task<ActionResult<int>> GetRemainingUsage()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var remaining = await _servicesProvider.UserSubscriptionService.GetRemainingUsageAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					data = remaining
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy thông tin subscription đang active
+		/// </summary>
+		[HttpGet("active-subscription-by-userId")]
+		[Authorize]
+		public async Task<ActionResult<UserSubscriptionModel>> GetActiveSubscription()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var subscription = await _servicesProvider.UserSubscriptionService.GetActiveSubscriptionAsync(userId);
+
+				if (subscription == null)
+				{
+					return NotFound(new
+					{
+						success = false,
+						message = "No active subscription found"
+					});
+				}
+
+				return Ok(new
+				{
+					success = true,
+					data = subscription
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy TỔNG số lượt sử dụng còn lại (tất cả packages)
+		/// </summary>
+		[HttpGet("total-remaining-usage-by-userId")]
+		[Authorize]
+		public async Task<ActionResult<int>> GetTotalRemainingUsage()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var totalRemaining = await _servicesProvider.UserSubscriptionService.GetAllActiveRemainingUsageByUserIdAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					data = totalRemaining
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy lượt sử dụng còn lại THEO TỪNG PACKAGE
+		/// </summary>
+		[HttpGet("user-remaining-usage-by-package")]
+		[Authorize]
+		public async Task<ActionResult<Dictionary<int, PackageUsageInfo>>> GetRemainingUsageByPackage()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var usageByPackage = await _servicesProvider.UserSubscriptionService.GetRemainingUsageByPackageAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					data = usageByPackage
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy thông tin tổng hợp sử dụng theo package (chi tiết)
+		/// </summary>
+		[HttpGet("usage-summary-by-userId")]
+		[Authorize]
+		public async Task<ActionResult<List<PackageUsageSummary>>> GetUsageSummary()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var summary = await _servicesProvider.UserSubscriptionService.GetUsageSummaryAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					data = summary
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		// ============== API THANH TOÁN ==============
+
+		[HttpPost]
+		[Route("subscription/{packageId}")]
+		[Authorize]
+		public async Task<string> CreateSubscriptionByPackageId([FromRoute] int packageId, string returnUrl, string cancelUrl)
+		{
+			if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
+			{
+				throw new UnauthorizedAccessException("User is not authenticated.");
+			}
+			var model = new CreateUserSubscriptionModel
+			{
+				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+				ServicePackageId = packageId,
+			};
+
+			var package = await _servicesProvider.ServicePackageService.GetByIdAsync(packageId);
+			var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{model.UserId}P{model.ServicePackageId}";
+
+			var paymentModel = new PayOSRequestModel
+			{
+				Amount = package.Price,
+				Description = description,
+				ReturnUrl = returnUrl,
+				CancelUrl = cancelUrl
+			};
+			var paymentUrl = await _servicesProvider.PaymentService.CreateAsync(paymentModel);
+			return paymentUrl;
+		}
+
+		/// <summary>
+		/// Payment callback - xử lý cả success và cancel
+		/// </summary>
+		[HttpGet("payment-callback")]
+		public async Task<IActionResult> PaymentCallback(
+			[FromQuery] string code,
+			[FromQuery] string id,
+			[FromQuery] bool cancel,
+			[FromQuery] string status,
+			[FromQuery] string orderCode)
+		{
+			try
+			{
+
+				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
+				var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+
+				// Parse userId từ description (format: yyyyMMddHHmmssU{userId}P{packageId})
+				//var description = paymentInfo.description;
+				//var userIdStartIndex = description.IndexOf("U") + 1;
+				//var userIdEndIndex = description.IndexOf("P");
+				//var userId = int.Parse(description.Substring(userIdStartIndex, userIdEndIndex - userIdStartIndex));
+
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				// Tạo subscription với status tương ứng
+				var model = new CreateUserSubscriptionModel
+				{
+					UserId = userId,
+					ServicePackageId = servicePackage.Id,
+					Status = !cancel // cancel = false => success = true
+				};
+
+				var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+
+				if (!cancel)
+				{
+					// THANH TOÁN THÀNH CÔNG
+					return Ok(new
+					{
+						success = true,
+						message = "Payment successful",
+						data = new
+						{
+							subscriptionId,
+							userId,
+							packageId = servicePackage.Id,
+							packageName = servicePackage.Name
+						}
+					});
+				}
+				else
+				{
+					// THANH TOÁN THẤT BẠI
+					return Ok(new
+					{
+						success = false,
+						message = "Payment cancelled",
+						data = new
+						{
+							subscriptionId,
+							userId
+						}
+					});
+				}
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+
 	}
 }

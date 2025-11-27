@@ -132,5 +132,118 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(s => s.EndDate)
 				.FirstOrDefaultAsync();
 		}
+
+
+		//============= PAYMENT ========================================
+
+		public async Task<List<UserSubscription>> GetaAllActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId
+					&& us.Status == true
+					&& us.EndDate >= DateTime.UtcNow)
+				.OrderBy(us => us.EndDate)
+				.ToListAsync();
+		}
+
+		// Đếm tổng lượt sử dụng còn lại theo PackageId
+		public async Task<Dictionary<int, int>> GetTotalRemainingUsesByPackageAndUserAsync(int userId)
+		{
+			var result = await _context.UserSubscriptions
+				.Where(us => us.UserId == userId
+					&& us.Status == true
+					&& us.EndDate >= DateTime.UtcNow)
+				.GroupBy(us => us.ServicePackageId)
+				.Select(g => new
+				{
+					PackageId = g.Key,
+					TotalRemaining = g.Sum(us => us.RemainingUses)
+				})
+				.ToDictionaryAsync(x => x.PackageId, x => x.TotalRemaining);
+
+			return result;
+		}
+
+		// Kiểm tra có lượt sử dụng còn lại không
+		public async Task<bool> HasRemainingUsageAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.AnyAsync(us => us.UserId == userId
+					&& us.Status == true
+					&& us.RemainingUses > 0
+					&& us.EndDate >= DateTime.UtcNow);
+		}
+
+		// Trừ lượt sử dụng - Ưu tiên trừ từ subscription CŨ NHẤT
+		/*
+		public async Task<bool> DeductRemainingUsesAsync(int userId)
+		{
+			var subscription = await _context.UserSubscriptions
+				.Where(us => us.UserId == userId
+					&& us.Status == true
+					&& us.RemainingUse > 0
+					&& us.EndDate >= DateTime.UtcNow)
+				.OrderBy(us => us.EndDate) // Trừ từ gói sắp hết hạn trước
+				.FirstOrDefaultAsync();
+
+			if (subscription == null)
+				return false;
+
+			subscription.RemainingUse -= 1;
+
+			// KHÔNG tự động set Status = false khi hết lượt
+			// Chỉ auto-expire khi hết hạn thời gian
+
+			await _context.SaveChangesAsync();
+			return true;
+		}
+		*/
+
+		// Hoàn trả lượt sử dụng - Ưu tiên hoàn vào subscription MỚI NHẤT
+		/*
+		public async Task<bool> RefundRemainingUsesAsync(int userId)
+		{
+			var subscription = await _context.UserSubscriptions
+				.Where(us => us.UserId == userId
+					&& us.Status == true
+					&& us.EndDate >= DateTime.UtcNow)
+				.OrderByDescending(us => us.StartDate) // Hoàn vào gói mới nhất
+				.FirstOrDefaultAsync();
+
+			if (subscription == null)
+				return false;
+
+			subscription.RemainingUse += 1;
+			await _context.SaveChangesAsync();
+			return true;
+		}
+		*/
+
+
+		public async Task<List<UserSubscription>> GetAllSubscriptionsWithPackageByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId)
+				.OrderByDescending(us => us.StartDate)
+				.ToListAsync();
+		}
+
+		public async Task<int> AutoExpireSubscriptionsAsync()
+		{
+			var expiredSubscriptions = await _context.UserSubscriptions
+				.Where(us => us.Status == true && us.EndDate < DateTime.UtcNow)
+				.ToListAsync();
+
+			foreach (var subscription in expiredSubscriptions)
+			{
+				subscription.Status = false;
+			}
+
+			return await _context.SaveChangesAsync();
+		}
+
+
 	}
 }

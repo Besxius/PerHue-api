@@ -1,5 +1,8 @@
 ﻿using PerHue.Domain.Basic;
 using PerHue.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PerHue.Domain.IRepositories
 {
@@ -14,5 +17,17 @@ namespace PerHue.Domain.IRepositories
 		Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId);
 		Task<bool> DeductRemainingUsesAsync(int userId);
 		Task<bool> RefundRemainingUsesAsync(int userId);
+
+		Task<List<UserSubscription>> GetaAllActiveSubscriptionsByUserIdAsync(int userId);
+
+		// Đếm tổng lượt sử dụng còn lại theo PackageId
+		Task<Dictionary<int, int>> GetTotalRemainingUsesByPackageAndUserAsync(int userId);
+
+		Task<bool> HasRemainingUsageAsync(int userId);
+
+		Task<List<UserSubscription>> GetAllSubscriptionsWithPackageByUserIdAsync(int userId);
+
+		Task<int> AutoExpireSubscriptionsAsync();
+
 	}
 }
