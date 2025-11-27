@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace PerHue.Domain.Entities;
 
-/// <summary>
-/// Lưu yêu cầu test màu sắc từ người dùng, bao gồm thông tin màu tóc, mắt, môi, da, loại test (AI hoặc chuyên gia), và trạng thái xử lý.
-/// </summary>
 public partial class TestRequest
 {
     public int Id { get; set; }

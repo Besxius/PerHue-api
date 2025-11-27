@@ -84,7 +84,8 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string id,
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
-			[FromQuery] string orderCode
+			[FromQuery] string orderCode,
+			int packageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
@@ -111,7 +112,8 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string id,
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
-			[FromQuery] string orderCode
+			[FromQuery] string orderCode,
+			int packageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
@@ -122,7 +124,7 @@ namespace PerHue.Api.Controllers
 				//UserId = 2,
 				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = servicePackage.Id,
-				Status = true,
+				Status = false,
 			};
 
 			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);

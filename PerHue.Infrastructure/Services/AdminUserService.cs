@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Expert;
 using PerHue.Application.Models.Role;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
@@ -24,6 +25,7 @@ namespace PerHue.Infrastructure.Services
 		public async Task<PaginatedResultV2<AdminUserModel>> GetUsersAsync(AdminUserSearchModel searchModel)
 		{
 			var baseQuery = _unitOfWork.UserRepository.GetQueryable()
+				.Include(x => x.Expert)
 				.Include(u => u.Role);
 
 			IQueryable<UserAccount> query = baseQuery;
@@ -106,7 +108,21 @@ namespace PerHue.Infrastructure.Services
 					RoleId = u.RoleId,
 					RoleName = u.Role.Name,
 					CreatedDate = DateTime.Now, // You might need to add this field to UserAccount entity
-					UpdatedDate = null
+					UpdatedDate = null,
+					ExpertProfile = u.Expert != null ? new ExpertModel
+					{
+						Bio = u.Expert.Bio,
+						Certification = u.Expert.Certification,
+						FacebookAccount = u.Expert.FacebookAccount,
+						InstagramAccount = u.Expert.InstagramAccount,
+						Introduction = u.Expert.Introduction,
+						Languages = u.Expert.Languages,
+						Nickname = u.Expert.Nickname,
+						LinkedInAccount = u.Expert.LinkedInAccount,
+						Specialization = u.Expert.Specialization,
+						Rating = u.Expert.Rating,
+						YearsOfExperience = u.Expert.YearsOfExperience,
+					} : null
 				})
 				.ToListAsync();
 

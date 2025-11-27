@@ -11,6 +11,7 @@ using PerHue.Infrastructure.AI;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -147,9 +148,17 @@ namespace PerHue.Infrastructure.Services
 		}*/
 		public async Task<TestRequestModel> CreateExpertTestRequestAsync(ExpertTestCreationParameters parameters)
 		{
+			// 1. CHECK SUBSCRIPTION
+			var activeSubscription = await _unitOfWork.UserSubscriptionRepository.GetActiveByUserIdAsync(parameters.UserId);
+
+			if (activeSubscription == null)
+			{
+				throw new InvalidOperationException("You do not have an active subscription or have run out of uses. Please purchase a package.");
+			}
+
 			_logger.LogInformation($"Creating expert test request for user {parameters.UserId} with image {parameters.ImageUrl}");
 
-			// 1. Create the TestRequest from the parameters object
+			// 2. Create the TestRequest
 			var testRequest = new TestRequest
 			{
 				SkinColor = parameters.SkinColor,
@@ -162,20 +171,30 @@ namespace PerHue.Infrastructure.Services
 				UserAccountId = parameters.UserId
 			};
 
-			// 2. Add the user's uploaded picture
+			// 3. Add the user's uploaded picture
 			testRequest.AiPictures.Add(new AiPicture { Source = parameters.ImageUrl, Note = "Original Photo" });
 			testRequest.Pictures.Add(new Picture { Source = parameters.ImageUrl });
 
 			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
+
+			// 4. DEDUCT USAGE FROM SUBSCRIPTION
+			activeSubscription.RemainingUses--;
+			if (activeSubscription.RemainingUses <= 0)
+			{
+				activeSubscription.RemainingUses = 0;
+				activeSubscription.Status = false; // Deactivate if no uses left
+			}
+			await _unitOfWork.UserSubscriptionRepository.UpdateAsync(activeSubscription);
+
+			// 5. Save Changes (Transactional)
+			// Both the new request and the subscription update will be saved together
 			await _unitOfWork.SaveChangesWithTransactionAsync();
-			_logger.LogInformation($"Created TestRequest with ID {testRequest.Id}");
 
-			// 3. Send to Experts
-			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
-			// Create a single instance of Random
+			_logger.LogInformation($"Created TestRequest with ID {testRequest.Id}. User {parameters.UserId} remaining uses: {activeSubscription.RemainingUses}");
+
+			// 6. Send to Experts (Randomly)
 			var random = new Random();
-
-			// Filter out the user, then use random.Next() to get a random order
+			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
 			var expertsToRequest = allExperts.Where(e => e.Id != parameters.UserId)
 											 .OrderBy(e => random.Next())
 											 .Take(3);
@@ -190,12 +209,84 @@ namespace PerHue.Infrastructure.Services
 					CreatedDate = DateTime.Now
 				};
 				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
-				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
-			}
 
+				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
+				var notification = new Notification
+				{
+					Title = "New Test Request",
+					Content = "You have received a new color analysis request.",
+					Receiver = expert.Id, // Expert ID corresponds to UserAccountId
+					TestRequestId = testRequest.Id,
+					ReceivedTime = DateTime.Now,
+					IsRead = false,
+					Type = "TestRequest"
+				};
+				await _unitOfWork.NotificationRepository.CreateAsync(notification);
+				// -----------------------------------
+			}
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			return _mapper.Map<TestRequestModel>(testRequest);
+		}
+		public async Task RequestReviewAsync(int testRequestId, int userId)
+		{
+			// 1. Validate Request
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
+			if (testRequest == null) throw new Exception("Test request not found.");
+			if (testRequest.UserAccountId != userId) throw new UnauthorizedAccessException("Unauthorized.");
+			if (testRequest.Status != "Completed") throw new Exception("Can only review completed tests.");
+
+			// 2. Check if review already requested (limit 1 review)
+			var existingReviewResponse = testRequest.TestResponses.Any(tr => tr.Type == ResponseTypeEnum.Review.ToString());
+			if (existingReviewResponse) throw new InvalidOperationException("A review has already been completed for this test.");
+
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequestId);
+			// Check if 4th request exists
+			if (expertRequests.Count() >= 4)
+			{
+				throw new InvalidOperationException("A review request has already been submitted for this test.");
+			}
+
+			// 3. Find a 4th Random Expert (who hasn't participated)
+			var usedExpertIds = expertRequests.Select(er => er.ExpertId).ToList();
+			var allExperts = await _unitOfWork.ExpertRepository.GetAllAsync();
+
+			var availableExperts = allExperts.Where(e => !usedExpertIds.Contains(e.Id) && e.Id != userId).ToList();
+
+			if (!availableExperts.Any()) throw new Exception("No additional experts available to review this request.");
+
+			var random = new Random();
+			var selectedExpert = availableExperts[random.Next(availableExperts.Count)];
+
+			// 4. Create new ExpertTestRequest
+			var newRequest = new ExpertTestRequest
+			{
+				ExpertId = selectedExpert.Id,
+				TestRequestId = testRequestId,
+				Status = "PendingReview",
+				CreatedDate = DateTime.Now
+			};
+
+			await _unitOfWork.ExpertTestRequestRepository.CreateAsync(newRequest);
+
+			// --- STATUS CHANGE: Mark main request as Reviewing ---
+			testRequest.Status = "Reviewing";
+			await _unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+			// --- NOTIFICATION: For the 4th Expert ---
+			var notification = new Notification
+			{
+				Title = "Review Request",
+				Content = "You have been selected to review and vote on a completed test.",
+				Receiver = selectedExpert.Id,
+				TestRequestId = testRequestId,
+				ReceivedTime = DateTime.Now,
+				IsRead = false,
+				Type = "ReviewRequest"
+			};
+			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}
 
 		public async Task<TestResultModel> CreateNormalTestSimpleColorResult(TestResultModel model)

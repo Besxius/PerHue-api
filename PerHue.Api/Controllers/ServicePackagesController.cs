@@ -30,33 +30,33 @@ namespace PerHue.Api.Controllers
 			return await _servicesProvider.ServicePackageService.GetByIdAsync(id);
 		}
 
-		[HttpPost]
-		public async Task Post([FromBody] ServicePackageModel model)
-		{
-			await _servicesProvider.ServicePackageService.CreateAsync(model);
-		}
+		//[HttpPost]
+		//public async Task Post([FromBody] ServicePackageModel model)
+		//{
+		//	await _servicesProvider.ServicePackageService.CreateAsync(model);
+		//}
 
-		[HttpPut("{id}")]
-		public async Task Put(int id, [FromBody] ServicePackageModel model)
-		{
-			var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
-			if (!isExists)
-			{
-				NotFound();
-			}
-			await _servicesProvider.ServicePackageService.UpdateAsync(id, model);
-			Ok();
-		}
+		//[HttpPut("{id}")]
+		//public async Task Put(int id, [FromBody] ServicePackageModel model)
+		//{
+		//	var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
+		//	if (!isExists)
+		//	{
+		//		NotFound();
+		//	}
+		//	await _servicesProvider.ServicePackageService.UpdateAsync(id, model);
+		//	Ok();
+		//}
 
-		[HttpDelete("{id}")]
-		public async Task Delete(int id)
-		{
-			var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
-			if (!isExists)
-			{
-				NotFound();
-			}
-			await _servicesProvider.ServicePackageService.DeleteAsync(id);
-		}
+		//[HttpDelete("{id}")]
+		//public async Task Delete(int id)
+		//{
+		//	var isExists = await _servicesProvider.ServicePackageService.GetByIdAsync(id) == null;
+		//	if (!isExists)
+		//	{
+		//		NotFound();
+		//	}
+		//	await _servicesProvider.ServicePackageService.DeleteAsync(id);
+		//}
 	}
 }

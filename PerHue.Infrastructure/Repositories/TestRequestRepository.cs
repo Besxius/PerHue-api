@@ -101,7 +101,7 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(tr => tr.CreatedDate)
 				.ToListAsync();
 		}
-		public async Task<(IEnumerable<TestRequest> Items, int TotalCount)> GetCompletedExpertTestsForUserAsync(int userId, int pageIndex, int pageSize, DateTime? date)
+		public async Task<(IEnumerable<TestRequest> Items, int TotalCount)> GetCompletedExpertTestsForUserAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate)
 		{
 			var query = _context.TestRequests
 				.Include(tr => tr.UserAccount)
@@ -114,10 +114,14 @@ namespace PerHue.Infrastructure.Repositories
 							 tr.TypeOfTest == "Expert");
 
 			// Apply Date Filter if provided
-			if (date.HasValue)
+			if (fromDate.HasValue)
 			{
-				// Compare only the Date part (ignoring time)
-				query = query.Where(tr => tr.CreatedDate.HasValue && tr.CreatedDate.Value.Date == date.Value.Date);
+				query = query.Where(tr => tr.CreatedDate.HasValue && tr.CreatedDate.Value.Date >= fromDate.Value.Date);
+			}
+
+			if (toDate.HasValue)
+			{
+				query = query.Where(tr => tr.CreatedDate.HasValue && tr.CreatedDate.Value.Date <= toDate.Value.Date);
 			}
 
 			// Get Total Count for Pagination

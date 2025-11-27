@@ -13,5 +13,6 @@ namespace PerHue.Domain.IRepositories
 	{
 		Task<IEnumerable<TestResponse>> GetResponsesForRequestAsync(int testRequestId);
 		Task<IEnumerable<TestResponse>> GetAllByExpertIdAsync(int expertId);
+		Task<IEnumerable<TestResponse>> GetRatedResponsesByExpertIdAsync(int expertId, DateTime? startDate, DateTime? endDate);
 	}
 }

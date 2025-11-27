@@ -84,9 +84,22 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<IEnumerable<ColorModel>> GetAllBySpectrumAsync()
 		{
-			// Clean and simple!
 			var entities = await _unitOfWork.ColorRepository.GetAllBySpectrumAsync();
 			return _mapper.Map<IEnumerable<ColorModel>>(entities);
+		}
+
+		public async Task<PaginatedResult<ColorModel>> GetAllBySpectrumPagedAsync(int pageIndex, int pageSize, string? searchTerm)
+		{
+			var (entities, totalCount) = await _unitOfWork.ColorRepository.GetAllBySpectrumPagedAsync(pageIndex, pageSize, searchTerm);
+			var items = _mapper.Map<IEnumerable<ColorModel>>(entities);
+			return new PaginatedResult<ColorModel>
+			{
+				Items = items,
+				PageIndex = pageIndex,
+				PageSize = pageSize,
+				TotalCount = totalCount,
+				TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+			};
 		}
 	}
 }
