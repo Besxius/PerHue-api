@@ -277,18 +277,6 @@ namespace PerHue.Infrastructure.Services
 			};
 		}
 
-		public async Task<PaginatedResultV2<ExpertPenaltyModel>> GetExpertPenaltiesAsync(ExpertPenaltySearchModel searchModel)
-		{
-			// This would need a penalty table in your database
-			// For now, returning empty result
-			return new PaginatedResultV2<ExpertPenaltyModel>
-			{
-				List = new List<ExpertPenaltyModel>(),
-				Total = 0,
-				Current = searchModel.PageIndex
-			};
-		}
-
 		public async Task<PaginatedResultV2<ExpertActivityModel>> GetExpertActivityAsync(ExpertActivitySearchModel searchModel)
 		{
 			var query = _context.UserAccounts
@@ -424,26 +412,6 @@ namespace PerHue.Infrastructure.Services
 				PreviousPeriodTests = previousTests,
 				GrowthPercentage = growthPercentage,
 				TestData = testData,
-				StartDate = startDate,
-				EndDate = endDate,
-				GroupBy = groupBy ?? "day"
-			};
-		}
-
-		public async Task<PenaltyStatisticsModel> GetPenaltyStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day")
-		{
-			// This would need a penalty table in your database
-			// For now, returning empty statistics
-			return new PenaltyStatisticsModel
-			{
-				TotalPenalties = 0,
-				TotalPenaltyAmount = 0,
-				PreviousPeriodPenalties = 0,
-				PreviousPeriodAmount = 0,
-				CountGrowthPercentage = 0,
-				AmountGrowthPercentage = 0,
-				PenaltyData = new List<PenaltyDataPoint>(),
-				PenaltiesByReason = new List<PenaltyByReasonModel>(),
 				StartDate = startDate,
 				EndDate = endDate,
 				GroupBy = groupBy ?? "day"
