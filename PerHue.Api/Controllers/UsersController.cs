@@ -79,23 +79,6 @@ namespace PerHue.Api.Controllers
 			return result is not null;
 		}
 
-		[HttpPost]
-		[Route("change-password")]
-		public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
-		{
-			if (await _servicesProvider.UserService.ChangePasswordAsync(model))
-			{
-				return Ok();
-			}
-			return BadRequest("Failed to change password.");
-		}
-
-		[HttpPost("send-otp")]
-		public async Task<IActionResult> SendOtp([FromBody] EmailRequestModel request)
-		{
-			bool isSent = await _servicesProvider.OtpService.SendOtpToEmailAsync(request.Email);
-			return isSent ? Ok("OTP sent successfully.") : BadRequest("Failed to send OTP.");
-		}
 
 		[HttpPost("verify-otp-demo")]
 		public IActionResult VerifyOtp([FromBody] VerifyOtpRequestModel request)

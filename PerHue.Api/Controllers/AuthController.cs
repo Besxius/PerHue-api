@@ -256,5 +256,40 @@ namespace PerHue.Api.Controllers
 				});
 			}
 		}
+		[HttpPost]
+		[Route("change-password")]
+		public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			// Service now handles finding user by email inside ChangePasswordAsync
+			if (await _servicesProvider.UserService.ChangePasswordAsync(model))
+			{
+				return Ok(new { message = "Password changed successfully." });
+			}
+			return BadRequest(new { message = "Failed to change password. Invalid OTP or Email." });
+		}
+
+		[HttpPost("send-otp")]
+		public async Task<IActionResult> SendOtp([FromBody] EmailRequestModel request)
+		{
+			if (string.IsNullOrEmpty(request.Email))
+			{
+				return BadRequest("Email is required.");
+			}
+
+			//Check if user exists before sending OTP ---
+			var userExists = await _servicesProvider.UserService.UserExistsAsync(request.Email);
+			if (!userExists)
+			{
+				return NotFound(new { message = "User with this email does not exist." });
+			}
+
+			bool isSent = await _servicesProvider.OtpService.SendOtpToEmailAsync(request.Email);
+			return isSent ? Ok(new { message = "OTP sent successfully." }) : BadRequest(new { message = "Failed to send OTP." });
+		}
 	}
 }
