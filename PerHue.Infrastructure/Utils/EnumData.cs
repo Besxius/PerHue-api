@@ -57,4 +57,21 @@
 		Expert,
 		Test
 	}
+
+	public enum TestStatus
+	{
+		Pending,
+		Processing,
+		Completed,
+		Failed,
+		Cancelled
+	}
+
+	public enum PictureNotes
+	{
+		UserUploadedFaceImage, // "User uploaded face image for AI Test
+		AiGeneratedImage, // AI Generated virtual try-on image
+		ExpertTestImage // Image for expert consultation
+	}
+
 }

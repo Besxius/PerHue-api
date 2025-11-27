@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
+using PerHue.Application.Models.TestRequest;
 using PerHue.Infrastructure.AI;
 using System;
 using System.Collections.Generic;
@@ -14,8 +16,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+
 using System.Threading.Tasks;
-using PerHue.Application.Models.TestRequest;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -82,34 +84,32 @@ namespace PerHue.Infrastructure.Services
 		private string BuildAnalysisPrompt(AiTestModel.GeminiAnalysisRequest request)
 		{
 			return $@"
-You are a professional color analysis expert. Analyze the provided images and determine the person's seasonal color type.
+		You are a professional color analysis expert. Analyze the provided images and determine the person's seasonal color type.
 
-User Information:
-- Hair Color: {request.HairColor ?? "Not specified"}
-- Eye Color: {request.EyesColor ?? "Not specified"}
-- Lips Color: {request.LipsColor ?? "Not specified"}
-- Skin Color: {request.SkinColor ?? "Not specified"}
+		User Information:
+		- Hair Color: {request.HairColor ?? "Not specified"}
+		- Eye Color: {request.EyesColor ?? "Not specified"}
+		- Lips Color: {request.LipsColor ?? "Not specified"}
+		- Skin Color: {request.SkinColor ?? "Not specified"}
 
-Based on the images and information provided, determine:
-1. The seasonal color type (Spring Warm, Summer Cool, Autumn Warm, Winter Cool, Soft Neutral,Deep Neutral)
-2. The corresponding ColorTypeId (1=Spring Warm, 2=SummSummer Cooler, 3=Autumn Warm, 4=Winter Cool, 5=Soft Neutral, 6=Deep Neutral)
-3. A list of 5-7 suggested colors that complement this color type
-4. A list of 5-7 colors to avoid
+		Based on the images and information provided, determine:
+		1. The seasonal color type (Spring Warm, Summer Cool, Autumn Warm, Winter Cool, Soft Neutral,Deep Neutral)
+		2. The corresponding ColorTypeId (1=Spring Warm, 2=SummSummer Cooler, 3=Autumn Warm, 4=Winter Cool, 5=Soft Neutral, 6=Deep Neutral)
+		3. A list of 5-7 HEX color codes that complement this color type (e.g., #FF5733, #C70039)
+		4. A list of 5-7 HEX color codes to avoid
 
-Return ONLY a valid JSON object with this exact structure (no additional text):
-{{
-  ""ColorType"": ""Spring Warm/Summer Cool/Autumn Warm/Winter Cool/Soft Neutral/Deep Neutral"",
-  ""ColorTypeId"": 1-6,
-  ""SuggestedColor"": [""color1"", ""color2"", ...],
-  ""AvoidedColor"": [""color1"", ""color2"", ...]
-}}
-
-Use specific color names like 'Coral Pink', 'Warm Beige', 'Deep Emerald', etc.
-";
+		Return ONLY a valid JSON object with this exact structure (no additional text):
+		{{
+		  ""ColorType"": ""Spring Warm/Summer Cool/Autumn Warm/Winter Cool/Soft Neutral/Deep Neutral"",
+		  ""ColorTypeId"": 1-6,
+		  ""SuggestedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...],
+		  ""AvoidedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...]
+		}}
+		";
 		}
 
 
-	private AiTestResultModel ParseGeminiResponse(string responseText)
+		private AiTestResultModel ParseGeminiResponse(string responseText)
 		{
 			try
 			{
@@ -139,6 +139,100 @@ Use specific color names like 'Coral Pink', 'Warm Beige', 'Deep Emerald', etc.
 				{
 					throw new Exception("Failed to deserialize Gemini response");
 				}
+
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Failed to parse Gemini response: {responseText}", ex);
+			}
+		}
+			
+
+		public async Task<GeminiColorAnalysisResponse> AnalyzeColorTypeAsync2(GeminiAnalysisRequest request)
+		{
+			try
+			{
+				var client = new GoogleAi(_apiKey);
+				//var model = client.CreateGenerativeModel("gemini-2.5-flash");
+				var model = client.CreateGenerativeModel("gemini-2.0-flash-exp");
+
+				var prompt = BuildAnalysisPrompt(request);
+				var parts = new List<GenerativeAI.Types.Part>
+				{
+					new GenerativeAI.Types.Part { Text = prompt }
+				};
+
+				using var httpClient = new HttpClient();
+				foreach (var imageUrl in request.ImageUrls)
+				{
+					var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+					parts.Add(new GenerativeAI.Types.Part
+					{
+						InlineData = new GenerativeAI.Types.Blob
+						{
+							MimeType = "image/jpeg",
+							Data = Convert.ToBase64String(imageBytes)
+						}
+					});
+				}
+
+				var response = await model.GenerateContentAsync(parts);
+				var resultText = response.Text;
+
+				return ParseGeminiResponse2(resultText);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error analyzing images with Gemini");
+				throw new Exception("Failed to analyze images with AI", ex);
+			}
+		}
+
+		private string BuildAnalysisPrompt(GeminiAnalysisRequest request)
+		{
+			return $@"
+		You are a professional color analysis expert. Analyze the provided images and determine the person's seasonal color type.
+
+		User Information:
+		- Hair Color: {request.HairColor ?? "Not specified"}
+		- Eye Color: {request.EyesColor ?? "Not specified"}
+		- Lips Color: {request.LipsColor ?? "Not specified"}
+		- Skin Color: {request.SkinColor ?? "Not specified"}
+
+		Based on the images and information provided, determine:
+		1. The seasonal color type (Spring Warm, Summer Cool, Autumn Warm, Winter Cool, Soft Neutral,Deep Neutral)
+		2. The corresponding ColorTypeId (1=Spring Warm, 2=SummSummer Cooler, 3=Autumn Warm, 4=Winter Cool, 5=Soft Neutral, 6=Deep Neutral)
+		3. A list of 5-7 HEX color codes that complement this color type (e.g., #FF5733, #C70039)
+		4. A list of 5-7 HEX color codes to avoid
+
+		Return ONLY a valid JSON object with this exact structure (no additional text):
+		{{
+		  ""ColorType"": ""Spring Warm/Summer Cool/Autumn Warm/Winter Cool/Soft Neutral/Deep Neutral"",
+		  ""ColorTypeId"": 1-6,
+		  ""SuggestedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...],
+		  ""AvoidedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...]
+		}}
+		";
+		}
+
+		private GeminiColorAnalysisResponse ParseGeminiResponse2(string responseText)
+		{
+			try
+			{
+				responseText = responseText.Trim();
+				if (responseText.StartsWith("```json")) responseText = responseText.Substring(7);
+				if (responseText.StartsWith("```")) responseText = responseText.Substring(3);
+				if (responseText.EndsWith("```")) responseText = responseText.Substring(0, responseText.Length - 3);
+				responseText = responseText.Trim();
+
+				var result = System.Text.Json.JsonSerializer.Deserialize<GeminiColorAnalysisResponse>(responseText, new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true
+				});
+
+				if (result == null)
+					throw new Exception("Failed to deserialize Gemini response");
 
 				return result;
 			}
