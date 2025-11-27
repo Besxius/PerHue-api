@@ -189,5 +189,14 @@ namespace PerHue.Infrastructure.Repositories
 
 			return (items, totalCount);
 		}
+
+		public async Task<IEnumerable<CapsulePalette>> GetListByColorsIdAsync(List<int> colorIds)
+		{
+			return await _context.CapsulePalettes
+				.Include(cp => cp.ColorType)
+				.Include(cp => cp.Colors)
+				.Where(cp => cp.Colors.Any(c => colorIds.Contains(c.Id)))
+				.ToListAsync();
+		}
 	}
 }
