@@ -28,7 +28,6 @@ public class PackageExpire : BackgroundService
 	/// <summary>
 	/// Send email to admin and user when user subscription is expired
 	/// or when subscription has 7 or fewer days left before EndDate.
-	/// *NOTE: This service needs further improvement
 	/// </summary>
 	/// <param name="stoppingToken"></param>
 	/// <returns></returns>
@@ -36,15 +35,16 @@ public class PackageExpire : BackgroundService
 	{
 		using var scope = _scopeFactory.CreateScope();
 		var _context = scope.ServiceProvider.GetRequiredService<PerHueDbContext>();
+		var _emailService = scope.ServiceProvider.GetRequiredService<EmailService>(); // Resolved once for efficiency
+
 		while (!stoppingToken.IsCancellationRequested)
 		{
 			var userSubcriptionList = await _context.UserSubscriptions
 				.ToListAsync(cancellationToken: stoppingToken);
 
 			List<int> expiredSubcriptions = [];
-			List<int> reminderSubcriptions = [];
+			List<int> reminderSubcriptions = []; // Kept as requested
 			List<int> users = [];
-			List<string> userEmails = [];
 
 			foreach (var item in userSubcriptionList)
 			{
@@ -52,46 +52,72 @@ public class PackageExpire : BackgroundService
 				{
 					var daysLeft = (item.EndDate.Value.Date - DateTime.UtcNow.Date).TotalDays;
 
-					// expired subscriptions
+					// 1. HANDLE EXPIRED SUBSCRIPTIONS
 					if (daysLeft <= 0 && item.Status == true) // only process if still active
 					{
 						expiredSubcriptions.Add(item.Id);
 
 						var user = await _context.UserAccounts
 							.FirstOrDefaultAsync(u => u.Id == item.UserId, cancellationToken: stoppingToken);
+
 						if (user != null)
 						{
 							users.Add(user.Id);
+
+							// A. Send Email with RemainingUses
 							if (!string.IsNullOrEmpty(user.Email))
-								userEmails.Add(user.Email);
+							{
+								string userSubject = "Your Subscription has Expired";
+								var userBody = $"Dear {user.Fullname},\n\n" +
+									"Your subscription has unfortunately expired.\n" +
+									$"You had {item.RemainingUses} remaining use(s) left in your package which have now expired.\n\n" +
+									"We hope you enjoyed our services.\n" +
+									"Please renew to continue enjoying our expert color analysis.";
+
+								await _emailService.SendEmailAsync(user.Email, userSubject, userBody);
+							}
+
+							// B. Create Notification for User
+							var notification = new Notification
+							{
+								Title = "Subscription Expired",
+								Content = $"Your subscription has expired. You had {item.RemainingUses} uses remaining left in your package which have now expired.",
+								Receiver = user.Id,
+								ReceivedTime = DateTime.Now,
+								IsRead = false,
+								Type = "System",
+								TestRequestId = null // Defaulting to null as it is not linked to a specific TestRequest
+							};
+							_context.Notifications.Add(notification);
 						}
 
-						// mark subscription as expired
+						// Mark subscription as expired
 						item.Status = false;
 						_context.UserSubscriptions.Update(item);
+
+						// Save updates (Subscription status + New Notification)
 						await _context.SaveChangesAsync(stoppingToken);
 					}
-					// soon-to-expire subscriptions (<= 7 days left)
+					// 2. HANDLE SOON-TO-EXPIRE SUBSCRIPTIONS (<= 7 days left)
 					else if (daysLeft <= 7 && daysLeft > 0)
 					{
 						reminderSubcriptions.Add(item.Id);
 						var user = await _context.UserAccounts
 							.FirstOrDefaultAsync(u => u.Id == item.UserId, cancellationToken: stoppingToken);
+
 						if (user != null && !string.IsNullOrEmpty(user.Email))
 						{
-							var _emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
-
 							string reminderSubject = "Your subscription is ending soon!";
 							string reminderBody = $"Hello {user.Fullname},\n\n" +
 								$"Your subscription will expire on {item.EndDate.Value:dd/MM/yyyy}. " +
 								$"That’s only {daysLeft} day(s) from now!\n\n" +
-								$"👉 You still have {item.RemainingUses == 0} usage(s) left in your package.\n\n" +
+								$"👉 You still have {item.RemainingUses} usage(s) left in your package.\n\n" +
 								$"Remember to use all of your color analysis before it ends!.";
 
-							// send reminder email
+							// Send reminder email
 							await _emailService.SendEmailAsync(user.Email, reminderSubject, reminderBody);
 
-							// optional: notify via SignalR
+							// Optional: notify via SignalR
 							await _hubContext.Clients.User(user.Id.ToString())
 								.SendAsync("ReceiveReminder", reminderBody, cancellationToken: stoppingToken);
 
@@ -101,42 +127,31 @@ public class PackageExpire : BackgroundService
 				}
 			}
 
+			// 3. ADMIN SUMMARY NOTIFICATION
 			if (expiredSubcriptions.Count > 0)
 			{
-				// notify via console
+				// Notify via console
 				Console.WriteLine($"The following Expired User Subcriptions: [{string.Join(", ", expiredSubcriptions)}]" +
 					$"\br" +
 					$"AND" +
 					$"\br" +
 					$"The following User Id: [{string.Join(", ", users)}]");
 
-				// get required services
-				var _emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
-
-				// send email to admin
+				// Send email to admin
 				string guid = Guid.NewGuid().ToString();
 				string email = ""; // <-- fill admin email here
-				string subject = "Automated Email Notification";
-				var body = $"Email with GUID: {guid} sent at {DateTime.Now}" +
-					$"\br" +
-					$"The following Expired User Subcriptions: [{string.Join(", ", expiredSubcriptions)}]" +
-					$"\br" +
-					$"The following User Id: [{string.Join(", ", users)}]";
 
-				await _emailService.SendEmailAsync(email, subject, body);
-				await _hubContext.Clients.All.SendAsync("ReceiveEmail", body, cancellationToken: stoppingToken);
-
-				// send email to users
-				if (userEmails.Count > 0)
+				if (!string.IsNullOrEmpty(email))
 				{
-					foreach (var userEmail in userEmails)
-					{
-						string userSubject = "Automated Email Notification";
-						var userBody = "Your subscription is over.\n" +
-							$"We hope you enjoyed our services.\n\n" +
-						$"Please renew to continue enjoying our services.";
-						await _emailService.SendEmailAsync(userEmail, userSubject, userBody);
-					}
+					string subject = "Automated Email Notification";
+					var body = $"Email with GUID: {guid} sent at {DateTime.Now}" +
+						$"\br" +
+						$"The following Expired User Subcriptions: [{string.Join(", ", expiredSubcriptions)}]" +
+						$"\br" +
+						$"The following User Id: [{string.Join(", ", users)}]";
+
+					await _emailService.SendEmailAsync(email, subject, body);
+					await _hubContext.Clients.All.SendAsync("ReceiveEmail", body, cancellationToken: stoppingToken);
 				}
 			}
 			else
@@ -145,7 +160,7 @@ public class PackageExpire : BackgroundService
 				Console.WriteLine($"Scanning Expired User Subcriptions at: {now}");
 			}
 
-			// wait before scanning again
+			// Wait before scanning again
 			await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 		}
 	}
