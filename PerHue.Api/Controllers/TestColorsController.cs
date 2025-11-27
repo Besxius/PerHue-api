@@ -25,10 +25,11 @@ namespace PerHue.Api.Controllers
 		[Route("normal-test/simple-color")]
 		public async Task<TestResultModel> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
-			var user = User.Identity;
+			var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 			var testResult = new CreateManualTestResultModel
 			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+				//UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+				UserId = userId,
 				SelectedColors = model.SelectedColors,
 			};
 			var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
