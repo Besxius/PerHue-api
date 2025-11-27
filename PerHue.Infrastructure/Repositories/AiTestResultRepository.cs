@@ -152,5 +152,11 @@ namespace PerHue.Infrastructure.Repositories
 
 			return (tests, totalCount);
 		}
+
+		public async Task CreatePicturesAsync(List<Picture> pictures)
+		{
+			await _context.Pictures.AddRangeAsync(pictures);
+			await _context.SaveChangesAsync();
+		}
 	}
 }
