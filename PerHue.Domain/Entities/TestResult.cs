@@ -13,7 +13,13 @@ public partial class TestResult
 
     public DateTime CreatedDate { get; set; }
 
-    public virtual UserAccount User { get; set; } = null!;
+    public string ChosenColor { get; set; } = null!;
 
-    public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
+    public string SuggestedColor { get; set; } = null!;
+
+    public int ColorTypeId { get; set; }
+
+    public virtual ColorType ColorType { get; set; } = null!;
+
+    public virtual UserAccount User { get; set; } = null!;
 }
