@@ -20,5 +20,7 @@ namespace PerHue.Domain.IRepositories
 		Task<(List<TestRequest> tests, int totalCount)> GetFilteredTestRequestsAsync(
 			int pageIndex, int pageSize, int? userId, string? status, string? typeOfTest, string? fullname,
 			DateTime? startDate, DateTime? endDate, int? sortBy, int? sortOrder);
+
+		Task CreatePicturesAsync(List<Picture> pictures);
 	}
 }
