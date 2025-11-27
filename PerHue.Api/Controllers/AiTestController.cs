@@ -134,11 +134,6 @@ namespace PerHue.Api.Controllers
 					return BadRequest(new { message = "At least one face image is required" });
 				}
 
-				if (requestDto.FaceImages.Count > 5)
-				{
-					return BadRequest(new { message = "Maximum 5 images allowed" });
-				}
-
 				// Validate image files
 				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
 				var maxFileSize = 10 * 1024 * 1024; // 10MB
@@ -162,19 +157,8 @@ namespace PerHue.Api.Controllers
 					}
 				}
 
-				// Map DTO to request model (không còn TestRequestId)
-				var request = new AiTestCompleteRequest
-				{
-					FaceImages = requestDto.FaceImages,
-					HairColor = requestDto.HairColor,
-					EyesColor = requestDto.EyesColor,
-					LipsColor = requestDto.LipsColor,
-					SkinColor = requestDto.SkinColor,
-					GenerateVirtualTryOn = requestDto.GenerateVirtualTryOn
-				};
-
 				// Gọi service với userId
-				var result = await _aiTestService.ProcessAiTestAsync2(userId, request);
+				var result = await _aiTestService.ProcessAiTestAsync2(userId, requestDto);
 
 				return Ok(new
 				{
@@ -253,11 +237,6 @@ namespace PerHue.Api.Controllers
 				if (testRequest.UserAccountId != userId)
 				{
 					return Forbid();
-				}
-
-				if (string.IsNullOrEmpty(request.UserImageUrl))
-				{
-					return BadRequest(new { message = "User image URL is required" });
 				}
 
 				if (!request.SuggestedColorHexCodes.Any())

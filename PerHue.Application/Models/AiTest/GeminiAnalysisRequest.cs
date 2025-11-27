@@ -77,7 +77,7 @@ namespace PerHue.Application.Models.AiTest
 
 	public class VirtualTryOnRequest
 	{
-		public string UserImageUrl { get; set; } = string.Empty;
+		public IFormFile UserImage { get; set; } = null!;
 		public List<string> SuggestedColorHexCodes { get; set; } = new();
 		public List<string> Environments { get; set; } = new() { "indoor", "outdoor_sunny", "outdoor_cloudy", "evening" };
 		public List<string> ClothingTypes { get; set; } = new() { "shirt", "dress", "sweater" };
@@ -105,6 +105,7 @@ namespace PerHue.Application.Models.AiTest
 		public string? LipsColor { get; set; }
 		public string? SkinColor { get; set; }
 		public bool GenerateVirtualTryOn { get; set; } = true;
+		public bool IsFromExpertTest { get; set; } = false;
 	}
 
 	public class AiTestCompleteResponse
