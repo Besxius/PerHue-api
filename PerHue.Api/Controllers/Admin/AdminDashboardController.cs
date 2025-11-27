@@ -89,23 +89,6 @@ namespace PerHue.Api.Controllers.Admin
         }
 
         /// <summary>
-        /// Get expert penalty statistics
-        /// </summary>
-        [HttpGet("experts/penalties")]
-        public async Task<ActionResult<PaginatedResultV2<ExpertPenaltyModel>>> GetExpertPenalties([FromQuery] ExpertPenaltySearchModel searchModel)
-        {
-            try
-            {
-                var penalties = await _servicesProvider.AdminDashboardService.GetExpertPenaltiesAsync(searchModel);
-                return Ok(penalties);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
         /// Get revenue statistics for a period
         /// </summary>
         [HttpGet("revenue")]
@@ -132,23 +115,6 @@ namespace PerHue.Api.Controllers.Admin
             {
                 var testStats = await _servicesProvider.AdminDashboardService.GetTestCountStatisticsAsync(startDate, endDate, groupBy, testType);
                 return Ok(testStats);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Get penalty statistics for a period
-        /// </summary>
-        [HttpGet("penalties/statistics")]
-        public async Task<ActionResult<PenaltyStatisticsModel>> GetPenaltyStatistics([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? groupBy = "day")
-        {
-            try
-            {
-                var penalties = await _servicesProvider.AdminDashboardService.GetPenaltyStatisticsAsync(startDate, endDate, groupBy);
-                return Ok(penalties);
             }
             catch (Exception ex)
             {
