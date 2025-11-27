@@ -29,14 +29,16 @@ namespace PerHue.Infrastructure.Services
 		}
 		public async Task<bool> ChangePasswordAsync(ChangePasswordModel model)
 		{
-			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.Id);
+			// 1. Verify OTP first
 			bool isValid = _otpService.VerifyOtp(model.SentEmail, model.Otp);
 			if (!isValid)
 			{
 				Console.WriteLine("Invalid OTP.");
 				return false;
-
 			}
+
+			// 2. Find user by Email instead of ID
+			var user = await _unitOfWork.UserRepository.GetByEmailAsync(model.SentEmail);
 			if (user is null)
 				return false;
 			/*if (model.NewPassword != model.OldPassword)
@@ -140,7 +142,10 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<bool> UserExistsAsync(string email)
 		{
-			var entity = await _unitOfWork.UserRepository.GetByIdAsync(email);
+			// var entity = await _unitOfWork.UserRepository.GetByIdAsync(email);
+
+			// New:
+			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
 			return entity is not null;
 		}
 
