@@ -137,17 +137,10 @@ namespace PerHue.Infrastructure.Services
 		/// <param name="userId">ID của user</param>
 		/// <param name="isFromExpertTest">True nếu là request từ Expert Test (không trừ lượt)</param>
 		/// <returns>True nếu trừ thành công, False nếu không còn lượt hoặc lỗi</returns>
-		public async Task<bool> DeductUsageAsync(int userId, bool isFromExpertTest = false)
+		public async Task<bool> DeductUsageAsync(int userId)
 		{
 			try
 			{
-				// KHÔNG TRỪ LƯỢT NẾU LÀ REQUEST TỪ EXPERT TEST
-				if (isFromExpertTest)
-				{
-					_logger.LogInformation($"Skipping usage deduction for user {userId} - Expert Test request");
-					return true;
-				}
-
 				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId);
 
 				if (!deducted)
