@@ -173,11 +173,17 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		public async Task<AdminCapsulePaletteModel> CreateAsync(AdminCapsulePaletteCreateModel model)
-		{	
+		{
 			var capsulePalette = new CapsulePalette
 			{
 				ColorTypeId = model.ColorTypeId
 			};
+
+			// validate at least 4 colors?
+			if (model.ColorIds != null && model.ColorIds.Count < 4)
+			{
+				throw new InvalidOperationException("A capsule palette must contain at least 4 colors.");
+			}
 
 			await _unitOfWork.CapsulePaletteRepository.CreateAsync(capsulePalette);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -209,12 +215,15 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<AdminCapsulePaletteModel> UpdateAsync(AdminCapsulePaletteUpdateModel model)
 		{
+			// Validate at least 4 colors?
+			if (model.ColorIds != null && model.ColorIds.Count < 4)
+			{
+				throw new InvalidOperationException("A capsule palette must contain at least 4 colors.");
+			}
+
 			var capsulePalette = await _unitOfWork.CapsulePaletteRepository.GetQueryable()
 				.Include(cp => cp.Colors)
-				.FirstOrDefaultAsync(cp => cp.Id == model.Id);
-
-			if (capsulePalette == null)
-				throw new InvalidOperationException($"CapsulePalette with id {model.Id} not found");
+				.FirstOrDefaultAsync(cp => cp.Id == model.Id) ?? throw new InvalidOperationException($"CapsulePalette with id {model.Id} not found");
 
 			// Update ColorTypeId
 			capsulePalette.ColorTypeId = model.ColorTypeId;
