@@ -19,9 +19,9 @@ public partial class Notification
 
     public int Receiver { get; set; }
 
-    public int TestRequestId { get; set; }
+    public int? TestRequestId { get; set; }
 
     public virtual UserAccount ReceiverNavigation { get; set; } = null!;
 
-    public virtual TestRequest TestRequest { get; set; } = null!;
+    public virtual TestRequest? TestRequest { get; set; }
 }
