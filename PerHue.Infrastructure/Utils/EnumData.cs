@@ -51,5 +51,10 @@
 		Certification,
 		Face
 	}
-
+	public enum ServicePackageTypeEnum
+	{
+		AI,
+		Expert,
+		Test
+	}
 }
