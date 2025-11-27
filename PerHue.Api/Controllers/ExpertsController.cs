@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Expert;
+using PerHue.Application.Models.ExpertTestResult;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PerHue.Api.Controllers
@@ -37,6 +40,40 @@ namespace PerHue.Api.Controllers
 		public async Task<ActionResult<ExpertModel>> GetExpertById(int id)
 		{
 			var expert = await _servicesProvider.ExpertService.GetByIdAsync(id);
+			if (expert == null)
+			{
+				return NotFound();
+			}
+			return Ok(expert);
+		}
+		[HttpGet("my-salary")]
+		[Authorize(Roles = "Expert")]
+		public async Task<ActionResult<ExpertSalaryModel>> GetMySalary(
+			[FromQuery] DateTime? startDate,
+			[FromQuery] DateTime? endDate)
+		{
+			// Get User ID from token
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var expertId))
+			{
+				return Unauthorized("Invalid User ID in token.");
+			}
+			try
+			{
+				var salaryReport = await _servicesProvider.ExpertService.CalculateSalaryAsync(expertId, startDate, endDate);
+				return Ok(salaryReport);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
+
+		[HttpGet("information")]
+		public async Task<ActionResult<ExpertModel>> GetExpertInformation()
+		{
+			var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var expert = await _servicesProvider.ExpertService.GetByIdAsync(int.Parse(id));
 			if (expert == null)
 			{
 				return NotFound();
