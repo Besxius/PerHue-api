@@ -1,3 +1,5 @@
+using PerHue.Application.Models.Expert;
+
 namespace PerHue.Application.Models
 {
 	public class AdminUserModel
@@ -16,5 +18,6 @@ namespace PerHue.Application.Models
 		public string RoleName { get; set; } = null!;
 		public DateTime CreatedDate { get; set; }
 		public DateTime? UpdatedDate { get; set; }
+		public ExpertModel? ExpertProfile { get; set; }
 	}
 }

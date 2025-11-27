@@ -136,5 +136,72 @@ namespace PerHue.Infrastructure.Repositories
 
 			return (items, totalCount);
 		}
+
+
+		//==========================================
+
+
+		public async Task<List<TestRequest>> GetByUserIdAsync(int userId)
+		{
+			return await _dbSet
+				.Where(t => t.UserAccountId == userId)
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
+		public async Task<List<TestRequest>> GetByUserIdWithDetailsAsync(int userId)
+		{
+			return await _dbSet
+				.Include(t => t.UserAccount)
+				.Include(t => t.AiTestResult)
+					.ThenInclude(r => r.ColorType)
+				.Include(t => t.AiPictures)
+				.Where(t => t.UserAccountId == userId)
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
+		public async Task<List<TestRequest>> GetByStatusAsync(string status)
+		{
+			return await _dbSet
+				.Include(t => t.UserAccount)
+				.Where(t => t.Status == status)
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
+		public async Task<List<TestRequest>> GetByTypeAsync(string typeOfTest)
+		{
+			return await _dbSet
+				.Include(t => t.UserAccount)
+				.Where(t => t.TypeOfTest == typeOfTest)
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
+		public async Task<int> CountByUserIdAsync(int userId)
+		{
+			return await _dbSet
+				.Where(t => t.UserAccountId == userId)
+				.CountAsync();
+		}
+
+		public async Task<List<TestRequest>> GetPendingTestsByUserIdAsync(int userId)
+		{
+			return await _dbSet
+				.Include(t => t.UserAccount)
+				.Where(t => t.UserAccountId == userId && t.Status == "Pending")
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<TestRequest>> GetAllAsync()
+		{
+			return await _dbSet
+				.Include(t => t.UserAccount)
+				.OrderByDescending(t => t.CreatedDate)
+				.ToListAsync();
+		}
+
 	}
 }

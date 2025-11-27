@@ -11,6 +11,8 @@ namespace PerHue.Application.Models.UserSubscription
 
 		public string Status { get; set; } = null!;
 
+		public short RemainingUses { get; set; }
+
 		public DateTime? CreateAt { get; set; }
 
 		public DateTime? UpdateAt { get; set; }
