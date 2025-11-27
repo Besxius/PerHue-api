@@ -58,7 +58,7 @@ namespace PerHue.Api.Controllers
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
 			if (account is null)
 			{
-				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
+				return NotFound("Tài khoản không tồn tại");
 			}
 
 			if (account.Isactive == false)
@@ -91,9 +91,20 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost("register")]
-		public async Task Register(CreateUserRequestModel user)
-		{
+		public async Task<IActionResult> Register(CreateUserRequestModel user)
+		{ 
+			var account = await _servicesProvider.UserService.GetByEmailAsync(user.Email);
+			if (account is not null)
+			{
+				return Unauthorized("Email have used in an account!");
+			}
+			if (!ModelState.IsValid)
+				{
+				return BadRequest("Invalid data!");
+			}
 			await _servicesProvider.UserService.CreateAsync(user);
+
+			return Ok("Register successful! Please check your email to activate your account.");
 		}
 
 		[HttpPost("google")]
@@ -101,7 +112,7 @@ namespace PerHue.Api.Controllers
 		{
 			if (string.IsNullOrEmpty(tokenDto.IdToken))
 			{
-				return BadRequest("ID Token không được cung cấp.");
+				return BadRequest("ID Token not provided");
 			}
 
 			GoogleJsonWebSignature.Payload payload;
@@ -244,6 +255,41 @@ namespace PerHue.Api.Controllers
 					error = ex.Message
 				});
 			}
+		}
+		[HttpPost]
+		[Route("change-password")]
+		public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			// Service now handles finding user by email inside ChangePasswordAsync
+			if (await _servicesProvider.UserService.ChangePasswordAsync(model))
+			{
+				return Ok(new { message = "Password changed successfully." });
+			}
+			return BadRequest(new { message = "Failed to change password. Invalid OTP or Email." });
+		}
+
+		[HttpPost("send-otp")]
+		public async Task<IActionResult> SendOtp([FromBody] EmailRequestModel request)
+		{
+			if (string.IsNullOrEmpty(request.Email))
+			{
+				return BadRequest("Email is required.");
+			}
+
+			//Check if user exists before sending OTP ---
+			var userExists = await _servicesProvider.UserService.UserExistsAsync(request.Email);
+			if (!userExists)
+			{
+				return NotFound(new { message = "User with this email does not exist." });
+			}
+
+			bool isSent = await _servicesProvider.OtpService.SendOtpToEmailAsync(request.Email);
+			return isSent ? Ok(new { message = "OTP sent successfully." }) : BadRequest(new { message = "Failed to send OTP." });
 		}
 	}
 }

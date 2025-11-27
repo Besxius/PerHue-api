@@ -1,16 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PerHue.Domain.Basic;
 using PerHue.Infrastructure.Persistence;
+using System.Linq.Expressions;
 
 namespace PerHue.Infrastructure.Basic
 {
 	public class GenericRepository<T> : IGenericRepository<T> where T : class
 	{
 		protected PerHueDbContext _context;
+		protected readonly DbSet<T> _dbSet;
 
 		public GenericRepository(PerHueDbContext context)
 		{
 			_context = context;
+			_dbSet = context.Set<T>();
 		}
 
 		public List<T> GetAll()
@@ -90,6 +93,43 @@ namespace PerHue.Infrastructure.Basic
 		public async Task<T> GetByIdAsync(Guid code)
 		{
 			return await _context.Set<T>().FindAsync(code);
+		}
+
+		public virtual async Task<bool> DeleteAsync(int id)
+		{
+			var entity = await GetByIdAsync(id);
+			if (entity == null)
+				return false;
+
+			_dbSet.Remove(entity);
+			await _context.SaveChangesAsync();
+			return true;
+		}
+
+		public virtual async Task<bool> ExistsAsync(int id)
+		{
+			var entity = await GetByIdAsync(id);
+			return entity != null;
+		}
+
+		public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+		{
+			return await _dbSet.Where(predicate).ToListAsync();
+		}
+
+		public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+		{
+			return await _dbSet.FirstOrDefaultAsync(predicate);
+		}
+
+		public virtual async Task<int> CountAsync()
+		{
+			return await _dbSet.CountAsync();
+		}
+
+		public virtual async Task<int> CountAsync(Expression<Func<T, bool>> predicate)
+		{
+			return await _dbSet.CountAsync(predicate);
 		}
 
 		#region Separating asigned entity and save operators        

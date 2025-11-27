@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.ServicePackage;
 
@@ -18,6 +19,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet]
+		[Authorize]
 		public async Task<IEnumerable<ServicePackageModel>> Gets()
 		{
 			var models = await _servicesProvider.ServicePackageService.GetAllAsync();

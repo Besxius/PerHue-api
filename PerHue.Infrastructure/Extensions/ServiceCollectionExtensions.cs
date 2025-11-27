@@ -78,6 +78,10 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IAIImageAnalysisService, AiImageAnalysisService>();
 			services.AddScoped<IAiTestService, AiTestService>();
 
+			services.AddScoped<IColorMatchingService, ColorMatchingService>();
+			services.AddScoped<IVirtualTryOnService, VirtualTryOnService>();
+			services.AddScoped<IAIImageAnalysisService, AiImageAnalysisService>();
+			services.AddScoped<IAiTestService, AiTestService>();
 			#endregion
 
 			#region Other Services
