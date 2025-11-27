@@ -47,20 +47,121 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<TestResultModel>(testResult);
 		}
 
+		//public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateManualTestResultModel model)
+		//{
+		//	var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
+
+		//	var entity = new TestResult
+		//	{
+		//		UserId = model.UserId,
+		//		User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
+		//		Picture = "",
+		//	};
+		//	// code fix
+
+		//	return _mapper.Map<TestResultModel>(entity);
+		//}
+
 		public async Task<TestResultModel> GetNormalTestSimpleColorResult(CreateManualTestResultModel model)
 		{
-			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors);
+			// 1. Validate input colors
+			var validatedColors = model.SelectedColors
+				.Where(c => !string.IsNullOrEmpty(c) && c.StartsWith("#") && c.Length == 7)
+				.Select(c => ColorCalculationHelper.NormalizeHexCode(c))
+				.ToList();
+
+			if (!validatedColors.Any())
+			{
+				throw new ArgumentException("No valid hex colors provided");
+			}
+
+			//Tìm màu tương tự trong database với scoring
+			var colorMatches = new List<(string InputHex, Domain.Entities.Color DbColor, double Score)>();
+
+			foreach (var inputHex in validatedColors)
+			{
+				var inputRgb = ColorCalculationHelper.HexToRgb(inputHex);
+				if (!inputRgb.HasValue) continue;
+
+				var allColors = await _unitOfWork.ColorRepository.GetAllAsync();
+
+				foreach (var dbColor in allColors)
+				{
+					var dbRgb = ColorCalculationHelper.HexToRgb(dbColor.HexCode);
+					if (!dbRgb.HasValue) continue;
+
+					var deltaE = ColorCalculationHelper.CalculateDeltaE(inputRgb.Value, dbRgb.Value);
+
+					// Chỉ lấy màu có Delta E <= 30 (tương đối gần)
+					if (deltaE <= 30)
+					{
+						var relevanceScore = ColorCalculationHelper.CalculateRelevanceScore(
+							inputRgb.Value,
+							dbRgb.Value
+						);
+
+						colorMatches.Add((inputHex, dbColor, relevanceScore));
+					}
+				}
+			}
+
+			//Lấy top matches cho mỗi input color
+			var bestMatches = colorMatches
+				.GroupBy(m => m.InputHex)
+				.SelectMany(g => g.OrderByDescending(m => m.Score).Take(3))
+				.ToList();
+
+			var matchedColorIds = bestMatches.Select(m => m.DbColor.Id).Distinct().ToList();
+
+			//Tìm Capsule Palettes liên quan
+			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetListByColorsIdAsync(matchedColorIds);
+
+			//Xác định Color Type phổ biến nhất
+			var colorTypeGroups = capsulePalettes
+				.GroupBy(cp => cp.ColorTypeId)
+				.Select(g => new
+				{
+					ColorTypeId = g.Key,
+					Count = g.Count(),
+					Palettes = g.ToList()
+				})
+				.OrderByDescending(g => g.Count)
+				.ToList();
+
+			var dominantColorType = colorTypeGroups.FirstOrDefault();
+			if (dominantColorType == null)
+			{
+				throw new InvalidOperationException("Could not determine color type");
+			}
+
+
+			var filteredPalettes = capsulePalettes
+				.Where(cp => cp.ColorTypeId == dominantColorType.ColorTypeId)
+				.DistinctBy(cp => cp.Id)
+				.Take(5)
+				.ToList();
+
+
+			var colorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(dominantColorType.ColorTypeId);
 
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
 				User = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId),
-				Picture = "",
+				Picture = "", // Có thể để trống với simple color test
+				ColorTypeId = dominantColorType.ColorTypeId,
+				ColorType = colorType,
+				CapsulePalettes = filteredPalettes,
+				Colors = bestMatches.Select(m => m.DbColor).DistinctBy(c => c.Id).ToList()
 			};
-			// code fix
+
+			// Lưu vào database nếu cần
+			// await _unitOfWork.TestResultRepository.AddAsync(entity);
+			// await _unitOfWork.SaveChangesAsync();
 
 			return _mapper.Map<TestResultModel>(entity);
 		}
+
 		public async Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateManualTestResultModel model)
 		{
 			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetRelativeCapsulePalettes(model.SelectedColors, model.ColorType);
