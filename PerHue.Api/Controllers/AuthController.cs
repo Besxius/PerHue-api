@@ -58,7 +58,7 @@ namespace PerHue.Api.Controllers
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
 			if (account is null)
 			{
-				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
+				return NotFound("Tài khoản không tồn tại");
 			}
 
 			if (account.Isactive == false)
@@ -91,9 +91,20 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost("register")]
-		public async Task Register(CreateUserRequestModel user)
-		{
+		public async Task<IActionResult> Register(CreateUserRequestModel user)
+		{ 
+			var account = await _servicesProvider.UserService.GetByEmailAsync(user.Email);
+			if (account is not null)
+			{
+				return Unauthorized("Email have used in an account!");
+			}
+			if (!ModelState.IsValid)
+				{
+				return BadRequest("Invalid data!");
+			}
 			await _servicesProvider.UserService.CreateAsync(user);
+
+			return Ok("Register successful! Please check your email to activate your account.");
 		}
 
 		[HttpPost("google")]
@@ -101,7 +112,7 @@ namespace PerHue.Api.Controllers
 		{
 			if (string.IsNullOrEmpty(tokenDto.IdToken))
 			{
-				return BadRequest("ID Token không được cung cấp.");
+				return BadRequest("ID Token not provided");
 			}
 
 			GoogleJsonWebSignature.Payload payload;
