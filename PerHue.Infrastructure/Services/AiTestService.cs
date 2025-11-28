@@ -16,6 +16,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
 using PerHue.Infrastructure.Utils;
+using AutoMapper;
+
 
 
 namespace PerHue.Infrastructure.Services
@@ -30,6 +32,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly IVirtualTryOnService _virtualTryOnService;
 		private readonly ITestRequestRepository _testRequestRepository;
 		private readonly IUserSubscriptionService _subscriptionService;
+		private readonly IMapper _mapper;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -295,7 +298,7 @@ namespace PerHue.Infrastructure.Services
 
 		//================================================================
 
-		public async Task<AiTestCompleteResponse> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
+		public async Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
 		{
 			try
 			{
@@ -419,7 +422,6 @@ namespace PerHue.Infrastructure.Services
 					// Lưu kết quả test vào AiTestResult
 					var aiTestResult = new AiTestResult
 					{
-						Id = testRequest.Id,
 						Date = DateTime.UtcNow,
 						ColorTypeId = colorAnalysis.ColorTypeId,
 						SuggestedColor = string.Join(", ", matchedSuggestedColors
@@ -431,21 +433,13 @@ namespace PerHue.Infrastructure.Services
 						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}"
 					};
 
-					await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
+					var result = await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
 
 					// Update status thành Completed
 					testRequest.Status = TestStatus.Completed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
 
-					var response = new AiTestCompleteResponse
-					{
-						TestRequestId = testRequest.Id,
-						ColorAnalysis = colorAnalysis,
-						MatchedSuggestedColors = matchedSuggestedColors,
-						MatchedAvoidedColors = matchedAvoidedColors,
-						VirtualTryOnResults = virtualTryOnResults,
-						Status = TestStatus.Completed.ToString()
-					};
+					var response = _mapper.Map<AiTestResultResponseModel>(result);
 
 					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
 						testRequest.Id);

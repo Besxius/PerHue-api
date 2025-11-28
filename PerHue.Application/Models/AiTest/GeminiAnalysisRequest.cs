@@ -115,4 +115,19 @@ namespace PerHue.Application.Models.AiTest
 		public VirtualTryOnResponse? VirtualTryOnResults { get; set; }
 		public string Status { get; set; } = string.Empty;
 	}
+
+	public class AiTestResultResponseModel
+	{
+		public int Id { get; set; }
+
+		public string? Note { get; set; }
+
+		public DateTime? Date { get; set; }
+
+		public string SuggestedColor { get; set; } = null!;
+
+		public string AvoidedColor { get; set; } = null!;
+
+		public int ColorTypeId { get; set; }
+	}
 }
