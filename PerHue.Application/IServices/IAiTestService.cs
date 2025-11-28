@@ -23,7 +23,7 @@ namespace PerHue.Application.IServices
 		Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId);
 		Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId);
 
-		Task<AiTestCompleteResponse> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request);
+		Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request);
 		Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(int testRequestId, GeminiAnalysisRequest request);
 		Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(int testRequestId, VirtualTryOnRequest request);
 	}
