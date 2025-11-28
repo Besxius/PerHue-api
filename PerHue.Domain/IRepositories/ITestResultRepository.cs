@@ -7,5 +7,7 @@ namespace PerHue.Domain.IRepositories
 	{
 		Task<IEnumerable<TestResult>> GetAllAsync();
 		Task<TestResult> GetByIdAsync(int id);
+		Task<IEnumerable<TestResult>> GetTestResultListAllWithUserAndColorTypeAsync();
+		Task<TestResult> GetTestResultDetailByIdWithUserAndColorTypeAsync(int id);
 	}
 }
