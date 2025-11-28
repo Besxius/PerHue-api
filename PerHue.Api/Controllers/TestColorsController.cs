@@ -9,7 +9,7 @@ using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
-	[Route("api/[controller]")]
+	[Route("api/normal-test")]
 	[ApiController]
 	public class TestColorsController : ControllerBase
 	{
@@ -22,57 +22,30 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost]
-		[Route("normal-test/simple-color")]
-		public async Task<TestResultModel> NormalTestSimpleColor(ManualTestSimpleColorModel model)
+		[Route("/simple-color")]
+		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
-			var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-			var testResult = new CreateManualTestResultModel
+			try
 			{
-				//UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				UserId = userId,
-				SelectedColors = model.SelectedColors,
-			};
-			var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var testResult = new CreateManualTestResultModel
+				{
+					//UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+					UserId = userId,
+					SelectedColors = model.SelectedColors,
+				};
+				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
 
-			return result;
-		}
-
-		//[HttpPost]
-		//[Route("normal-test/simple-color/save")]
-		//public async Task<TestResultModel> SaveNormalTestSimpleColor(TestResultModel model)
-		//{
-		//	var result = await _servicesProvider.TestResultService.CreateNormalTestSimpleColorResult(model);
-		//	return result;
-		//}
-
-		[HttpPost]
-		[Route("normal-test/capsule-palette")]
-		public async Task<TestResultModel> NormalTestColorPalette(ManualTestColorPaletteModel model)
-		{
-			var testResult = new CreateManualTestResultModel
+				return Ok(new { success = true, data = result });
+			}
+			catch (ArgumentException ex)
 			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				SelectedColors = model.SelectedColors,
-				ColorType = model.ColorType
-			};
-			var result = await _servicesProvider.TestResultService.GetNormalTestCapsulePaletteResult(testResult);
-			return result;
-		}
-
-		//[HttpPost]
-		//[Route("normal-test/capsule-palette/save")]
-		//public async Task<TestResultModel> SaveNormalTestColorPalette(TestResultModel model)
-		//{
-		//	var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(model);
-		//	return result;
-		//}
-
-		[HttpPost]
-		[Route("ai-test/upload-image")]
-		public async Task<string> AiTestUploadImage(AiTestUploadImageModel model)
-		{
-			var result = await _servicesProvider.TestResultService.GetAiTestUploadImageResult(model);
-			return result;
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error while processing Manual Test", error = ex.Message });
+			}
 		}
 
 		[HttpPost("expert-test")]
