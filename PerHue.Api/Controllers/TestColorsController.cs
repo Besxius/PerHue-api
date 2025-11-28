@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
 using PerHue.Application.Models.TestRequest;
+using PerHue.Infrastructure.Services;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -15,14 +17,16 @@ namespace PerHue.Api.Controllers
 	{
 		private readonly IImageUploadService _imageUploadService;
 		private readonly IServicesProvider _servicesProvider;
-		public TestColorsController(IServicesProvider servicesProvider, IImageUploadService imageUploadService)
+		private readonly IAiTestService _aiTestService;
+		public TestColorsController(IServicesProvider servicesProvider, IImageUploadService imageUploadService, IAiTestService aiTestService)
 		{
 			_servicesProvider = servicesProvider;
 			_imageUploadService = imageUploadService;
+			_aiTestService = aiTestService;
 		}
 
 		[HttpPost]
-		[Route("/simple-color")]
+		[Authorize(Roles = "User,Admin")]
 		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
 			try
@@ -88,6 +92,72 @@ namespace PerHue.Api.Controllers
 			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(parameters);
 
 			return Ok(testRequest);
+		}
+
+		/// <summary>
+		/// Tạo và xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)
+		/// </summary>
+		[HttpPost("ai-test/create-and-process")]
+		[Consumes("multipart/form-data")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+				if (userId == 0)
+				{
+					return Unauthorized(new { message = "User not authenticated" });
+				}
+
+				// Validate images
+				if (requestDto.FaceImages == null || requestDto.FaceImages.Count == 0)
+				{
+					return BadRequest(new { message = "At least one face image is required" });
+				}
+
+				// Validate image files
+				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+				var maxFileSize = 10 * 1024 * 1024; // 10MB
+
+				foreach (var image in requestDto.FaceImages)
+				{
+					var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+					if (!allowedExtensions.Contains(extension))
+					{
+						return BadRequest(new { message = $"Invalid file type: {image.FileName}. Only JPG, JPEG, and PNG are allowed." });
+					}
+
+					if (image.Length > maxFileSize)
+					{
+						return BadRequest(new { message = $"File too large: {image.FileName}. Maximum size is 10MB." });
+					}
+
+					if (image.Length == 0)
+					{
+						return BadRequest(new { message = $"Empty file: {image.FileName}" });
+					}
+				}
+
+				// Gọi service với userId
+				var result = await _aiTestService.ProcessAiTestAsync2(userId, requestDto);
+
+				return Ok(new
+				{
+					success = true,
+					data = result,
+					message = "AI Test created and processed successfully"
+				});
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error processing AI Test", error = ex.Message });
+			}
 		}
 	}
 }
