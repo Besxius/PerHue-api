@@ -113,7 +113,7 @@ namespace PerHue.Infrastructure.Services
 			//Lấy top matches cho mỗi input color
 			var bestMatches = colorMatches
 				.GroupBy(m => m.InputHex)
-				.SelectMany(g => g.OrderByDescending(m => m.Score).Take(3))
+				.SelectMany(g => g.OrderByDescending(m => m.Score))
 				.ToList();
 
 			if (!bestMatches.Any())
