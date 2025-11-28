@@ -104,8 +104,6 @@ namespace PerHue.Application.Models.AiTest
 		public string? EyesColor { get; set; }
 		public string? LipsColor { get; set; }
 		public string? SkinColor { get; set; }
-		public bool GenerateVirtualTryOn { get; set; } = true;
-		public bool IsFromExpertTest { get; set; } = false;
 	}
 
 	public class AiTestCompleteResponse

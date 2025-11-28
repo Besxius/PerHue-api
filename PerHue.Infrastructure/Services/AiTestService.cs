@@ -309,6 +309,8 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
 					throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
 				}
+				await _subscriptionService.DeductUsageAsync(userId);
+
 
 				// Validate images
 				if (request.FaceImages == null || request.FaceImages.Count == 0)
@@ -358,26 +360,6 @@ namespace PerHue.Infrastructure.Services
 				await _aiTestRepository.CreatePicturesAsync(pictures);
 				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
 
-				//TRỪ LƯỢT SAU KHI UPLOAD THÀNH CÔNG
-				bool isFromExpertTest = request.IsFromExpertTest;
-
-				var deducted = await _subscriptionService.DeductUsageAsync(userId, isFromExpertTest);
-
-				if (!deducted && !isFromExpertTest)
-				{
-					_logger.LogError($"Failed to deduct usage for user {userId}");
-					testRequest.Status = TestStatus.Failed.ToString();
-					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-					throw new InvalidOperationException("Failed to deduct usage. Please try again.");
-				}
-
-				if (!isFromExpertTest)
-				{
-					var newRemaining = await _subscriptionService.GetRemainingUsageAsync(userId);
-					_logger.LogInformation($"Successfully deducted 1 AI test usage for user {userId}. New remaining: {newRemaining}");
-				}
-
-
 				// Xử lý AI analysis
 				try
 				{
@@ -406,7 +388,7 @@ namespace PerHue.Infrastructure.Services
 
 					// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
-					if (request.GenerateVirtualTryOn && request.FaceImages.Count > 0)
+					if (request.FaceImages.Count > 0)
 					{
 						// SỬ DỤNG IFormFile TRỰC TIẾP
 						var tryOnRequest = new VirtualTryOnRequest
@@ -478,21 +460,23 @@ namespace PerHue.Infrastructure.Services
 					testRequest.Status = TestStatus.Failed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
 
-					//HOÀN TRẢ LƯỢT NẾU CÓ LỖI
-					if (!isFromExpertTest)
+					var refunded = await _subscriptionService.RefundUsageAsync(userId);
+					if (refunded)
 					{
-						var refunded = await _subscriptionService.RefundUsageAsync(userId);
-						if (refunded)
-						{
-							_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
-						}
+						_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
 					}
+
 					throw;
 				}
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "Error creating AI Test for UserId: {UserId}", userId);
+				var refunded = await _subscriptionService.RefundUsageAsync(userId);
+				if (refunded)
+				{
+					_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
+				}
 				throw;
 			}
 		}
