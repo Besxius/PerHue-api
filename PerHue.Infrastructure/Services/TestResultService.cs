@@ -307,12 +307,13 @@ namespace PerHue.Infrastructure.Services
 		}*/
 		public async Task<TestRequestModel> CreateExpertTestRequestAsync(ExpertTestCreationParameters parameters)
 		{
-			// 1. CHECK SUBSCRIPTION
-			var activeSubscription = await _unitOfWork.UserSubscriptionRepository.GetActiveByUserIdAsync(parameters.UserId);
+			// 1. CHECK SUBSCRIPTION (EXPERT TYPE ONLY)
+			var activeSubscription = await _unitOfWork.UserSubscriptionRepository
+				.GetActiveSubscriptionByTypeAsync(parameters.UserId, ServicePackageTypeEnum.Expert.ToString());
 
 			if (activeSubscription == null)
 			{
-				throw new InvalidOperationException("You do not have an active subscription or have run out of uses. Please purchase a package.");
+				throw new InvalidOperationException("You do not have an active EXPERT subscription or have run out of uses. Please purchase an Expert package.");
 			}
 
 			_logger.LogInformation($"Creating expert test request for user {parameters.UserId} with image {parameters.ImageUrl}");
