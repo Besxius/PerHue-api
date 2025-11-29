@@ -9,7 +9,7 @@ namespace PerHue.Api.Controllers.Admin;
 
 [Route("api/admin/[controller]")]
 [ApiController]
-[Authorize(Roles = "admin")]
+[Authorize(Roles = "Admin")]
 public class VerificationController : ControllerBase
 {
 	private readonly IVerificationService _verificationService;
