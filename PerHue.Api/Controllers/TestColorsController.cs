@@ -5,8 +5,6 @@ using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
-using PerHue.Application.Models.TestRequest;
-using PerHue.Infrastructure.Services;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -25,7 +23,7 @@ namespace PerHue.Api.Controllers
 			_aiTestService = aiTestService;
 		}
 
-		[HttpPost]
+		[HttpPost("manual-test")]
 		[Authorize(Roles = "User,Admin")]
 		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
@@ -87,48 +85,6 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { success = false, message = ex.Message });
 			}
-		}
-
-		[HttpPost("expert-test")]
-		[Authorize(Roles = "User,Admin")]
-		// Use the new DTO from the correct namespace
-		public async Task<IActionResult> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
-		{
-			if (model.File == null || model.File.Length == 0)
-			{
-				return BadRequest("No file uploaded.");
-			}
-
-			// Get User ID from token
-			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-			if (string.IsNullOrEmpty(userIdString))
-			{
-				return Unauthorized("User ID not found in token.");
-			}
-
-			if (!int.TryParse(userIdString, out var userId))
-			{
-				return Unauthorized("Invalid User ID format in token.");
-			}
-
-			// 1. Upload image
-			var imageUrl = await _imageUploadService.UploadImageAsync(model.File);
-
-			// 2. Create the new service parameter DTO
-			var parameters = new ExpertTestCreationParameters
-			{
-				UserId = userId,
-				ImageUrl = imageUrl,
-				HairColor = model.HairColor,
-				EyesColor = model.EyesColor,
-				LipsColor = model.LipsColor,
-				SkinColor = model.SkinColor
-			};
-
-			// 3. Create the expert test request
-			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(parameters);
-
-			return Ok(testRequest);
 		}
 
 		/// <summary>
@@ -195,6 +151,47 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { message = "Error processing AI Test", error = ex.Message });
 			}
+		}
+
+		[HttpPost("expert-test")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
+		{
+			if (model.File == null || model.File.Length == 0)
+			{
+				return BadRequest("No file uploaded.");
+			}
+
+			// Get User ID from token
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userIdString))
+			{
+				return Unauthorized("User ID not found in token.");
+			}
+
+			if (!int.TryParse(userIdString, out var userId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			// 1. Upload image
+			var imageUrl = await _imageUploadService.UploadImageAsync(model.File);
+
+			// 2. Create the new service parameter DTO
+			var parameters = new ExpertTestCreationParameters
+			{
+				UserId = userId,
+				ImageUrl = imageUrl,
+				HairColor = model.HairColor,
+				EyesColor = model.EyesColor,
+				LipsColor = model.LipsColor,
+				SkinColor = model.SkinColor
+			};
+
+			// 3. Create the expert test request
+			var testRequest = await _servicesProvider.TestResultService.CreateExpertTestRequestAsync(parameters);
+
+			return Ok(testRequest);
 		}
 	}
 }

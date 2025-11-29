@@ -119,6 +119,12 @@ namespace PerHue.Infrastructure.Services
 
 			return results;
 		}
+		public async Task<IEnumerable<TestRequestModel>> GetAllExpertTestRequestsAsync()
+		{
+			var requests = await _unitOfWork.TestRequestRepository.GetAllExpertTestsAsync();
+			return _mapper.Map<IEnumerable<TestRequestModel>>(requests);
+		}
+
 		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate)
 		{
 			// 1. Get Paged Test Requests

@@ -14,12 +14,10 @@ namespace PerHue.Application.IServices
         Task<AccountDetailModel?> GetAccountDetailAsync(int accountId);
 
         // Expert Management
-        Task<PaginatedResultV2<ExpertPenaltyModel>> GetExpertPenaltiesAsync(ExpertPenaltySearchModel searchModel);
         Task<PaginatedResultV2<ExpertActivityModel>> GetExpertActivityAsync(ExpertActivitySearchModel searchModel);
 
         // Statistics
         Task<RevenueStatisticsModel> GetRevenueStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day");
         Task<TestCountStatisticsModel> GetTestCountStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day", string? testType = null);
-        Task<PenaltyStatisticsModel> GetPenaltyStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day");
     }
 }

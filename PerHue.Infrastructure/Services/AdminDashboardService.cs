@@ -4,6 +4,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.Dashboard;
 using PerHue.Infrastructure.Persistence;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -36,11 +37,11 @@ namespace PerHue.Infrastructure.Services
 				.CountAsync();
 
 			var totalRevenue = await _context.Payments
-				.Where(p => p.Status == "success")
+				.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower())
 				.SumAsync(p => p.Amount);
 
 			var revenueToday = await _context.Payments
-				.Where(p => p.Status == "success" && p.CreatedAt.Date == today)
+				.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower() && p.CreatedAt.Date == today)
 				.SumAsync(p => p.Amount);
 
 			var totalTests = await _context.TestResults.CountAsync();
@@ -210,7 +211,7 @@ namespace PerHue.Infrastructure.Services
 					CreatedDate = u.CreatedDate,
 					LastLoginDate = u.CreatedDate,
 					TestCount = u.TestResults.Count(),
-					TotalSpent = u.Payments.Where(p => p.Status == "success").Sum(p => p.Amount)
+					TotalSpent = u.Payments.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower()).Sum(p => p.Amount)
 				})
 				.ToListAsync();
 
@@ -270,22 +271,10 @@ namespace PerHue.Infrastructure.Services
 				LastLoginDate = user.CreatedDate,
 				TotalTests = user.TestResults.Count,
 				CompletedTests = user.TestResults.Count,
-				TotalSpent = user.Payments.Where(p => p.Status == "success").Sum(p => p.Amount),
+				TotalSpent = user.Payments.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower()).Sum(p => p.Amount),
 				SubscriptionCount = user.UserSubscriptions.Count,
 				RecentActivity = recentActivity,
 				Subscriptions = subscriptions
-			};
-		}
-
-		public async Task<PaginatedResultV2<ExpertPenaltyModel>> GetExpertPenaltiesAsync(ExpertPenaltySearchModel searchModel)
-		{
-			// This would need a penalty table in your database
-			// For now, returning empty result
-			return new PaginatedResultV2<ExpertPenaltyModel>
-			{
-				List = new List<ExpertPenaltyModel>(),
-				Total = 0,
-				Current = searchModel.PageIndex
 			};
 		}
 
@@ -338,14 +327,14 @@ namespace PerHue.Infrastructure.Services
 		public async Task<RevenueStatisticsModel> GetRevenueStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day")
 		{
 			var payments = await _context.Payments
-				.Where(p => p.Status == "success" && p.CreatedAt >= startDate && p.CreatedAt <= endDate)
+				.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower() && p.CreatedAt >= startDate && p.CreatedAt <= endDate)
 				.ToListAsync();
 
 			var totalRevenue = payments.Sum(p => p.Amount);
 
 			var previousPeriod = startDate.AddDays(-(endDate - startDate).Days);
 			var previousRevenue = await _context.Payments
-				.Where(p => p.Status == "success" && p.CreatedAt >= previousPeriod && p.CreatedAt < startDate)
+				.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower() && p.CreatedAt >= previousPeriod && p.CreatedAt < startDate)
 				.SumAsync(p => p.Amount);
 
 			var growthPercentage = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
@@ -386,7 +375,7 @@ namespace PerHue.Infrastructure.Services
 
 			if (!string.IsNullOrEmpty(testType))
 			{
-				// Add filter for test type based on your test type field
+				query = query.Where(t => t.TypeOfTest.ToLower() == testType.ToLower());
 			}
 
 			var tests = await query.ToListAsync();
@@ -411,11 +400,23 @@ namespace PerHue.Infrastructure.Services
 				{
 					Period = g.Key.ToString("yyyy-MM-dd"),
 					Count = g.Count(),
-					CompletedCount = g.Count(t => t.Status == "success"),
-					InProgressCount = g.Count(t => t.Status != "success"),
+					CompletedCount = g.Count(t => t.Status.ToLower() == (nameof(TestStatus.Completed)).ToLower()),
+					InProgressCount = g.Count(t => t.Status.ToLower() == (nameof(TestStatus.Pending)).ToLower() || t.Status.ToLower() == (nameof(TestStatus.Processing)).ToLower()),
 					Date = g.Key
 				})
 				.OrderBy(d => d.Date)
+				.ToList();
+
+			// Calculate tests by type statistics
+			var testsByType = tests
+				.GroupBy(t => t.TypeOfTest)
+				.Select(g => new TestByTypeModel
+				{
+					TestType = g.Key,
+					Count = g.Count(),
+					Percentage = totalTests > 0 ? (double)g.Count() / totalTests * 100 : 0
+				})
+				.OrderByDescending(t => t.Count)
 				.ToList();
 
 			return new TestCountStatisticsModel
@@ -426,27 +427,8 @@ namespace PerHue.Infrastructure.Services
 				TestData = testData,
 				StartDate = startDate,
 				EndDate = endDate,
-				GroupBy = groupBy ?? "day"
-			};
-		}
-
-		public async Task<PenaltyStatisticsModel> GetPenaltyStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day")
-		{
-			// This would need a penalty table in your database
-			// For now, returning empty statistics
-			return new PenaltyStatisticsModel
-			{
-				TotalPenalties = 0,
-				TotalPenaltyAmount = 0,
-				PreviousPeriodPenalties = 0,
-				PreviousPeriodAmount = 0,
-				CountGrowthPercentage = 0,
-				AmountGrowthPercentage = 0,
-				PenaltyData = new List<PenaltyDataPoint>(),
-				PenaltiesByReason = new List<PenaltyByReasonModel>(),
-				StartDate = startDate,
-				EndDate = endDate,
-				GroupBy = groupBy ?? "day"
+				GroupBy = groupBy ?? "day",
+				TestsByType = testsByType
 			};
 		}
 	}
