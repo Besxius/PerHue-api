@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
-	[Route("api/normal-test")]
+	[Route("api/manual-test")]
 	[ApiController]
 	public class TestColorsController : ControllerBase
 	{
@@ -34,12 +34,10 @@ namespace PerHue.Api.Controllers
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 				var testResult = new CreateManualTestResultModel
 				{
-					//UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 					UserId = userId,
 					SelectedColors = model.SelectedColors,
 				};
 				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
-
 				return Ok(new { success = true, data = result });
 			}
 			catch (ArgumentException ex)
@@ -49,6 +47,45 @@ namespace PerHue.Api.Controllers
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = "Error while processing Manual Test", error = ex.Message });
+			}
+		}		
+
+		[HttpGet("list-mine")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetMyManualTests()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var results = await _servicesProvider.TestResultService.GetAllAsyncByUserId(userId);
+				if (results == null)
+				{
+					return NotFound(new { success = false, message = "There are no manual tests yet." });
+				}
+				return Ok(new { success = true, data = results });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		[HttpGet("{id}")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetManualTestById(int id)
+		{
+			try
+			{
+				var result = await _servicesProvider.TestResultService.GetByIdAsync(id);
+				if (result == null)
+				{
+					return NotFound(new { success = false, message = "Manual test not found." });
+				}
+				return Ok(new { success = true, data = result });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
 			}
 		}
 

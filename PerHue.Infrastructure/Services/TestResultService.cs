@@ -46,6 +46,12 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<IEnumerable<TestResultModel>>(testResults);
 		}
 
+		public async Task<IEnumerable<TestResultModel>> GetAllAsyncByUserId(int userId)
+		{
+			var testResults = await _unitOfWork.TestResultRepository.GetAllByUserIdAsync(userId);
+			return _mapper.Map<IEnumerable<TestResultModel>>(testResults);
+		}
+
 		public async Task<TestResultModel> GetByIdAsync(int id)
 		{
 			var testResult = await _unitOfWork.TestResultRepository.GetByIdAsync(id);
