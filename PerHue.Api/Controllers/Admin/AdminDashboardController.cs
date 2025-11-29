@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
@@ -7,7 +8,8 @@ namespace PerHue.Api.Controllers.Admin
 {
     [Route("api/admin/dashboard")]
     [ApiController]
-    public class AdminDashboardController : ControllerBase
+	[Authorize(Roles = "Admin")]
+	public class AdminDashboardController : ControllerBase
     {
         private readonly IServicesProvider _servicesProvider;
 
