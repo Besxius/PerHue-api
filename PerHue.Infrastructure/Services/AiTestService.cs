@@ -33,6 +33,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly ITestRequestRepository _testRequestRepository;
 		private readonly IUserSubscriptionService _subscriptionService;
 		private readonly IMapper _mapper;
+		private readonly IUserService _userService;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -42,7 +43,8 @@ namespace PerHue.Infrastructure.Services
 			IColorMatchingService colorMatchingService,
 			IVirtualTryOnService virtualTryOnService,
 			ITestRequestRepository testRequestRepository,
-			IUserSubscriptionService subscriptionService)
+			IUserSubscriptionService subscriptionService,
+			IUserService userService)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -52,6 +54,7 @@ namespace PerHue.Infrastructure.Services
 			_virtualTryOnService = virtualTryOnService;
 			_testRequestRepository = testRequestRepository;
 			_subscriptionService = subscriptionService;
+			_userService = userService;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model)
@@ -196,6 +199,7 @@ namespace PerHue.Infrastructure.Services
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
 		{
 			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequestId);
+			var user = await _userService.GetByIdAsync(userId);
 
 			if (testRequest == null || testRequest.UserAccountId != userId)
 			{
@@ -206,7 +210,10 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = testRequest.Id,
 				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow
+				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow,
+				UserAccountId = testRequest.UserAccountId,
+				Fullname = user.Fullname,
+				TypeOfTest = testRequest.TypeOfTest
 			};
 
 			if (testRequest.AiTestResult != null)
@@ -226,18 +233,22 @@ namespace PerHue.Infrastructure.Services
 		public async Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId)
 		{
 			var testRequests = await _aiTestRepository.GetTestRequestsByUserIdAsync(userId);
+			var user = await _userService.GetByIdAsync(userId);
 
-			return testRequests.Select(t => new AiTestModel.AiTestResponseModel
+			return testRequests.Select(testRequest => new AiTestModel.AiTestResponseModel
 			{
-				TestRequestId = t.Id,
-				Status = t.Status ?? "Unknown",
-				CreatedDate = t.CreatedDate ?? DateTime.UtcNow,
-				Result = t.AiTestResult != null ? new AiTestResultModel
+				TestRequestId = testRequest.Id,
+				Status = testRequest.Status ?? "Unknown",
+				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow,
+				UserAccountId = testRequest.UserAccountId,
+				Fullname = user.Fullname,
+				TypeOfTest = testRequest.TypeOfTest,
+				Result = testRequest.AiTestResult != null ? new AiTestResultModel
 				{
-					ColorType = t.AiTestResult.ColorType.Name,
-					ColorTypeId = t.AiTestResult.ColorTypeId,
-					SuggestedColor = t.AiTestResult.SuggestedColor.Split(", ").ToList(),
-					AvoidedColor = t.AiTestResult.AvoidedColor.Split(", ").ToList()
+					ColorType = testRequest.AiTestResult.ColorType.Name,
+					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
+					SuggestedColor = testRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+					AvoidedColor = testRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
 				} : null
 			}).ToList();
 		}
@@ -302,6 +313,17 @@ namespace PerHue.Infrastructure.Services
 		{
 			try
 			{
+				// Validate images TRƯỚC KHI TRỪ LƯỢT
+				if (request.FaceImages == null || request.FaceImages.Count == 0)
+				{
+					throw new ArgumentException("At least one face image is required");
+				}
+
+				if (request.FaceImages.Count > 1)
+				{
+					throw new ArgumentException("Only one face image is allowed");
+				}
+
 				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
 				// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
@@ -312,19 +334,15 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
 					throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
 				}
-				await _subscriptionService.DeductUsageAsync(userId);
 
-
-				// Validate images
-				if (request.FaceImages == null || request.FaceImages.Count == 0)
+				var deducted = await _subscriptionService.DeductUsageAsync(userId, isFromExpertTest: false);
+				if (!deducted)
 				{
-					throw new ArgumentException("At least one face image is required");
+					_logger.LogError("Failed to deduct usage for user {UserId}", userId);
+					throw new InvalidOperationException("Failed to deduct usage. Please try again.");
 				}
-
-				if (request.FaceImages.Count > 5)
-				{
-					throw new ArgumentException("Maximum 5 images allowed");
-				}
+				var remainingAfterDeduct = await _subscriptionService.GetRemainingUsageAsync(userId);
+				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remainingAfterDeduct}", userId, remainingAfterDeduct);
 
 				// Tạo TestRequest mới
 				var testRequest = new TestRequest
