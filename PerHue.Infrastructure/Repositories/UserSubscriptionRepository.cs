@@ -132,5 +132,16 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(s => s.EndDate)
 				.FirstOrDefaultAsync();
 		}
+		public async Task<UserSubscription?> GetActiveSubscriptionByTypeAsync(int userId, string type)
+		{
+			return await _context.UserSubscriptions
+				.Include(s => s.ServicePackage)
+				.Where(s => s.UserId == userId
+							&& s.Status == true
+							&& s.RemainingUses > 0
+							&& s.ServicePackage.Type == type)
+				.OrderByDescending(s => s.EndDate)
+				.FirstOrDefaultAsync();
+		}
 	}
 }
