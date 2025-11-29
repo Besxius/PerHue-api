@@ -10,6 +10,8 @@ namespace PerHue.Application.Models.Notification
         public bool IsRead { get; set; }
         public DateTime Time { get; set; }
         public int Receiver { get; set; }
-        public string ReceiverUsername { get; set; }
-    }
+		public string Type { get; set; } = null!;
+		public string ReceiverUsername { get; set; }
+		public int? TestRequestId { get; set; }
+	}
 }
