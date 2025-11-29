@@ -68,7 +68,7 @@ namespace PerHue.Infrastructure.Services
 
 			if (testRequest == null) throw new Exception("Test request not found.");
 			if (testRequest.UserAccountId != userId) throw new UnauthorizedAccessException("You are not authorized.");
-			if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
+			//if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
 
 			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
 			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
