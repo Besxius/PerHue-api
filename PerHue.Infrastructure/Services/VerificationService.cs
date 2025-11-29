@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServices;
+using PerHue.Application.Models;
 using PerHue.Application.Models.VerifyInformation;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
@@ -9,152 +11,243 @@ using System.Threading.Tasks;
 
 namespace PerHue.Infrastructure.Services
 {
-    public class VerificationService : IVerificationService
-    {
-        private readonly IUnitOfWork _unitOfWork;
+	public class VerificationService : IVerificationService
+	{
+		private readonly IUnitOfWork _unitOfWork;
 
-        public VerificationService(IUnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
+		public VerificationService(IUnitOfWork unitOfWork)
+		{
+			_unitOfWork = unitOfWork;
+		}
 
-        public async Task<IEnumerable<VerifyRequestModel>> GetAllVerificationRequestsAsync()
-        {
-            var verifications = await _unitOfWork.VerificationRepository.GetAllVerificationRequestsAsync();
-            return verifications.Select(MapToVerifyRequestModel);
-        }
+		public async Task<PaginatedResultV2<VerifyRequestModel>> GetAllAsync(VerificationSearchModel searchModel)
+		{
+			var baseQuery = _unitOfWork
+					.VerificationRepository
+					.GetQueryable()
+					.Include(v => v.IdNavigation);
 
-        public async Task<VerifyRequestModel> GetVerificationRequestByIdAsync(int id)
-        {
-            var verification = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
-            return verification == null ? null : MapToVerifyRequestModel(verification);
-        }
+			IQueryable<VerifyInformation> query = baseQuery;
 
-        public async Task SubmitVerificationAsync(int userId, VerifyRequestModel model)
-        {
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new InvalidOperationException("User not found.");
-            }
+			// Apply search
+			if (!string.IsNullOrEmpty(searchModel.SearchTerm))
+			{
+				var searchTerm = searchModel.SearchTerm.ToLower();
+				switch (searchModel.SearchBy?.ToLower())
+				{
+					case "id":
+						if (int.TryParse(searchTerm, out int id))
+						{
+							query = query.Where(v => v.Id == id);
+						}
+						else
+						{
+							query = query.Where(v => false); // No results if parsing fails
+						}
+						break;
+					case "email":
+						query = query.Where(v => v.Email.ToLower().Contains(searchTerm));
+						break;
+					case "nickname":
+						query = query.Where(v => v.Nickname.ToLower().Contains(searchTerm));
+						break;
+					case "specialization":
+						query = query.Where(v => v.Specialization.ToLower().Contains(searchTerm));
+						break;
+					case "yearsofexperience":
+						if (int.TryParse(searchTerm, out int years))
+						{
+							query = query.Where(v => v.YearsOfExperience == years);
+						}
+						else
+						{
+							query = query.Where(v => false); // No results if parsing fails
+						}
+						break;
+					default:
+						query = query.Where(v =>
+							v.Email.ToLower().Contains(searchTerm) ||
+							v.Nickname.ToLower().Contains(searchTerm) ||
+							v.Specialization.ToLower().Contains(searchTerm));
+						break;
+				}
+			}
 
-            if (!string.Equals(model.Email, user.Email, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("The provided email must match your account email.");
-            }
+			// Apply sorting
+			if (!string.IsNullOrEmpty(searchModel.SortBy))
+			{
+				var sortBy = searchModel.SortBy.ToLower();
+				var sortOrder = searchModel.SortOrder?.ToLower() ?? "desc";
 
-            if (model.YearsOfExperience <= 0)
-            {
-                throw new InvalidOperationException("Years of experience must be a positive number.");
-            }
+				query = sortBy switch
+				{
+					"id" => sortOrder == "asc" ? query.OrderBy(v => v.Id) : query.OrderByDescending(v => v.Id),
+					"email" => sortOrder == "asc" ? query.OrderBy(v => v.Email) : query.OrderByDescending(v => v.Email),
+					"nickname" => sortOrder == "asc" ? query.OrderBy(v => v.Nickname) : query.OrderByDescending(v => v.Nickname),
+					"specialization" => sortOrder == "asc" ? query.OrderBy(v => v.Specialization) : query.OrderByDescending(v => v.Specialization),
+					"yearsofexperience" => sortOrder == "asc" ? query.OrderBy(v => v.YearsOfExperience) : query.OrderByDescending(v => v.YearsOfExperience),
+					_ => sortOrder == "asc" ? query.OrderBy(v => v.Id) : query.OrderByDescending(v => v.Id)
+				};
+			}
 
-            if (await _unitOfWork.VerificationRepository.ExistsAsync(userId))
-            {
-                throw new InvalidOperationException("User already has a verification request pending.");
-            }
+			// Apply pagination
+			var totalCount = await query.CountAsync();
 
-            if (user.Expert != null)
-            {
-                throw new InvalidOperationException("User is already an expert.");
-            }
+			// var items = query.Skip((searchModel.PageIndex - 1) * searchModel.PageSize).Take(searchModel.PageSize).ToList();
+			var items = await query
+				.Skip((searchModel.PageIndex - 1) * searchModel.PageSize)
+				.Take(searchModel.PageSize)
+				.Select(v => new VerifyRequestModel
+				{
+					Id = v.Id,
+					Email = v.Email,
+					Nickname = v.Nickname,
+					Specialization = v.Specialization,
+					Bio = v.Bio,
+					YearsOfExperience = v.YearsOfExperience,
+					Languages = v.Languages
+				})
+				.ToListAsync();
 
-            var verifyInfo = new VerifyInformation
-            {
-                Id = userId,
-                Email = model.Email,
-                Nickname = model.Nickname,
-                Specialization = model.Specialization,
-                Bio = model.Bio,
-                YearsOfExperience = model.YearsOfExperience,
-                Languages = model.Languages,
-            };
+			return new PaginatedResultV2<VerifyRequestModel>
+			{
+				List = items,
+				Total = totalCount,
+				Current = searchModel.PageIndex
+			};
+		}
 
-            await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
-            await _unitOfWork.SaveChangesWithTransactionAsync();
-        }
+		public async Task<VerifyRequestModel> GetVerificationRequestByIdAsync(int id)
+		{
+			var verification = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
+			return verification == null ? null : MapToVerifyRequestModel(verification);
+		}
 
-        public async Task<bool> AcceptVerificationAsync(int id)
-        {
-            var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
-            if (verifyInfo == null)
-            {
-                throw new InvalidOperationException("Verification request not found.");
-            }
+		public async Task SubmitVerificationAsync(int userId, VerifyRequestModel model)
+		{
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+			if (user == null)
+			{
+				throw new InvalidOperationException("User not found.");
+			}
 
-            var expert = new Expert
-            {
-                Id = id,
-                Nickname = verifyInfo.Nickname,
-                Specialization = verifyInfo.Specialization,
-                Bio = verifyInfo.Bio,
-                YearsOfExperience = verifyInfo.YearsOfExperience,
-                Languages = verifyInfo.Languages,
-                Rating = 0,
-                Introduction = null,
-                FacebookAccount = null,
-                LinkedInAccount = null,
-                InstagramAccount = null
-            };
+			if (!string.Equals(model.Email, user.Email, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new InvalidOperationException("The provided email must match your account email.");
+			}
 
-            await _unitOfWork.ExpertRepository.CreateAsync(expert);
+			if (model.YearsOfExperience <= 0)
+			{
+				throw new InvalidOperationException("Years of experience must be a positive number.");
+			}
 
-            // Update user role to expert
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-            if (user != null)
-            {
-                var expertRole = await _unitOfWork.RoleRepository.GetByIdAsync(3);
-                if (expertRole != null)
-                {
-                    user.RoleId = expertRole.Id;
-                    await _unitOfWork.UserRepository.UpdateAsync(user);
-                }
-            }
+			if (await _unitOfWork.VerificationRepository.ExistsAsync(userId))
+			{
+				throw new InvalidOperationException("User already has a verification request pending.");
+			}
 
-            await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
-            await _unitOfWork.SaveChangesWithTransactionAsync(); 
-            return true;
-        }
+			if (user.Expert != null)
+			{
+				throw new InvalidOperationException("User is already an expert.");
+			}
 
-        public async Task<bool> DenyVerificationAsync(int id, string reason)
-        {
-            var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
-            if (verifyInfo == null)
-            {
-                throw new InvalidOperationException("Verification request not found.");
-            }
+			var verifyInfo = new VerifyInformation
+			{
+				Id = userId,
+				Email = model.Email,
+				Nickname = model.Nickname,
+				Specialization = model.Specialization,
+				Bio = model.Bio,
+				YearsOfExperience = model.YearsOfExperience,
+				Languages = model.Languages,
+			};
 
-            var notification = new Notification
-            {
-                Receiver = id,
-                Title = "Expert Verification Request Denied",
-                Content = $"Your verification request has been denied. Reason: {reason}",
-                ReceivedTime = DateTime.Now,
-                IsRead = false
-            };
+			await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+		}
 
-            await _unitOfWork.NotificationRepository.CreateAsync(notification);
-            await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
-            await _unitOfWork.SaveChangesWithTransactionAsync();
-            return true; 
-        }
+		public async Task<bool> AcceptVerificationAsync(int id)
+		{
+			var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
+			if (verifyInfo == null)
+			{
+				throw new InvalidOperationException("Verification request not found.");
+			}
 
-        public async Task<bool> HasPendingVerificationAsync(int userId)
-        {
-            return await _unitOfWork.VerificationRepository.ExistsAsync(userId);
-        }
+			var expert = new Expert
+			{
+				Id = id,
+				Nickname = verifyInfo.Nickname,
+				Specialization = verifyInfo.Specialization,
+				Bio = verifyInfo.Bio,
+				YearsOfExperience = verifyInfo.YearsOfExperience,
+				Languages = verifyInfo.Languages,
+				Rating = 0,
+				Introduction = null,
+				FacebookAccount = null,
+				LinkedInAccount = null,
+				InstagramAccount = null
+			};
 
-        private VerifyRequestModel MapToVerifyRequestModel(VerifyInformation verifyInformation)
-        {
-            return new VerifyRequestModel
-            {
-                Id = verifyInformation.Id,
-                Email = verifyInformation.Email,
-                Nickname = verifyInformation.Nickname,
-                Specialization = verifyInformation.Specialization,
-                Bio = verifyInformation.Bio,
-                YearsOfExperience = verifyInformation.YearsOfExperience,
-                Languages = verifyInformation.Languages,
-            };
-        }
-    }
+			await _unitOfWork.ExpertRepository.CreateAsync(expert);
+
+			// Update user role to expert
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+			if (user != null)
+			{
+				var expertRole = await _unitOfWork.RoleRepository.GetByIdAsync(3);
+				if (expertRole != null)
+				{
+					user.RoleId = expertRole.Id;
+					await _unitOfWork.UserRepository.UpdateAsync(user);
+				}
+			}
+
+			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+			return true;
+		}
+
+		public async Task<bool> DenyVerificationAsync(int id, string reason)
+		{
+			var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
+			if (verifyInfo == null)
+			{
+				throw new InvalidOperationException("Verification request not found.");
+			}
+
+			var notification = new Notification
+			{
+				Receiver = id,
+				Title = "Expert Verification Request Denied",
+				Content = $"Your verification request has been denied. Reason: {reason}",
+				ReceivedTime = DateTime.Now,
+				IsRead = false
+			};
+
+			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+			return true;
+		}
+
+		public async Task<bool> HasPendingVerificationAsync(int userId)
+		{
+			return await _unitOfWork.VerificationRepository.ExistsAsync(userId);
+		}
+
+		private VerifyRequestModel MapToVerifyRequestModel(VerifyInformation verifyInformation)
+		{
+			return new VerifyRequestModel
+			{
+				Id = verifyInformation.Id,
+				Email = verifyInformation.Email,
+				Nickname = verifyInformation.Nickname,
+				Specialization = verifyInformation.Specialization,
+				Bio = verifyInformation.Bio,
+				YearsOfExperience = verifyInformation.YearsOfExperience,
+				Languages = verifyInformation.Languages,
+			};
+		}
+	}
 }
