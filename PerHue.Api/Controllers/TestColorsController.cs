@@ -9,7 +9,7 @@ using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
-	[Route("api/manual-test")]
+	[Route("api/testcolors")]
 	[ApiController]
 	public class TestColorsController : ControllerBase
 	{
