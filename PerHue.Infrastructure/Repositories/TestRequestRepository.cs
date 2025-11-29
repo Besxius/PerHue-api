@@ -39,6 +39,17 @@ namespace PerHue.Infrastructure.Repositories
 				.ToListAsync();
 		}
 
+		public async Task<IEnumerable<TestRequest>> GetAllExpertTestsAsync()
+		{
+			return await _context.TestRequests
+				.Include(tr => tr.UserAccount)
+				.Include(tr => tr.AiPictures)
+				.Include(tr => tr.Pictures)
+				.Where(tr => tr.TypeOfTest == "Expert")
+				.OrderByDescending(tr => tr.CreatedDate)
+				.ToListAsync();
+		}
+
 		public async Task<TestRequest> CreateTestRequestAsync(int userAccountId, string typeOfTest)
 		{
 			var testRequest = new TestRequest
@@ -137,8 +148,6 @@ namespace PerHue.Infrastructure.Repositories
 			return (items, totalCount);
 		}
 
-
-		//==========================================
 
 
 		public async Task<List<TestRequest>> GetByUserIdAsync(int userId)
