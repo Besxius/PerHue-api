@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models;
 using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
@@ -25,7 +26,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost("manual-test")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
+		public async Task<ActionResult<TestResultModel>> NormalTestSimpleColor(ManualTestSimpleColorModel model)
 		{
 			try
 			{
@@ -36,7 +37,7 @@ namespace PerHue.Api.Controllers
 					SelectedColors = model.SelectedColors,
 				};
 				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
-				return Ok(new { success = true, data = result });
+				return Ok(result);
 			}
 			catch (ArgumentException ex)
 			{
@@ -54,7 +55,7 @@ namespace PerHue.Api.Controllers
 		[HttpPost("ai-test")]
 		[Consumes("multipart/form-data")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
+		public async Task<ActionResult<AiTestResultResponseModel>> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
 		{
 			try
 			{
@@ -65,12 +66,7 @@ namespace PerHue.Api.Controllers
 					return Unauthorized(new { message = "User not authenticated" });
 				}
 
-				// Validate images
-				if (requestDto.FaceImages == null || requestDto.FaceImages.Count == 0)
-				{
-					return BadRequest(new { message = "At least one face image is required" });
-				}
-
+				
 				// Validate image files
 				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
 				var maxFileSize = 10 * 1024 * 1024; // 10MB
@@ -97,12 +93,7 @@ namespace PerHue.Api.Controllers
 				// Gọi service với userId
 				var result = await _aiTestService.ProcessAiTestAsync2(userId, requestDto);
 
-				return Ok(new
-				{
-					success = true,
-					data = result,
-					message = "AI Test created and processed successfully"
-				});
+				return Ok(result);
 			}
 			catch (ArgumentException ex)
 			{
@@ -116,7 +107,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost("expert-test")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
+		public async Task<ActionResult<TestRequestModel>> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
 		{
 			if (model.File == null || model.File.Length == 0)
 			{

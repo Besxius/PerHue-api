@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models;
 using PerHue.Application.Models.ExpertTestResult;
+using PerHue.Application.Models.ManualTest;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -20,7 +22,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("manual-test/my-history")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyManualTests()
+		public async Task<ActionResult<IEnumerable<TestResultModel>>> GetMyManualTests()
 		{
 			try
 			{
@@ -40,7 +42,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("manual-test/{id}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetManualTestById(int id)
+		public async Task<ActionResult<TestResultModel>> GetManualTestById(int id)
 		{
 			try
 			{
@@ -59,7 +61,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("ai-test/my-history")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyAiTests()
+		public async Task<ActionResult<List<AiTestModel.AiTestResponseModel>>> GetMyAiTests()
 		{
 			try
 			{
@@ -75,7 +77,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("ai-test/{testRequestId}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetAiTestResult(int testRequestId)
+		public async Task<ActionResult<AiTestModel.AiTestResponseModel?>> GetAiTestResult(int testRequestId)
 		{
 			try
 			{
@@ -97,7 +99,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("expert-tests/my-history")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetAllExpertTestRequests()
+		public async Task<ActionResult<IEnumerable<TestRequestModel>>> GetAllExpertTestRequests()
 		{
 			try
 			{
@@ -138,7 +140,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("expert-tests/all")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyExpertTestHistory(
+		public async Task<ActionResult<PaginatedResult<ExpertTestResultModel>>> GetMyExpertTestHistory(
 			[FromQuery] int pageIndex = 1,
 			[FromQuery] int pageSize = 10,
 			[FromQuery] DateTime? fromDate = null,
