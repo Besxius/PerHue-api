@@ -48,7 +48,7 @@ namespace PerHue.Api.Controllers
 		{
 			return await _servicesProvider.UserSubscriptionService.GetHistoryUserSubscriptionsByUserIdAsync(userId);
 		}
-		[HttpPost]
+/*		[HttpPost]
 		[Route("subscription/{packageId}")]
 		//[Authorize(Roles = "User")]
 		public async Task<string> Post([FromRoute] int packageId, string returnUrl, string cancelUrl)
@@ -76,9 +76,9 @@ namespace PerHue.Api.Controllers
 			};
 			var paymentUrl = await _servicesProvider.PaymentService.CreateAsync(paymentModel);
 			return paymentUrl;
-		}
+		}*/
 
-		[HttpGet("subscription/success")]
+		/*[HttpGet("subscription/success")]
 		public async Task<IActionResult> SubscriptionSuccess(
 			[FromQuery] string code,
 			[FromQuery] string id,
@@ -133,7 +133,7 @@ namespace PerHue.Api.Controllers
 			{
 				Message = "Payment process failed!",
 			});
-		}
+		}*/
 
 		private string CreateDateTimeStringNoSeparator(DateTime dateTime)
 		{
@@ -276,7 +276,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost]
 		[Route("subscription/{packageId}")]
-		[Authorize]
+		//[Authorize]
 		public async Task<string> CreateSubscriptionByPackageId([FromRoute] int packageId, string returnUrl, string cancelUrl)
 		{
 			if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
@@ -319,12 +319,6 @@ namespace PerHue.Api.Controllers
 
 				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
 				var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
-
-				// Parse userId từ description (format: yyyyMMddHHmmssU{userId}P{packageId})
-				//var description = paymentInfo.description;
-				//var userIdStartIndex = description.IndexOf("U") + 1;
-				//var userIdEndIndex = description.IndexOf("P");
-				//var userId = int.Parse(description.Substring(userIdStartIndex, userIdEndIndex - userIdStartIndex));
 
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 				// Tạo subscription với status tương ứng
