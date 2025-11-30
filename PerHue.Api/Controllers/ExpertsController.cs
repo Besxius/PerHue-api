@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models;
 using PerHue.Application.Models.Expert;
 using PerHue.Application.Models.ExpertTestResult;
 using System.Collections.Generic;
@@ -79,6 +80,60 @@ namespace PerHue.Api.Controllers
 				return NotFound();
 			}
 			return Ok(expert);
+		}
+
+		private async Task<int> GetCurrentExpertId()
+		{
+			var email = User.FindFirst(ClaimTypes.Email)?.Value;
+			var user = await _servicesProvider.UserService.GetByEmailAsync(email);
+			return user.Id; // In this system, ExpertId is the same as UserAccount.Id
+		}
+
+		[HttpGet("requests")]
+		public async Task<IActionResult> GetPendingRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetPendingRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpPost("respond")]
+		public async Task<IActionResult> SubmitResponse([FromBody] CreateTestResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			var expertId = await GetCurrentExpertId();
+			var response = await _servicesProvider.ExpertTestService.SubmitResponseAsync(model, expertId);
+			return Ok(response);
+		}
+		[HttpGet("review-requests")]
+		public async Task<IActionResult> GetPendingReviewRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+		[HttpPost("vote")]
+		public async Task<IActionResult> VoteForResponse([FromBody] VoteResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			try
+			{
+				var expertId = await GetCurrentExpertId();
+				var response = await _servicesProvider.ExpertTestService.VoteForResponseAsync(model, expertId);
+				return Ok(response);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 	}
 }
