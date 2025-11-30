@@ -306,7 +306,6 @@ namespace PerHue.Infrastructure.Services
 			return true;
 		}
 
-
 		//================================================================
 
 		public async Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
