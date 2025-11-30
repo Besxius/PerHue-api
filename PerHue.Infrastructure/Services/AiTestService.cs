@@ -313,15 +313,15 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				// Validate images TRƯỚC KHI TRỪ LƯỢT
-				if (request.FaceImages == null || request.FaceImages.Count == 0)
-				{
-					throw new ArgumentException("At least one face image is required");
-				}
+				//if (request.FaceImages == null || request.FaceImages.Count == 0)
+				//{
+				//	throw new ArgumentException("At least one face image is required");
+				//}
 
-				if (request.FaceImages.Count > 1)
-				{
-					throw new ArgumentException("Only one face image is allowed");
-				}
+				//if (request.FaceImages.Count > 1)
+				//{
+				//	throw new ArgumentException("Only one face image is allowed");
+				//}
 
 				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
@@ -333,8 +333,9 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
 					throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
 				}
+				await _subscriptionService.DeductUsageAsync(userId);
 
-				var deducted = await _subscriptionService.DeductUsageAsync(userId, isFromExpertTest: false);
+				var deducted = await _subscriptionService.DeductUsageAsync(userId);
 				if (!deducted)
 				{
 					_logger.LogError("Failed to deduct usage for user {UserId}", userId);
@@ -379,6 +380,24 @@ namespace PerHue.Infrastructure.Services
 				// Lưu ảnh người dùng vào bảng Picture
 				await _aiTestRepository.CreatePicturesAsync(pictures);
 				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
+
+
+				//var deducted = await _subscriptionService.DeductUsageAsync(userId, isFromExpertTest);
+
+				//if (!deducted && !isFromExpertTest)
+				//{
+				//	_logger.LogError($"Failed to deduct usage for user {userId}");
+				//	testRequest.Status = TestStatus.Failed.ToString();
+				//	await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+				//	throw new InvalidOperationException("Failed to deduct usage. Please try again.");
+				//}
+
+				//if (!isFromExpertTest)
+				//{
+				//	var newRemaining = await _subscriptionService.GetRemainingUsageAsync(userId);
+				//	_logger.LogInformation($"Successfully deducted 1 AI test usage for user {userId}. New remaining: {newRemaining}");
+				//}
+
 
 				// Xử lý AI analysis
 				try

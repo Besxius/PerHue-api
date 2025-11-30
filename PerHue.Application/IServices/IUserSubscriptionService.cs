@@ -12,8 +12,13 @@ namespace PerHue.Application.IServices
 
 		Task<bool> HasRemainingUsageAsync(int userId);
 		Task<int> GetRemainingUsageAsync(int userId);
-		Task<bool> DeductUsageAsync(int userId, bool isFromExpertTest = false);
+		Task<bool> DeductUsageAsync(int userId);
 		Task<bool> RefundUsageAsync(int userId);
 		Task<UserSubscriptionModel?> GetActiveSubscriptionAsync(int userId);
+
+		Task<bool> BooleanForHasRemainingUsageAsync(int userId);
+		Task<int> GetAllActiveRemainingUsageByUserIdAsync(int userId);
+		Task<Dictionary<int, PackageUsageInfo>> GetRemainingUsageByPackageAsync(int userId);
+		Task<List<PackageUsageSummary>> GetUsageSummaryAsync(int userId);
 	}
 }
