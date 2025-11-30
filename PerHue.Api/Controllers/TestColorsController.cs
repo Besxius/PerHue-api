@@ -25,17 +25,14 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost("manual-test")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
+		public async Task<IActionResult> NormalTestSimpleColor(CreateManualTestResultModel model)
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var testResult = new CreateManualTestResultModel
-				{
-					UserId = userId,
-					SelectedColors = model.SelectedColors,
-				};
-				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
+				model.UserId = userId;
+
+				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(model);
 				return Ok(new { success = true, data = result });
 			}
 			catch (ArgumentException ex)
@@ -66,7 +63,7 @@ namespace PerHue.Api.Controllers
 				}
 
 				// Validate images
-				if (requestDto.FaceImages == null || requestDto.FaceImages.Count == 0)
+				if (requestDto.FaceImages == null || requestDto.FaceImages == null)
 				{
 					return BadRequest(new { message = "At least one face image is required" });
 				}
@@ -75,23 +72,21 @@ namespace PerHue.Api.Controllers
 				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
 				var maxFileSize = 10 * 1024 * 1024; // 10MB
 
-				foreach (var image in requestDto.FaceImages)
+				var image = requestDto.FaceImages;
+				var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+				if (!allowedExtensions.Contains(extension))
 				{
-					var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-					if (!allowedExtensions.Contains(extension))
-					{
-						return BadRequest(new { message = $"Invalid file type: {image.FileName}. Only JPG, JPEG, and PNG are allowed." });
-					}
+					return BadRequest(new { message = $"Invalid file type: {image.FileName}. Only JPG, JPEG, and PNG are allowed." });
+				}
 
-					if (image.Length > maxFileSize)
-					{
-						return BadRequest(new { message = $"File too large: {image.FileName}. Maximum size is 10MB." });
-					}
+				if (image.Length > maxFileSize)
+				{
+					return BadRequest(new { message = $"File too large: {image.FileName}. Maximum size is 10MB." });
+				}
 
-					if (image.Length == 0)
-					{
-						return BadRequest(new { message = $"Empty file: {image.FileName}" });
-					}
+				if (image.Length == 0)
+				{
+					return BadRequest(new { message = $"Empty file: {image.FileName}" });
 				}
 
 				// Gọi service với userId

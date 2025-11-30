@@ -18,5 +18,6 @@ namespace PerHue.Application.IServices
 		Task<TestResultModel> GetNormalTestCapsulePaletteResult(CreateManualTestResultModel model);
 		Task<TestResultModel> GetNormalTestSimpleColorResult(CreateManualTestResultModel model);
 		Task<IEnumerable<TestResultModel>> GetAllAsyncByUserId(int userId);
+		Task<TestResultModel> GetByTestResultIdAsync(int id);
 	}
 }
