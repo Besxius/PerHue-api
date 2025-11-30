@@ -46,7 +46,7 @@ namespace PerHue.Api.Controllers
 		{
 			try
 			{
-				var result = await _services.TestResultService.GetByIdAsync(id);
+				var result = await _services.TestResultService.GetByTestResultIdAsync(id);
 				if (result == null)
 				{
 					return NotFound(new { success = false, message = "Manual test not found." });
