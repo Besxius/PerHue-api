@@ -314,15 +314,15 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				// Validate images TRƯỚC KHI TRỪ LƯỢT
-				if (request.FaceImages == null || request.FaceImages.Count == 0)
-				{
-					throw new ArgumentException("At least one face image is required");
-				}
+				//if (request.FaceImages == null || request.FaceImages.Count == 0)
+				//{
+				//	throw new ArgumentException("At least one face image is required");
+				//}
 
-				if (request.FaceImages.Count > 1)
-				{
-					throw new ArgumentException("Only one face image is allowed");
-				}
+				//if (request.FaceImages.Count > 1)
+				//{
+				//	throw new ArgumentException("Only one face image is allowed");
+				//}
 
 				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
