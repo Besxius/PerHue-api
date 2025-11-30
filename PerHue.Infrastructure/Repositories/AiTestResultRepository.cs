@@ -40,7 +40,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(t => t.AiTestResult)
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
-				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI Test")
+				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI")
 				.OrderByDescending(t => t.CreatedDate)
 				.ToListAsync();
 		}
