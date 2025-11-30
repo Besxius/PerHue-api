@@ -13,11 +13,17 @@ namespace PerHue.Application.Models.ManualTest
 
 		public int UserId { get; set; }
 
-		public string Picture { get; set; } = null!;
+		public string? Picture { get; set; } = null!;
 
 		public string? Type { get; set; }
 
 		public int ColorTypeId { get; set; }
+
+		public DateTime CreatedDate { get; set; }
+
+		public string ChosenColor { get; set; } = null!;
+
+		public string SuggestedColor { get; set; } = null!;
 
 		public virtual ColorTypeModel ColorType { get; set; } = null!;
 

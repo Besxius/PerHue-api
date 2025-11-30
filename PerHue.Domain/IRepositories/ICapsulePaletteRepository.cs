@@ -11,5 +11,6 @@ namespace PerHue.Domain.IRepositories
 		Task<IEnumerable<CapsulePalette>> GetRelativeCapsulePalettes(List<string> selectedColors, string colorType);
 		Task<IEnumerable<CapsulePalette>> GetByColorTypeIdAsync(int colorTypeId);
 		Task<(IEnumerable<CapsulePalette> Items, int TotalCount)> GetByColorTypeIdPagedAsync(int colorTypeId, int pageIndex, int pageSize, string? searchTerm);
+		Task<IEnumerable<CapsulePalette>> GetListByColorsIdAsync(List<int> colorIds);
 	}
 }

@@ -17,6 +17,8 @@ public partial class ServicePackage
 
     public short Uses { get; set; }
 
+    public string Type { get; set; } = null!;
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? UpdatedDate { get; set; }

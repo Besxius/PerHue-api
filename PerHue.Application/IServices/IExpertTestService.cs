@@ -18,6 +18,9 @@ namespace PerHue.Application.IServices
 		Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId);
 
 		Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync();
+
+		Task<IEnumerable<TestRequestModel>> GetAllExpertTestRequestsAsync();
+
 		Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate);
 		Task RateExpertResponseAsync(RateExpertResponseModel model, int userId);
 		Task<TestResponseModel> VoteForResponseAsync(VoteResponseModel model, int expertId);
