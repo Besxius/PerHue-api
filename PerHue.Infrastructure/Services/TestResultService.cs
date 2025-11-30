@@ -49,7 +49,42 @@ namespace PerHue.Infrastructure.Services
 		public async Task<IEnumerable<TestResultModel>> GetAllAsyncByUserId(int userId)
 		{
 			var testResults = await _unitOfWork.TestResultRepository.GetAllByUserIdAsync(userId);
-			return _mapper.Map<IEnumerable<TestResultModel>>(testResults);
+			var resultList = new List<TestResultModel>();
+
+			foreach (var testResult in testResults)
+			{
+				var result = _mapper.Map<TestResultModel>(testResult);
+
+				// Lấy CapsulePalettes và Colors từ ColorType
+				var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
+				var colors = await _unitOfWork.ColorRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
+
+				result.CapsulePalettes = _mapper.Map<List<CapsulePaletteModel>>(capsulePalettes);
+				result.Colors = _mapper.Map<List<ColorModel>>(colors);
+
+				resultList.Add(result);
+			}
+
+			return resultList;
+		}
+
+		public async Task<TestResultModel> GetByTestResultIdAsync(int id)
+		{
+			var testResult = await _unitOfWork.TestResultRepository.GetByTestResultIdAsync(id);
+			if (testResult == null)
+			{
+				return null;
+			}
+
+			var result = _mapper.Map<TestResultModel>(testResult);
+
+			var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
+			var colors = await _unitOfWork.ColorRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
+
+			result.CapsulePalettes = _mapper.Map<List<CapsulePaletteModel>>(capsulePalettes);
+			result.Colors = _mapper.Map<List<ColorModel>>(colors);
+
+			return result;
 		}
 
 		public async Task<TestResultModel> GetByIdAsync(int id)
@@ -193,7 +228,7 @@ namespace PerHue.Infrastructure.Services
 			//}
 
 			var suggestedColorString = string.Join(",", suggestedColors);
-
+			
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
@@ -206,9 +241,21 @@ namespace PerHue.Infrastructure.Services
 			//Check uploaded picture
 			if (model.Picture != null)
 			{
-				var modelPictureLink = await _imageUploadService.UploadImageAsync(model.Picture);
-				_logger.LogInformation($"Received picture upload: {model.Picture.FileName}, size: {model.Picture.Length} bytes");
-				entity.Picture = modelPictureLink;
+				try
+				{
+					var modelPictureLink = await _imageUploadService.UploadImageAsync(model.Picture);
+					_logger.LogInformation($"Image uploaded successfully: {modelPictureLink}");
+					entity.Picture = modelPictureLink; // Gán URL sau khi upload
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError($"Failed to upload image: {ex.Message}");
+					// Quyết định: throw exception hoặc tiếp tục với Picture = ""
+				}
+			}
+			else
+			{
+				_logger.LogWarning("No picture provided or picture is empty");
 			}
 
 			await _unitOfWork.TestResultRepository.CreateAsync(entity);
