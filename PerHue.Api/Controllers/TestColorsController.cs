@@ -9,7 +9,7 @@ using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
 {
-	[Route("api/testcolors")]
+	[Route("api/[controller]")]
 	[ApiController]
 	public class TestColorsController : ControllerBase
 	{
@@ -48,49 +48,10 @@ namespace PerHue.Api.Controllers
 			}
 		}		
 
-		[HttpGet("list-mine")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyManualTests()
-		{
-			try
-			{
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var results = await _servicesProvider.TestResultService.GetAllAsyncByUserId(userId);
-				if (results == null)
-				{
-					return NotFound(new { success = false, message = "There are no manual tests yet." });
-				}
-				return Ok(new { success = true, data = results });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
-
-		[HttpGet("{id}")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetManualTestById(int id)
-		{
-			try
-			{
-				var result = await _servicesProvider.TestResultService.GetByIdAsync(id);
-				if (result == null)
-				{
-					return NotFound(new { success = false, message = "Manual test not found." });
-				}
-				return Ok(new { success = true, data = result });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
-
 		/// <summary>
 		/// Tạo và xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)
 		/// </summary>
-		[HttpPost("ai-test/create-and-process")]
+		[HttpPost("ai-test")]
 		[Consumes("multipart/form-data")]
 		[Authorize(Roles = "User,Admin")]
 		public async Task<IActionResult> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
