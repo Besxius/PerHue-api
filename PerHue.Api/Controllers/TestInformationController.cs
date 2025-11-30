@@ -18,6 +18,98 @@ namespace PerHue.Api.Controllers
 			_services = services;
 		}
 
+		[HttpGet("manual-test/my-history")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetMyManualTests()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var results = await _services.TestResultService.GetAllAsyncByUserId(userId);
+				if (results == null)
+				{
+					return NotFound(new { success = false, message = "There are no manual tests yet." });
+				}
+				return Ok(results);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		[HttpGet("manual-test/{id}")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetManualTestById(int id)
+		{
+			try
+			{
+				var result = await _services.TestResultService.GetByIdAsync(id);
+				if (result == null)
+				{
+					return NotFound(new { success = false, message = "Manual test not found." });
+				}
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		[HttpGet("ai-test/my-history")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetMyAiTests()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var results = await _services.AiTestService.GetUserAiTestsAsync(userId);
+				return Ok(results);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		[HttpGet("ai-test/{testRequestId}")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetAiTestResult(int testRequestId)
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var result = await _services.AiTestService.GetAiTestResultAsync(testRequestId, userId);
+
+				if (result == null)
+				{
+					return NotFound(new { success = false, message = "Test not found" });
+				}
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		[HttpGet("expert-tests/my-history")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<IActionResult> GetAllExpertTestRequests()
+		{
+			try
+			{
+				var results = await _services.ExpertTestService.GetAllExpertTestRequestsAsync();
+				return Ok(results);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
+
 		[HttpGet("expert-test/{testRequestId}")]
 		[Authorize(Roles = "User,Admin")]
 		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int testRequestId) // <-- Changed return type
@@ -43,21 +135,8 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
+
 		[HttpGet("expert-tests/all")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetAllExpertTestRequests()
-		{
-			try
-			{
-				var results = await _services.ExpertTestService.GetAllExpertTestRequestsAsync();
-				return Ok(results);
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, $"Internal server error: {ex.Message}");
-			}
-		}
-		[HttpGet("expert-tests/my-history")]
 		[Authorize(Roles = "User,Admin")]
 		public async Task<IActionResult> GetMyExpertTestHistory(
 			[FromQuery] int pageIndex = 1,
@@ -83,87 +162,6 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		[HttpGet("manual-test/my-history")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyManualTests()
-		{
-			try
-			{
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var results = await _services.TestResultService.GetAllAsyncByUserId(userId);
-				if (results == null)
-				{
-					return NotFound(new { success = false, message = "There are no manual tests yet." });
-				}
-				return Ok(new { success = true, data = results });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
-
-		[HttpGet("manual-test/{id}")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetManualTestById(int id)
-		{
-			try
-			{
-				var result = await _services.TestResultService.GetByIdAsync(id);
-				if (result == null)
-				{
-					return NotFound(new { success = false, message = "Manual test not found." });
-				}
-				return Ok(new { success = true, data = result });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
-
-		/// <summary>
-		/// Lấy kết quả AI test theo ID testRequest
-		/// </summary>
-		[HttpGet("ai-test/{testRequestId}")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetAiTestResult(int testRequestId)
-		{
-			try
-			{
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var result = await _services.AiTestService.GetAiTestResultAsync(testRequestId, userId);
-
-				if (result == null)
-				{
-					return NotFound(new { success = false, message = "Test not found" });
-				}
-
-				return Ok(new { success = true, data = result });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
-
-		/// <summary>
-		/// Lấy tất cả AI tests của user
-		/// </summary>
-		[HttpGet("ai-test/my-history")]
-		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> GetMyAiTests()
-		{
-			try
-			{
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var results = await _services.AiTestService.GetUserAiTestsAsync(userId);
-				return Ok(new { success = true, data = results });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
+		
 	}
 }
