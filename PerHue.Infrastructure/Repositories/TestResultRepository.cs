@@ -18,6 +18,16 @@ namespace PerHue.Infrastructure.Repositories
 			return await _context.TestResults.Include(p => p.User).ToListAsync();
 		}
 
+		public async Task<TestResult> GetByTestResultIdAsync(int id)
+		{
+			return await _context.TestResults
+				.Include(p => p.User)
+				.Include(tr => tr.ColorType)
+				.ThenInclude(ct => ct.CapsulePalettes)
+				.ThenInclude(cp => cp.Colors)
+				.FirstOrDefaultAsync(p => p.Id == id);
+		}
+
 		public async Task<TestResult> GetByIdAsync(int id)
 		{
 			return await _context.TestResults.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == id);
@@ -27,6 +37,9 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.TestResults
 				.Include(tr => tr.User)
+				.Include(tr => tr.ColorType)
+				.ThenInclude(ct => ct.CapsulePalettes)
+				.ThenInclude(cp => cp.Colors)
 				.Where(tr => tr.UserId == userId)
 				.ToListAsync();
 		}
