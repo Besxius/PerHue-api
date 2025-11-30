@@ -169,7 +169,6 @@ namespace PerHue.Infrastructure.Services
 			var filteredPalettes = capsulePalettesList
 				.Where(cp => cp.ColorTypeId == dominantColorType.ColorTypeId)
 				.DistinctBy(cp => cp.Id)
-				.Take(5)
 				.ToList();
 
 			//Format ChosenColor và SuggestedColor
@@ -177,7 +176,6 @@ namespace PerHue.Infrastructure.Services
 
 			//SuggestedColor: Lấy top màu matched + thêm một số màu nổi bật từ ColorType
 			var suggestedColors = matchedColorsInColorType
-				.Take(10)
 				.Select(c => c.HexCode)
 				.ToList();
 
