@@ -25,17 +25,14 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost("manual-test")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<IActionResult> NormalTestSimpleColor(ManualTestSimpleColorModel model)
+		public async Task<IActionResult> NormalTestSimpleColor(CreateManualTestResultModel model)
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var testResult = new CreateManualTestResultModel
-				{
-					UserId = userId,
-					SelectedColors = model.SelectedColors,
-				};
-				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
+				model.UserId = userId;
+
+				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(model);
 				return Ok(new { success = true, data = result });
 			}
 			catch (ArgumentException ex)
@@ -63,6 +60,12 @@ namespace PerHue.Api.Controllers
 				if (userId == 0)
 				{
 					return Unauthorized(new { message = "User not authenticated" });
+				}
+
+				// Validate images
+				if (requestDto.FaceImages == null || requestDto.FaceImages == null)
+				{
+					return BadRequest(new { message = "At least one face image is required" });
 				}
 
 				// Validate image files
