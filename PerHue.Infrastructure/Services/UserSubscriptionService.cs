@@ -137,17 +137,10 @@ namespace PerHue.Infrastructure.Services
 		/// <param name="userId">ID của user</param>
 		/// <param name="isFromExpertTest">True nếu là request từ Expert Test (không trừ lượt)</param>
 		/// <returns>True nếu trừ thành công, False nếu không còn lượt hoặc lỗi</returns>
-		public async Task<bool> DeductUsageAsync(int userId, bool isFromExpertTest = false)
+		public async Task<bool> DeductUsageAsync(int userId)
 		{
 			try
 			{
-				// KHÔNG TRỪ LƯỢT NẾU LÀ REQUEST TỪ EXPERT TEST
-				if (isFromExpertTest)
-				{
-					_logger.LogInformation($"Skipping usage deduction for user {userId} - Expert Test request");
-					return true;
-				}
-
 				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId);
 
 				if (!deducted)
@@ -223,5 +216,112 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
+
+		// ========================= PAYMENT ============================
+
+		// Kiểm tra có lượt sử dụng còn lại không
+		public async Task<bool> BooleanForHasRemainingUsageAsync(int userId)
+		{
+			return await _unitOfWork.UserSubscriptionRepository.HasRemainingUsageAsync(userId);
+		}
+
+		// Lấy TỔNG lượt sử dụng còn lại (tất cả packages)
+		public async Task<int> GetAllActiveRemainingUsageByUserIdAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetaAllActiveSubscriptionsByUserIdAsync(userId);
+			return subscriptions.Sum(s => s.RemainingUses);
+		}
+
+		// Lấy lượt sử dụng còn lại THEO TỪNG PACKAGE
+		public async Task<Dictionary<int, PackageUsageInfo>> GetRemainingUsageByPackageAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetaAllActiveSubscriptionsByUserIdAsync(userId);
+
+			var packageUsage = subscriptions
+				.GroupBy(s => s.ServicePackageId)
+				.ToDictionary(
+					g => g.Key,
+					g => new PackageUsageInfo
+					{
+						PackageId = g.Key,
+						PackageName = g.First().ServicePackage?.Name ?? "Unknown",
+						TotalRemaining = g.Sum(s => s.RemainingUses),
+						SubscriptionCount = g.Count()
+					}
+				);
+
+			return packageUsage;
+		}
+
+		// Trừ 1 lượt sử dụng
+		/*public async Task<bool> DeductUsageAsync(int userId)
+		{
+			try
+			{
+				var deducted = await _repository.DeductRemainingUsesAsync(userId);
+
+				if (deducted)
+				{
+					var remaining = await GetRemainingUsageAsync(userId);
+					_logger.LogInformation($"Deducted 1 usage for user {userId}. Total remaining: {remaining}");
+				}
+				else
+				{
+					_logger.LogWarning($"Failed to deduct usage for user {userId} - No active subscriptions");
+				}
+
+				return deducted;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Error deducting usage for user {userId}");
+				return false;
+			}
+		}*/
+
+		// Hoàn trả 1 lượt sử dụng
+		/*public async Task<bool> RefundUsageAsync(int userId)
+		{
+			try
+			{
+				var refunded = await _repository.RefundRemainingUsesAsync(userId);
+
+				if (refunded)
+				{
+					_logger.LogInformation($"Refunded 1 usage for user {userId}");
+				}
+
+				return refunded;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Error refunding usage for user {userId}");
+				return false;
+			}
+		}*/
+
+		// Lấy thông tin tổng hợp sử dụng theo package
+		public async Task<List<PackageUsageSummary>> GetUsageSummaryAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsWithPackageByUserIdAsync(userId);
+
+			var summary = subscriptions
+				.Where(s => s.Status == true && s.EndDate >= DateTime.UtcNow)
+				.GroupBy(s => new { s.ServicePackageId, s.ServicePackage.Name })
+				.Select(g => new PackageUsageSummary
+				{
+					PackageId = g.Key.ServicePackageId,
+					PackageName = g.Key.Name,
+					TotalPurchased = g.Sum(s => s.ServicePackage.Uses),
+					TotalUsed = g.Sum(s => s.ServicePackage.Uses - s.RemainingUses),
+					TotalRemaining = g.Sum(s => s.RemainingUses),
+					ActiveSubscriptionCount = g.Count(),
+					EarliestExpiry = g.Min(s => s.EndDate),
+					LatestExpiry = g.Max(s => s.EndDate)
+				})
+				.ToList();
+
+			return summary;
+		}
 	}
 }
