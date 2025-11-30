@@ -31,7 +31,7 @@ namespace PerHue.Api.Controllers
 		/// Tạo AI test request và upload ảnh
 		/// </summary>
 		[HttpPost]
-		public async Task<IActionResult> CreateAiTest([FromForm] AiTestModel.CreateAiTestRequestModel model)
+/*		public async Task<IActionResult> CreateAiTest([FromForm] AiTestModel.CreateAiTestRequestModel model)
 		{
 			try
 			{
@@ -47,12 +47,12 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { success = false, message = "An error occurred", details = ex.Message });
 			}
-		}
+		}*/
 
 		/// <summary>
 		/// Lấy kết quả AI test theo ID testRequest
 		/// </summary>
-		[HttpGet("{testRequestId}")]
+/*		[HttpGet("{testRequestId}")]
 		public async Task<IActionResult> GetAiTestResult(int testRequestId)
 		{
 			try
@@ -71,12 +71,12 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { success = false, message = ex.Message });
 			}
-		}
+		}*/
 
 		/// <summary>
 		/// Lấy tất cả AI tests của user
 		/// </summary>
-		[HttpGet("my-tests")]
+/*		[HttpGet("my-tests")]
 		public async Task<IActionResult> GetMyAiTests()
 		{
 			try
@@ -89,12 +89,12 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { success = false, message = ex.Message });
 			}
-		}
+		}*/
 
 		/// <summary>
 		/// Xử lý lại một AI test (nếu failed)
 		/// </summary>
-		[HttpPost("{testRequestId}/reprocess")]
+/*		[HttpPost("{testRequestId}/reprocess")]
 		public async Task<IActionResult> ReprocessAiTest(int testRequestId)
 		{
 			try
@@ -110,7 +110,7 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, new { success = false, message = ex.Message });
 			}
-		}
+		}*/
 
 		/// <summary>
 		/// Tạo và xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)

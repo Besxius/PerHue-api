@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 
 namespace PerHue.Infrastructure.AI
 {
-	internal class GeminiService
+	public class GeminiService
 	{
 		private readonly HttpClient _httpClient;
 		private readonly string _apiKey;

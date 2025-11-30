@@ -1,19 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
+using PerHue.Infrastructure.Basic;
 using PerHue.Infrastructure.Persistence;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace PerHue.Infrastructure.Repositories;
 
-public class VerificationRepository : IVerificationRepository
+public class VerificationRepository : GenericRepository<VerifyInformation>, IVerificationRepository
 {
-    private readonly PerHueDbContext _context;
-
-    public VerificationRepository(PerHueDbContext context)
-    {
-        _context = context;
+    public VerificationRepository(PerHueDbContext context) : base(context)
+	{
     }
 
     public async Task<IEnumerable<VerifyInformation>> GetAllVerificationRequestsAsync()

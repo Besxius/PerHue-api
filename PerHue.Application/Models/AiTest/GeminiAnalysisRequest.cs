@@ -104,8 +104,6 @@ namespace PerHue.Application.Models.AiTest
 		public string? EyesColor { get; set; }
 		public string? LipsColor { get; set; }
 		public string? SkinColor { get; set; }
-		public bool GenerateVirtualTryOn { get; set; } = true;
-		public bool IsFromExpertTest { get; set; } = false;
 	}
 
 	public class AiTestCompleteResponse
@@ -116,5 +114,20 @@ namespace PerHue.Application.Models.AiTest
 		public List<ColorMatchResult> MatchedAvoidedColors { get; set; } = new();
 		public VirtualTryOnResponse? VirtualTryOnResults { get; set; }
 		public string Status { get; set; } = string.Empty;
+	}
+
+	public class AiTestResultResponseModel
+	{
+		public int Id { get; set; }
+
+		public string? Note { get; set; }
+
+		public DateTime? Date { get; set; }
+
+		public string SuggestedColor { get; set; } = null!;
+
+		public string AvoidedColor { get; set; } = null!;
+
+		public int ColorTypeId { get; set; }
 	}
 }

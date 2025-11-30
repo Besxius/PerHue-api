@@ -68,7 +68,7 @@ namespace PerHue.Infrastructure.Services
 
 			if (testRequest == null) throw new Exception("Test request not found.");
 			if (testRequest.UserAccountId != userId) throw new UnauthorizedAccessException("You are not authorized.");
-			if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
+			//if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
 
 			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
 			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
@@ -119,6 +119,12 @@ namespace PerHue.Infrastructure.Services
 
 			return results;
 		}
+		public async Task<IEnumerable<TestRequestModel>> GetAllExpertTestRequestsAsync()
+		{
+			var requests = await _unitOfWork.TestRequestRepository.GetAllExpertTestsAsync();
+			return _mapper.Map<IEnumerable<TestRequestModel>>(requests);
+		}
+
 		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate)
 		{
 			// 1. Get Paged Test Requests

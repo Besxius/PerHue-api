@@ -22,5 +22,29 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.TestResults.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == id);
 		}
+
+		public async Task<IEnumerable<TestResult>> GetAllByUserIdAsync(int userId)
+		{
+			return await _context.TestResults
+				.Include(tr => tr.User)
+				.Where(tr => tr.UserId == userId)
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<TestResult>> GetTestResultListAllWithUserAndColorTypeAsync()
+		{
+			return await _context.TestResults
+				.Include(tr => tr.User)
+				.Include(tr => tr.ColorType)
+				.ToListAsync();
+		}
+
+		public async Task<TestResult> GetTestResultDetailByIdWithUserAndColorTypeAsync(int id)
+		{
+			return await _context.TestResults
+				.Include(tr => tr.User)
+				.Include(tr => tr.ColorType)
+				.FirstOrDefaultAsync(tr => tr.Id == id);
+		}
 	}
 }
