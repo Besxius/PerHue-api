@@ -33,4 +33,10 @@ public class VerifyRequestModel
     [Required(ErrorMessage = "Certification information is required")]
     [StringLength(500, ErrorMessage = "Certification details cannot exceed 500 characters")]
     public string Certification { get; set; } = null!;
+
+	public string? FacebookAccount { get; set; }
+
+	public string? LinkedInAccount { get; set; }
+
+	public string? InstagramAccount { get; set; }
 }
