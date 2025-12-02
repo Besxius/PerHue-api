@@ -109,7 +109,10 @@ namespace PerHue.Infrastructure.Services
 					Specialization = v.Specialization,
 					Bio = v.Bio,
 					YearsOfExperience = v.YearsOfExperience,
-					Languages = v.Languages
+					Languages = v.Languages,
+					LinkedInAccount = v.LinkedInAccount,
+					FacebookAccount = v.FacebookAccount,
+					InstagramAccount = v.InstagramAccount
 				})
 				.ToListAsync();
 
@@ -218,9 +221,9 @@ namespace PerHue.Infrastructure.Services
 				Languages = verifyInfo.Languages,
 				Rating = 0,
 				Introduction = null,
-				FacebookAccount = null,
-				LinkedInAccount = null,
-				InstagramAccount = null
+				FacebookAccount = verifyInfo.FacebookAccount,
+				LinkedInAccount = verifyInfo.LinkedInAccount,
+				InstagramAccount = verifyInfo.InstagramAccount
 			};
 
 			await _unitOfWork.ExpertRepository.CreateAsync(expert);
@@ -281,6 +284,9 @@ namespace PerHue.Infrastructure.Services
 				Bio = verifyInformation.Bio,
 				YearsOfExperience = verifyInformation.YearsOfExperience,
 				Languages = verifyInformation.Languages,
+				FacebookAccount = verifyInformation.FacebookAccount,
+				LinkedInAccount = verifyInformation.LinkedInAccount,
+				InstagramAccount = verifyInformation.InstagramAccount,
 			};
 		}
 	}
