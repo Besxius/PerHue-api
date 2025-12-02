@@ -23,7 +23,13 @@ public partial class VerifyInformation
 
     public string Status { get; set; } = null!;
 
-    public virtual UserAccount IdNavigation { get; set; } = null!;
+	public string? FacebookAccount { get; set; }
+
+	public string? LinkedInAccount { get; set; }
+
+	public string? InstagramAccount { get; set; }
+
+	public virtual UserAccount IdNavigation { get; set; } = null!;
 
     public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
 }
