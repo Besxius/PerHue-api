@@ -9,7 +9,7 @@ public interface IVerificationRepository : IGenericRepository<VerifyInformation>
 {
     Task<IEnumerable<VerifyInformation>> GetAllVerificationRequestsAsync();
     Task<VerifyInformation> GetVerificationRequestByIdAsync(int id);
-    Task CreateVerificationRequestAsync(VerifyInformation verifyInformation);
-    Task DeleteVerificationRequestAsync(int id);
+    Task<VerifyInformation> CreateVerificationRequestAsync(VerifyInformation verifyInformation);
+    Task DeleteVerificationRequestAsync(int id, bool chosenStatus);
     Task<bool> ExistsAsync(int userId);
 }

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Net.payOS.Types;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Payment;
+using PerHue.Application.Models.PaymentLog;
 using PerHue.Application.Models.UserSubscription;
 using PerHue.Infrastructure.Utils;
 using System.Security.Claims;
@@ -48,7 +50,7 @@ namespace PerHue.Api.Controllers
 		{
 			return await _servicesProvider.UserSubscriptionService.GetHistoryUserSubscriptionsByUserIdAsync(userId);
 		}
-/*		[HttpPost]
+		[HttpPost]
 		[Route("subscription/{packageId}")]
 		//[Authorize(Roles = "User")]
 		public async Task<string> Post([FromRoute] int packageId, string returnUrl, string cancelUrl)
@@ -57,10 +59,13 @@ namespace PerHue.Api.Controllers
 			{
 				throw new UnauthorizedAccessException("User is not authenticated.");
 			}
+
+			var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
 			var model = new CreateUserSubscriptionModel
 			{
 				//UserId = 2,
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+				UserId = userId,
 				ServicePackageId = packageId,
 			};
 
@@ -76,9 +81,95 @@ namespace PerHue.Api.Controllers
 			};
 			var paymentUrl = await _servicesProvider.PaymentService.CreateAsync(paymentModel);
 			return paymentUrl;
-		}*/
+		}
 
-		/*[HttpGet("subscription/success")]
+		/// <summary>
+		/// Payment callback - xử lý cả success và cancel
+		/// </summary>
+		[HttpGet("payment-callback")]
+		public async Task<IActionResult> PaymentCallback(
+			[FromQuery] string code,
+			[FromQuery] string id,
+			[FromQuery] bool cancel,
+			[FromQuery] string status,
+			[FromQuery] string orderCode)
+		{
+			try
+			{
+
+				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
+				var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackage.Id}";
+
+				//Tạo payment ở dưới db
+				var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
+				{
+					UserId = userId,
+					Amount = paymentInfo.amount,
+					Description = description,
+					OrderCode = orderCode,
+					ServicePackageId = servicePackage.Id
+				};
+				int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
+
+				//Tạo payment log ở dưới db
+				var paymentLogDb = new CreatePaymentLogModel
+				{
+					PaymentId = paymentId,
+					Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
+					CreatedAt = DateTime.Now,
+					OldStatus = "Pending",
+					NewStatus = !cancel ? "Cancelled" : "Success", // cancel = false => success = true
+					Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
+				};
+				await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
+
+				
+
+				if (!cancel)
+				{
+					// Tạo subscription với status tương ứng
+					var model = new CreateUserSubscriptionModel
+					{
+						UserId = userId,
+						ServicePackageId = servicePackage.Id,
+						Status = !cancel // cancel = false => success = true
+					};
+
+					var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+					// THANH TOÁN THÀNH CÔNG
+					return Ok(new
+					{
+						success = true,
+						message = "Payment successful",
+						data = new
+						{
+							subscriptionId,
+							userId,
+							packageId = servicePackage.Id,
+							packageName = servicePackage.Name
+						}
+					});
+				}
+				else
+				{
+					// THANH TOÁN THẤT BẠI
+					return Ok(new
+					{
+						success = false,
+						message = "Payment cancelled",
+					});
+				}
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+/*		[HttpGet("subscription/success")]
 		public async Task<IActionResult> SubscriptionSuccess(
 			[FromQuery] string code,
 			[FromQuery] string id,
@@ -273,100 +364,6 @@ namespace PerHue.Api.Controllers
 		}
 
 		// ============== API THANH TOÁN ==============
-
-		[HttpPost]
-		[Route("subscription/{packageId}")]
-		//[Authorize]
-		public async Task<string> CreateSubscriptionByPackageId([FromRoute] int packageId, string returnUrl, string cancelUrl)
-		{
-			if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
-			{
-				throw new UnauthorizedAccessException("User is not authenticated.");
-			}
-			var model = new CreateUserSubscriptionModel
-			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				ServicePackageId = packageId,
-			};
-
-			var package = await _servicesProvider.ServicePackageService.GetByIdAsync(packageId);
-			var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{model.UserId}P{model.ServicePackageId}";
-
-			var paymentModel = new PayOSRequestModel
-			{
-				Amount = package.Price,
-				Description = description,
-				ReturnUrl = returnUrl,
-				CancelUrl = cancelUrl
-			};
-			var paymentUrl = await _servicesProvider.PaymentService.CreateAsync(paymentModel);
-			return paymentUrl;
-		}
-
-		/// <summary>
-		/// Payment callback - xử lý cả success và cancel
-		/// </summary>
-		[HttpGet("payment-callback")]
-		public async Task<IActionResult> PaymentCallback(
-			[FromQuery] string code,
-			[FromQuery] string id,
-			[FromQuery] bool cancel,
-			[FromQuery] string status,
-			[FromQuery] string orderCode)
-		{
-			try
-			{
-
-				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-				var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
-
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				// Tạo subscription với status tương ứng
-				var model = new CreateUserSubscriptionModel
-				{
-					UserId = userId,
-					ServicePackageId = servicePackage.Id,
-					Status = !cancel // cancel = false => success = true
-				};
-
-				var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
-
-				if (!cancel)
-				{
-					// THANH TOÁN THÀNH CÔNG
-					return Ok(new
-					{
-						success = true,
-						message = "Payment successful",
-						data = new
-						{
-							subscriptionId,
-							userId,
-							packageId = servicePackage.Id,
-							packageName = servicePackage.Name
-						}
-					});
-				}
-				else
-				{
-					// THANH TOÁN THẤT BẠI
-					return Ok(new
-					{
-						success = false,
-						message = "Payment cancelled",
-						data = new
-						{
-							subscriptionId,
-							userId
-						}
-					});
-				}
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new { success = false, message = ex.Message });
-			}
-		}
 
 
 	}

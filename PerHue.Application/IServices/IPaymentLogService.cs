@@ -5,5 +5,6 @@ namespace PerHue.Application.IServices
 {
 	public interface IPaymentLogService : IGenericService<PaymentLogModel>
 	{
+		Task CreatePaymentLogAsync(CreatePaymentLogModel model);
 	}
 }
