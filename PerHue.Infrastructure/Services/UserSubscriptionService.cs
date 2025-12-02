@@ -27,8 +27,15 @@ namespace PerHue.Infrastructure.Services
 			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId);
 			var servicePackage = await _unitOfWork.ServicePackageRepository.GetByIdAsync(model.ServicePackageId);
 
+			var findUserSubscription = await _unitOfWork.UserSubscriptionRepository
+				.FindSameTypeSubscriptionIsActiveOrNot(user.Id, servicePackage.Id);
+			if (findUserSubscription != null)
+			{
+				findUserSubscription.Status = false;
+			}
+
 			entity.StartDate = DateTime.Now;
-			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration);
+			entity.EndDate = DateTime.Now.AddMonths(servicePackage.Duration);
 			entity.CreateAt = DateTime.Now;
 			entity.Status = model.Status;
 			entity.User = user;
