@@ -62,12 +62,6 @@ namespace PerHue.Api.Controllers
 					return Unauthorized(new { message = "User not authenticated" });
 				}
 
-				// Validate images
-				if (requestDto.FaceImages == null || requestDto.FaceImages == null)
-				{
-					return BadRequest(new { message = "At least one face image is required" });
-				}
-
 				// Validate image files
 				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
 				var maxFileSize = 10 * 1024 * 1024; // 10MB
