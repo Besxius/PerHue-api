@@ -27,8 +27,16 @@ namespace PerHue.Infrastructure.Services
 			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId);
 			var servicePackage = await _unitOfWork.ServicePackageRepository.GetByIdAsync(model.ServicePackageId);
 
+			var findUserSubscription = await _unitOfWork.UserSubscriptionRepository
+				.FindSameTypeSubscriptionIsActiveOrNot(user.Id, servicePackage.Id);
+			if (findUserSubscription != null)
+			{
+				findUserSubscription.Status = false;
+				await _unitOfWork.UserSubscriptionRepository.UpdateAsync(findUserSubscription);
+			}
+
 			entity.StartDate = DateTime.Now;
-			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration);
+			entity.EndDate = DateTime.Now.AddMonths(servicePackage.Duration);
 			entity.CreateAt = DateTime.Now;
 			entity.Status = model.Status;
 			entity.User = user;
@@ -132,33 +140,34 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		/// <summary>
-		/// Trừ 1 lượt sử dụng của user
+		/// Trừ 1 lượt sử dụng của user theo packageId và type
 		/// </summary>
 		/// <param name="userId">ID của user</param>
-		/// <param name="isFromExpertTest">True nếu là request từ Expert Test (không trừ lượt)</param>
+		/// <param name="packageId">ID của service package</param>
+		/// <param name="type">Loại package (VD: "AI", "Expert", "Test")</param>
 		/// <returns>True nếu trừ thành công, False nếu không còn lượt hoặc lỗi</returns>
-		public async Task<bool> DeductUsageAsync(int userId)
+		public async Task<bool> DeductUsageAsync(int userId, int packageId, string type)
 		{
 			try
 			{
-				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId);
+				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId, packageId, type);
 
 				if (!deducted)
 				{
-					_logger.LogWarning($"Failed to deduct usage for user {userId} - No active subscription or no remaining uses");
+					_logger.LogWarning($"Failed to deduct usage for user {userId}, package {packageId}, type {type} - No active subscription or no remaining uses");
 					return false;
 				}
 
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 
 				var remaining = await GetRemainingUsageAsync(userId);
-				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remaining}");
+				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}, package {packageId}, type {type}. Total remaining: {remaining}");
 
 				return true;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, $"Error deducting usage for user {userId}");
+				_logger.LogError(ex, $"Error deducting usage for user {userId}, package {packageId}, type {type}");
 				return false;
 			}
 		}
@@ -166,28 +175,31 @@ namespace PerHue.Infrastructure.Services
 		/// <summary>
 		/// Hoàn trả 1 lượt sử dụng (trong trường hợp lỗi xử lý)
 		/// </summary>
-		public async Task<bool> RefundUsageAsync(int userId)
+		/// <param name="userId">ID của user</param>
+		/// <param name="packageId">ID của service package</param>
+		/// <param name="type">Loại package (VD: "AI", "Expert", "Test")</param>
+		public async Task<bool> RefundUsageAsync(int userId, int packageId, string type)
 		{
 			try
 			{
-				var refunded = await _unitOfWork.UserSubscriptionRepository.RefundRemainingUsesAsync(userId);
+				var refunded = await _unitOfWork.UserSubscriptionRepository.RefundRemainingUsesAsync(userId, packageId, type);
 
 				if (!refunded)
 				{
-					_logger.LogWarning($"Failed to refund usage for user {userId}");
+					_logger.LogWarning($"Failed to refund usage for user {userId}, package {packageId}, type {type}");
 					return false;
 				}
 
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 
 				var remaining = await GetRemainingUsageAsync(userId);
-				_logger.LogInformation($"Successfully refunded 1 usage for user {userId}. Remaining: {remaining}");
+				_logger.LogInformation($"Successfully refunded 1 usage for user {userId}, package {packageId}, type {type}. Total remaining: {remaining}");
 
 				return true;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, $"Error refunding usage for user {userId}");
+				_logger.LogError(ex, $"Error refunding usage for user {userId}, package {packageId}, type {type}");
 				return false;
 			}
 		}
@@ -218,12 +230,6 @@ namespace PerHue.Infrastructure.Services
 
 
 		// ========================= PAYMENT ============================
-
-		// Kiểm tra có lượt sử dụng còn lại không
-		public async Task<bool> BooleanForHasRemainingUsageAsync(int userId)
-		{
-			return await _unitOfWork.UserSubscriptionRepository.HasRemainingUsageAsync(userId);
-		}
 
 		// Lấy TỔNG lượt sử dụng còn lại (tất cả packages)
 		public async Task<int> GetAllActiveRemainingUsageByUserIdAsync(int userId)

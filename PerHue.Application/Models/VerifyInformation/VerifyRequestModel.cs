@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace PerHue.Application.Models.VerifyInformation;
@@ -39,4 +40,12 @@ public class VerifyRequestModel
 	public string? LinkedInAccount { get; set; }
 
 	public string? InstagramAccount { get; set; }
+
+	public List<PhotoAndType> photoAndTypes { get; set; } = new();
+}
+
+public class PhotoAndType
+{
+	public IFormFile Photo { get; set; }
+	public string Type { get; set; }
 }

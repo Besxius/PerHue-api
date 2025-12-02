@@ -74,4 +74,11 @@
 		ExpertTestImage // Image for expert consultation
 	}
 
+	public enum VerificationStatus
+	{
+		Pending,
+		Approved,
+		Denied
+	}
+
 }
