@@ -1,4 +1,5 @@
 ﻿using PerHue.Application.Basic;
+using PerHue.Application.Models.Payment;
 using PerHue.Application.Models.UserSubscription;
 
 namespace PerHue.Application.IServices

@@ -30,5 +30,12 @@ namespace PerHue.Domain.IRepositories
 
 		Task<int> AutoExpireSubscriptionsAsync();
 
+		Task<UserSubscription?> GetActiveSubscriptionByPackageIdAsync(int userId, int servicePackageId);
+		Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId);
+		Task<bool> DisableSubscriptionAsync(int subscriptionId);
+		Task<int> GetTotalRemainingUsagesByUserIdAsync(int userId);
+
+		Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot(int userId, int packageId);
+
 	}
 }

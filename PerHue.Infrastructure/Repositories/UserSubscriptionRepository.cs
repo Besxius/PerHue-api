@@ -256,5 +256,60 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(s => s.EndDate)
 				.FirstOrDefaultAsync();
 		}
+
+
+
+
+		public async Task<UserSubscription?> GetActiveSubscriptionByPackageIdAsync(int userId, int servicePackageId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Include(us => us.User)
+				.FirstOrDefaultAsync(us =>
+					us.UserId == userId &&
+					us.ServicePackageId == servicePackageId &&
+					us.Status == true &&
+					us.EndDate >= DateTime.Now);
+		}
+
+		public async Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us =>
+					us.UserId == userId &&
+					us.Status == true &&
+					us.EndDate >= DateTime.Now)
+				.ToListAsync();
+		}
+
+		public async Task<bool> DisableSubscriptionAsync(int subscriptionId)
+		{
+			var subscription = await GetByIdAsync(subscriptionId);
+			if (subscription == null)
+				return false;
+
+			subscription.Status = false;
+			await UpdateAsync(subscription);
+			return true;
+		}
+
+		public async Task<int> GetTotalRemainingUsagesByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Where(us =>
+					us.UserId == userId &&
+					us.Status == true &&
+					us.EndDate >= DateTime.Now)
+				.SumAsync(us => us.RemainingUses);
+		}
+
+		public async Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot (int userId, int packageId)
+		{
+			return await _context.UserSubscriptions
+				.Where(us => us.UserId == userId && us.ServicePackageId == packageId && us.Status == true)
+				.OrderByDescending(us => us.EndDate)
+				.FirstOrDefaultAsync();
+		}
 	}
 }
