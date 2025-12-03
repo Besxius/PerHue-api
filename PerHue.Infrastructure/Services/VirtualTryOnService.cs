@@ -37,8 +37,8 @@ namespace PerHue.Infrastructure.Services
             // ✅ SỬ DỤNG MODEL HỖ TRỢ IMAGE GENERATION
             var client = new GoogleAi(_apiKey);
             //var model = client.CreateGenerativeModel("gemini-2.5-flash-image");
-            var model = client.CreateGenerativeModel("gemini-3-pro-image-preview");
-				var response = new VirtualTryOnResponse();
+			var model = client.CreateGenerativeModel("gemini-3-pro-image-preview");
+			var response = new VirtualTryOnResponse();
 
             // ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
             var selectedColors = request.SuggestedColorHexCodes
