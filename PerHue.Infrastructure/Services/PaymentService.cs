@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Net.payOS.Types;
 using PerHue.Application.IServices;
+using PerHue.Application.Models;
 using PerHue.Application.Models.Payment;
 using PerHue.Application.Models.Payment.An;
 using PerHue.Domain.Entities;
@@ -75,6 +76,114 @@ namespace PerHue.Infrastructure.Services
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			return createdPayment;
+		}
+
+		/// <summary>
+		/// Lấy tất cả payments của user với phân trang
+		/// </summary>
+		public async Task<PaginatedResultV2<PaymentDetailModel>> GetPaymentHistoryByUserIdAsync(
+			int userId,
+			int pageIndex,
+			int pageSize)
+		{
+			var (payments, totalCount) = await _unitOfWork.PaymentRepository
+				.GetPaymentsByUserIdWithPaginationAsync(userId, pageIndex, pageSize);
+
+			var models = payments.Select(p => new PaymentDetailModel
+			{
+				Id = p.Id,
+				UserId = p.UserId,
+				UserFullname = p.User?.Fullname ?? string.Empty,
+				UserEmail = p.User?.Email ?? string.Empty,
+				Amount = p.Amount,
+				Description = p.Description,
+				OrderCode = p.TransactionId,
+				CreatedAt = p.CreatedAt,
+				PaymentLogs = p.PaymentLogs?.Select(pl => new PaymentLogDetailModel
+				{
+					Id = pl.Id,
+					PaymentId = pl.PaymentId,
+					Message = pl.Mesage,
+					CreatedAt = pl.CreatedAt,
+					OldStatus = pl.OldStatus,
+					NewStatus = pl.NewStatus,
+					Metadata = pl.Metadata
+				}).OrderByDescending(pl => pl.CreatedAt).ToList() ?? new()
+			}).ToList();
+
+			return new PaginatedResultV2<PaymentDetailModel>
+			{
+				List = models,
+				Total = totalCount,
+				Current = pageIndex
+			};
+		}
+
+		/// <summary>
+		/// Lấy chi tiết payment theo id với PaymentLogs
+		/// </summary>
+		public async Task<PaymentDetailModel?> GetPaymentDetailByIdAsync(int paymentId, int userId)
+		{
+			var payment = await _unitOfWork.PaymentRepository.GetPaymentByIdWithLogsAsync(paymentId);
+
+			if (payment == null)
+				return null;
+
+			// Kiểm tra ownership
+			if (payment.UserId != userId)
+				return null;
+
+			return new PaymentDetailModel
+			{
+				Id = payment.Id,
+				UserId = payment.UserId,
+				UserFullname = payment.User?.Fullname ?? string.Empty,
+				UserEmail = payment.User?.Email ?? string.Empty,
+				Amount = payment.Amount,
+				Description = payment.Description,
+				OrderCode = payment.TransactionId,
+				CreatedAt = payment.CreatedAt,
+				PaymentLogs = payment.PaymentLogs?.Select(pl => new PaymentLogDetailModel
+				{
+					Id = pl.Id,
+					PaymentId = pl.PaymentId,
+					Message = pl.Mesage,
+					CreatedAt = pl.CreatedAt,
+					OldStatus = pl.OldStatus,
+					NewStatus = pl.NewStatus,
+					Metadata = pl.Metadata
+				}).OrderByDescending(pl => pl.CreatedAt).ToList() ?? new()
+			};
+		}
+
+		/// <summary>
+		/// Lấy tất cả payments của user (không phân trang)
+		/// </summary>
+		public async Task<List<PaymentDetailModel>> GetAllPaymentsByUserIdAsync(int userId)
+		{
+			var payments = await _unitOfWork.PaymentRepository.GetAllPaymentsByUserIdAsync(userId);
+
+			return payments.Select(p => new PaymentDetailModel
+			{
+				Id = p.Id,
+				UserId = p.UserId,
+				UserFullname = p.User?.Fullname ?? string.Empty,
+				UserEmail = p.User?.Email ?? string.Empty,
+				Amount = p.Amount,
+				Description = p.Description,
+				OrderCode = p.TransactionId,
+				CreatedAt = p.CreatedAt,
+				PaymentLogs = p.PaymentLogs?.Select(pl => new PaymentLogDetailModel
+				{
+					Id = pl.Id,
+					PaymentId = pl.PaymentId,
+					Message = pl.Mesage,
+					CreatedAt = pl.CreatedAt,
+					OldStatus = pl.OldStatus,
+					NewStatus = pl.NewStatus,
+					Metadata = pl.Metadata
+				}).OrderByDescending(pl => pl.CreatedAt).ToList() ?? new()
+			}).ToList();
 		}
 
 	}
