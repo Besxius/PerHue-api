@@ -67,6 +67,10 @@ namespace PerHue.Infrastructure.Services
 				return null;
 			}
 
+			var pictureUrl = await _aiTestRepository.GetPictureUrlByTestRequestIdAsync(testRequest.Id);
+
+			//var picture = await _imageUploadService.DownloadImageAsFormFileAsync(pictureUrl);
+
 			var response = new AiTestModel.AiTestResponseModel
 			{
 				TestRequestId = testRequest.Id,
@@ -74,7 +78,9 @@ namespace PerHue.Infrastructure.Services
 				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow,
 				UserAccountId = testRequest.UserAccountId,
 				Fullname = user.Fullname,
-				TypeOfTest = testRequest.TypeOfTest
+				TypeOfTest = testRequest.TypeOfTest,
+				//Image = picture
+				ImageUrl = pictureUrl
 			};
 
 			if (testRequest.AiTestResult != null)
@@ -96,20 +102,66 @@ namespace PerHue.Infrastructure.Services
 			var testRequests = await _aiTestRepository.GetTestRequestsByUserIdAsync(userId);
 			var user = await _userService.GetByIdAsync(userId);
 
-			return testRequests.Select(testRequest => new AiTestModel.AiTestResponseModel
+			var pictureUrlTasks = testRequests.Select(async tr => new
 			{
-				TestRequestId = testRequest.Id,
-				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow,
-				UserAccountId = testRequest.UserAccountId,
-				Fullname = user.Fullname,
-				TypeOfTest = testRequest.TypeOfTest,
-				Result = testRequest.AiTestResult != null ? new AiTestResultModel
+				TestRequest = tr,
+				PictureUrl = await _aiTestRepository.GetPictureUrlByTestRequestIdAsync(tr.Id)
+			});
+
+			var testRequestsWithUrls = await Task.WhenAll(pictureUrlTasks);
+
+			/*// Download tất cả ảnh song song
+			var responseTasks = testRequestsWithUrls.Select(async item =>
+			{
+				IFormFile? picture = null;
+				if (!string.IsNullOrEmpty(item.PictureUrl))
 				{
-					ColorType = testRequest.AiTestResult.ColorType.Name,
-					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
-					SuggestedColor = testRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
-					AvoidedColor = testRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
+					try
+					{
+						picture = await _imageUploadService.DownloadImageAsFormFileAsync(item.PictureUrl);
+					}
+					catch (Exception ex)
+					{
+						_logger.LogWarning(ex, "Failed to download image for TestRequest {TestRequestId}", item.TestRequest.Id);
+					}
+				}
+
+				return new AiTestModel.AiTestResponseModel
+				{
+					TestRequestId = item.TestRequest.Id,
+					Status = item.TestRequest.Status ?? "Unknown",
+					CreatedDate = item.TestRequest.CreatedDate ?? DateTime.UtcNow,
+					UserAccountId = item.TestRequest.UserAccountId,
+					Fullname = user.Fullname,
+					TypeOfTest = item.TestRequest.TypeOfTest,
+					Image = picture,
+					Result = item.TestRequest.AiTestResult != null ? new AiTestResultModel
+					{
+						ColorType = item.TestRequest.AiTestResult.ColorType.Name,
+						ColorTypeId = item.TestRequest.AiTestResult.ColorTypeId,
+						SuggestedColor = item.TestRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+						AvoidedColor = item.TestRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
+					} : null
+				};
+			});
+
+			return (await Task.WhenAll(responseTasks)).ToList();*/
+
+			return testRequestsWithUrls.Select(item => new AiTestModel.AiTestResponseModel
+			{
+				TestRequestId = item.TestRequest.Id,
+				Status = item.TestRequest.Status ?? "Unknown",
+				CreatedDate = item.TestRequest.CreatedDate ?? DateTime.UtcNow,
+				UserAccountId = item.TestRequest.UserAccountId,
+				Fullname = user.Fullname,
+				TypeOfTest = item.TestRequest.TypeOfTest,
+				ImageUrl = item.PictureUrl, // Trả về URL thay vì IFormFile
+				Result = item.TestRequest.AiTestResult != null ? new AiTestResultModel
+				{
+					ColorType = item.TestRequest.AiTestResult.ColorType.Name,
+					ColorTypeId = item.TestRequest.AiTestResult.ColorTypeId,
+					SuggestedColor = item.TestRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+					AvoidedColor = item.TestRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
 				} : null
 			}).ToList();
 		}

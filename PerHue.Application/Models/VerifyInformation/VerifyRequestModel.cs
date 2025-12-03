@@ -41,11 +41,6 @@ public class VerifyRequestModel
 
 	public string? InstagramAccount { get; set; }
 
-	public List<PhotoAndType> photoAndTypes { get; set; } = new();
-}
-
-public class PhotoAndType
-{
-	public IFormFile Photo { get; set; }
-	public string Type { get; set; }
+	public List<IFormFile> Photo { get; set; }
+	public List<string> PhotoType { get; set; }
 }

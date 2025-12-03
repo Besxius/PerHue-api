@@ -21,7 +21,9 @@ public class VerificationController : ControllerBase
 
 	[HttpPost]
 	[Authorize]
-	public async Task<IActionResult> SubmitRequest(VerifyRequestModel model)
+	[Consumes("multipart/form-data")]
+
+	public async Task<IActionResult> SubmitRequest([FromForm] VerifyRequestModel model)
 	{
 		if (!ModelState.IsValid)
 		{

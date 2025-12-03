@@ -80,5 +80,4 @@
 		Approved,
 		Denied
 	}
-
 }
