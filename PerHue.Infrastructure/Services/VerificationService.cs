@@ -159,10 +159,10 @@ namespace PerHue.Infrastructure.Services
 			}
 			
 			if (model.Photo == null
-				|| model.Type == null
+				|| model.PhotoType == null
 				|| model.Photo.Count == 0
-				|| model.Type.Count == 0
-				|| model.Photo.Count != model.Type.Count)
+				|| model.PhotoType.Count == 0
+				|| model.Photo.Count != model.PhotoType.Count)
 			{
 				throw new InvalidOperationException("At least one photo and matching type are required for verification.");
 			}
@@ -186,7 +186,7 @@ namespace PerHue.Infrastructure.Services
 			for (int i = 0; i < model.Photo.Count; i++)
 			{
 				var photoFile = model.Photo[i];
-				var photoType = model.Type[i];
+				var photoType = model.PhotoType[i];
 
 				// Validate photo type
 				if (photoType != PhotoTypeEnum.Face.ToString()
