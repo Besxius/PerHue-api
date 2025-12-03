@@ -67,7 +67,21 @@ namespace PerHue.Infrastructure.Repositories
 			return await _context.ExpertTestRequests
 				.FirstOrDefaultAsync(etr => etr.ExpertId == expertId
 										&& etr.TestRequestId == testRequestId
-										&& etr.Status == "PendingReview"); 
+										&& etr.Status == "PendingReview");
+		}
+
+		public async Task<IEnumerable<ExpertTestRequest>> GetAllRequestsForExpertAsync(int expertId)
+		{
+			return await _context.ExpertTestRequests
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.UserAccount)
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.AiPictures)
+				.Include(etr => etr.TestRequest)
+					.ThenInclude(tr => tr.Pictures)
+				.Where(etr => etr.ExpertId == expertId)
+				.OrderByDescending(etr => etr.CreatedDate)
+				.ToListAsync();
 		}
 
 	}

@@ -33,6 +33,26 @@ namespace PerHue.Infrastructure.Services
 			var testRequests = expertRequests.Select(etr => etr.TestRequest);
 			return _mapper.Map<IEnumerable<TestRequestModel>>(testRequests);
 		}
+		public async Task<IEnumerable<ExpertAssignmentModel>> GetAllRequestsAsync(int expertId)
+		{
+			// Fetch the ExpertTestRequests (which contain the Status and Link to TestRequest)
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetAllRequestsForExpertAsync(expertId);
+
+			// Map to the new ExpertAssignmentModel
+			var result = expertRequests.Select(etr =>
+			{
+				// 1. Map the base TestRequest details
+				var model = _mapper.Map<ExpertAssignmentModel>(etr.TestRequest);
+
+				// 2. Populate the Expert-specific details
+				model.ExpertStatus = etr.Status;           // The status from Expert_TestRequest (Completed/Pending/etc)
+				model.AssignmentDate = etr.CreatedDate;    // The date assigned to Expert
+
+				return model;
+			});
+
+			return result;
+		}
 
 		public async Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId)
 		{
