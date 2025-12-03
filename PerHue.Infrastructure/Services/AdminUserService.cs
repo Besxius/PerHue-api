@@ -104,7 +104,6 @@ namespace PerHue.Infrastructure.Services
 					Dob = u.Dob,
 					Isactive = u.IsActive,
 					Profilepicture = u.ProfilePicture,
-					Isaitested = u.IsAitested,
 					RoleId = u.RoleId,
 					RoleName = u.Role.Name,
 					CreatedDate = DateTime.Now, // You might need to add this field to UserAccount entity
@@ -153,7 +152,6 @@ namespace PerHue.Infrastructure.Services
 				Dob = user.Dob,
 				Isactive = user.IsActive,
 				Profilepicture = user.ProfilePicture,
-				Isaitested = user.IsAitested,
 				RoleId = user.RoleId,
 				RoleName = user.Role.Name,
 				CreatedDate = DateTime.Now,
@@ -181,7 +179,6 @@ namespace PerHue.Infrastructure.Services
 					Dob = model.Dob,
 					IsActive = model.Isactive,
 					ProfilePicture = model.Profilepicture,
-					IsAitested = false,
 					RoleId = model.RoleId
 				};
 

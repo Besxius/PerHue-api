@@ -158,11 +158,6 @@ namespace PerHue.Infrastructure.Services
 				query = query.Where(u => u.RoleId == searchModel.RoleId.Value);
 			}
 
-			if (searchModel.IsAiTested.HasValue)
-			{
-				query = query.Where(u => u.IsAitested == searchModel.IsAiTested.Value);
-			}
-
 			if (searchModel.CreatedFrom.HasValue)
 			{
 				query = query.Where(u => u.CreatedDate >= searchModel.CreatedFrom.Value);
@@ -207,7 +202,6 @@ namespace PerHue.Infrastructure.Services
 					IsActive = u.IsActive,
 					IsBanned = false, // Add logic if ban field exists
 					RoleName = u.Role.Name,
-					IsAiTested = u.IsAitested,
 					CreatedDate = u.CreatedDate,
 					LastLoginDate = u.CreatedDate,
 					TestCount = u.TestResults.Count(),
@@ -263,7 +257,6 @@ namespace PerHue.Infrastructure.Services
 				IsActive = user.IsActive,
 				IsBanned = false, // Add logic if ban field exists
 				ProfilePicture = user.ProfilePicture,
-				IsAiTested = user.IsAitested,
 				RoleId = user.RoleId,
 				RoleName = user.Role.Name,
 				CreatedDate = user.CreatedDate,

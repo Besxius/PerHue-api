@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
+using PerHue.Application.Models;
 using PerHue.Application.Models.UserSubscription;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
@@ -46,7 +47,6 @@ namespace PerHue.Infrastructure.Services
 
 			if (model.Status == true)
 			{
-				user.IsAitested = true;
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 			}
 
@@ -328,6 +328,74 @@ namespace PerHue.Infrastructure.Services
 				.ToList();
 
 			return summary;
+		}
+
+
+		//lấy gói theo user id
+		/// <summary>
+		/// Lấy tất cả subscriptions đang sử dụng của user tính đến thời điểm hiện tại
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetCurrentlyActiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions active của user
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllActiveSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllActiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions inactive của user
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllInactiveSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllInactiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (cả active và inactive)
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllRegisteredSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllRegisteredSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy subscriptions với phân trang và filter
+		/// </summary>
+		public async Task<PaginatedResultV2<UserSubscriptionModel>> GetUserSubscriptionsWithFilterAsync(
+			int userId,
+			int pageIndex,
+			int pageSize,
+			bool? status = null)
+		{
+			var (subscriptions, totalCount) = await _unitOfWork.UserSubscriptionRepository
+				.GetUserSubscriptionsWithPaginationAsync(userId, pageIndex, pageSize, status);
+
+			var models = subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+
+			return new PaginatedResultV2<UserSubscriptionModel>
+			{
+				List = models,
+				Total = totalCount,
+				Current = pageIndex
+			};
 		}
 	}
 }
