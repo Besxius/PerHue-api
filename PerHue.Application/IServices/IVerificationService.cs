@@ -9,8 +9,9 @@ namespace PerHue.Application.IServices
     {
         Task<PaginatedResultV2<VerifyRequestModel>> GetAllAsync(VerificationSearchModel searchModel);
         Task<VerifyRequestModel> GetVerificationRequestByIdAsync(int id);
-        Task SubmitVerificationAsync(int userId, VerifyRequestModel model);
-        Task<bool> AcceptVerificationAsync(int id); // Updated to return bool
+		Task SubmitVerificationAsync(int userId, VerifyRequestModel model);
+
+		Task<bool> AcceptVerificationAsync(int id); // Updated to return bool
         Task<bool> DenyVerificationAsync(int id, string reason); // Updated to return bool
         Task<bool> HasPendingVerificationAsync(int userId);
     }
