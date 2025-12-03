@@ -9,5 +9,7 @@ namespace PerHue.Application.IServices
 		Task<IEnumerable<PaymentModel>> GetAllAsync();
 		Task<PaymentModel> GetByIdAsync(int id);
 		Task<string> CreateAsync(PayOSRequestModel model);
+
+		Task<int> CreateSuccessPaymentInDbAsync(PerHue.Application.Models.Payment.An.CreatePaymentModel model);
 	}
 }

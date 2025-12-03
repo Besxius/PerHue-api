@@ -51,10 +51,12 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IAiPictureRepository, AiPictureRepository>();
 			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 			services.AddScoped<IAiTestResultRepository, AiTestResultRepository>();
+
+			services.AddScoped<IPhotoRepository, PhotoRepository>();
 			#endregion
 
 			#region Services
-		services.AddScoped<IServicesProvider, ServicesProvider>();
+			services.AddScoped<IServicesProvider, ServicesProvider>();
 		services.AddScoped<IUserService, UserService>();
 		services.AddScoped<IAdminUserService, AdminUserService>();
 		services.AddScoped<IAdminColorService, AdminColorService>();

@@ -1,9 +1,11 @@
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.VerifyInformation;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +16,12 @@ namespace PerHue.Infrastructure.Services
 	public class VerificationService : IVerificationService
 	{
 		private readonly IUnitOfWork _unitOfWork;
+		private readonly IImageUploadService _imageUploadService;
 
-		public VerificationService(IUnitOfWork unitOfWork)
+		public VerificationService(IUnitOfWork unitOfWork, IImageUploadService imageUploadService)
 		{
 			_unitOfWork = unitOfWork;
+			_imageUploadService = imageUploadService;
 		}
 
 		public async Task<PaginatedResultV2<VerifyRequestModel>> GetAllAsync(VerificationSearchModel searchModel)
@@ -105,7 +109,10 @@ namespace PerHue.Infrastructure.Services
 					Specialization = v.Specialization,
 					Bio = v.Bio,
 					YearsOfExperience = v.YearsOfExperience,
-					Languages = v.Languages
+					Languages = v.Languages,
+					LinkedInAccount = v.LinkedInAccount,
+					FacebookAccount = v.FacebookAccount,
+					InstagramAccount = v.InstagramAccount
 				})
 				.ToListAsync();
 
@@ -150,19 +157,49 @@ namespace PerHue.Infrastructure.Services
 			{
 				throw new InvalidOperationException("User is already an expert.");
 			}
-
+			
+			if (model.photoAndTypes.Count == 0)
+			{
+				throw new InvalidOperationException("At least one photo is required for verification.");
+			}	
+			
 			var verifyInfo = new VerifyInformation
 			{
-				Id = userId,
 				Email = model.Email,
 				Nickname = model.Nickname,
 				Specialization = model.Specialization,
 				Bio = model.Bio,
 				YearsOfExperience = model.YearsOfExperience,
 				Languages = model.Languages,
+				Status = VerificationStatus.Pending.ToString()
 			};
 
-			await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
+			var justSavedVerifyInfo = await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
+
+			//Lưu ảnh vào db Photo
+			var imageUrls = new List<string>();
+			var type = new List<string>();
+			var photos = new List<Photo>();
+			foreach (var photo in model.photoAndTypes)
+			{
+				var imageUrl = await _imageUploadService.UploadImageAsync(photo.Photo);
+				imageUrls.Add(imageUrl);
+				if (photo.Type != PhotoTypeEnum.Face.ToString() 
+					&& photo.Type != PhotoTypeEnum.Certification.ToString() 
+					&& photo.Type != PhotoTypeEnum.Identity.ToString())
+				{
+					throw new InvalidOperationException("Invalid photo type.");
+				}
+				type.Add(photo.Type);
+				photos.Add(new Photo
+				{
+					PhotoUrl = imageUrl,
+					VerifyInformationId = justSavedVerifyInfo.Id,
+					Type = photo.Type
+				});
+			}
+			await _unitOfWork.PhotoRepository.CreatePhotosAsync(photos);
+
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}
 
@@ -184,9 +221,9 @@ namespace PerHue.Infrastructure.Services
 				Languages = verifyInfo.Languages,
 				Rating = 0,
 				Introduction = null,
-				FacebookAccount = null,
-				LinkedInAccount = null,
-				InstagramAccount = null
+				FacebookAccount = verifyInfo.FacebookAccount,
+				LinkedInAccount = verifyInfo.LinkedInAccount,
+				InstagramAccount = verifyInfo.InstagramAccount
 			};
 
 			await _unitOfWork.ExpertRepository.CreateAsync(expert);
@@ -203,7 +240,7 @@ namespace PerHue.Infrastructure.Services
 				}
 			}
 
-			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
+			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id, true);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 			return true;
 		}
@@ -226,7 +263,7 @@ namespace PerHue.Infrastructure.Services
 			};
 
 			await _unitOfWork.NotificationRepository.CreateAsync(notification);
-			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id);
+			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id, false);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 			return true;
 		}
@@ -247,6 +284,9 @@ namespace PerHue.Infrastructure.Services
 				Bio = verifyInformation.Bio,
 				YearsOfExperience = verifyInformation.YearsOfExperience,
 				Languages = verifyInformation.Languages,
+				FacebookAccount = verifyInformation.FacebookAccount,
+				LinkedInAccount = verifyInformation.LinkedInAccount,
+				InstagramAccount = verifyInformation.InstagramAccount,
 			};
 		}
 	}

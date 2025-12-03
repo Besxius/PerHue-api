@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace PerHue.Application.Models.VerifyInformation;
@@ -33,4 +34,18 @@ public class VerifyRequestModel
     [Required(ErrorMessage = "Certification information is required")]
     [StringLength(500, ErrorMessage = "Certification details cannot exceed 500 characters")]
     public string Certification { get; set; } = null!;
+
+	public string? FacebookAccount { get; set; }
+
+	public string? LinkedInAccount { get; set; }
+
+	public string? InstagramAccount { get; set; }
+
+	public List<PhotoAndType> photoAndTypes { get; set; } = new();
+}
+
+public class PhotoAndType
+{
+	public IFormFile Photo { get; set; }
+	public string Type { get; set; }
 }
