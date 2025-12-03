@@ -11,6 +11,8 @@ public partial class Report
 
     public string? Type { get; set; }
 
+    public string Status { get; set; } = null!;
+
     public string? Notice { get; set; }
 
     public int UserAccountId { get; set; }
