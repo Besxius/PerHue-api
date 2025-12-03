@@ -24,12 +24,12 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="searchModel">Search and pagination parameters</param>
 		/// <returns>Paginated list of reports</returns>
 		[HttpGet]
-		public async Task<ActionResult<ServiceResponse<PaginatedResultV2<ReportModel>>>> GetAllReports([FromQuery] ReportSearchModel searchModel)
+		public async Task<ActionResult<PaginatedResultV2<ReportModel>>> GetAllReports([FromQuery] ReportSearchModel searchModel)
 		{
 			try
 			{
 				var result = await _servicesProvider.ReportService.GetAllReportsAsync(searchModel);
-				return Ok(ServiceResponse<PaginatedResultV2<ReportModel>>.Ok(result, "Reports retrieved successfully"));
+				return Ok(result);
 			}
 			catch (Exception ex)
 			{
