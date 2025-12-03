@@ -75,14 +75,14 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		[HttpGet("ai-test/{testRequestId}")]
+		[HttpGet("ai-test/{id}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<ActionResult<AiTestModel.AiTestResponseModel?>> GetAiTestResult(int testRequestId)
+		public async Task<ActionResult<AiTestModel.AiTestResponseModel?>> GetAiTestResult(int id)
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var result = await _services.AiTestService.GetAiTestResultAsync(testRequestId, userId);
+				var result = await _services.AiTestService.GetAiTestResultAsync(id, userId);
 
 				if (result == null)
 				{
@@ -112,9 +112,9 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		[HttpGet("expert-test/{testRequestId}")]
+		[HttpGet("expert-test/{id}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int testRequestId) // <-- Changed return type
+		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id) // <-- Changed return type
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
@@ -125,7 +125,7 @@ namespace PerHue.Api.Controllers
 			try
 			{
 				// This now returns the complete object
-				var result = await _services.ExpertTestService.GetExpertResponsesForUserAsync(testRequestId, userId);
+				var result = await _services.ExpertTestService.GetExpertResponsesForUserAsync(id, userId);
 				return Ok(result);
 			}
 			catch (UnauthorizedAccessException ex)

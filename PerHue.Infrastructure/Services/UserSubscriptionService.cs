@@ -47,7 +47,6 @@ namespace PerHue.Infrastructure.Services
 
 			if (model.Status == true)
 			{
-				user.IsAitested = true;
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 			}
 
