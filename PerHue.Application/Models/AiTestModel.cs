@@ -27,6 +27,9 @@ namespace PerHue.Application.Models
 			public int? UserAccountId { get; set; }
 			public string? Fullname { get; set; }
 			public string TypeOfTest { get; set; } = null!;
+
+			//public IFormFile Image { get; set; }
+			public string? ImageUrl { get; set; }
 			public AiTestResultModel? Result { get; set; }
 		}
 
