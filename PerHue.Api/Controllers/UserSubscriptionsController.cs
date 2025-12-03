@@ -22,12 +22,14 @@ namespace PerHue.Api.Controllers
 			_payOSPaymentService = payOSPaymentService;
 		}
 		[HttpGet]
+		[Authorize]
 		public async Task<IEnumerable<UserSubscriptionModel>> Gets()
 		{
 			return await _servicesProvider.UserSubscriptionService.GetAllAsync();
 		}
 
 		[HttpGet("{id}")]
+		[Authorize]
 		public async Task<ActionResult<UserSubscriptionModel>> Get(int id)
 		{
 			var model = await _servicesProvider.UserSubscriptionService.GetByIdAsync(id);
@@ -92,16 +94,16 @@ namespace PerHue.Api.Controllers
 			[FromQuery] string id,
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
-			[FromQuery] string orderCode)
+			[FromQuery] string orderCode,
+			[FromQuery] int servicePackageId)
 		{
 			try
 			{
 
 				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-				var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
 
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackage.Id}";
+				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackageId}";
 
 				//Tạo payment ở dưới db
 				var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
@@ -110,7 +112,6 @@ namespace PerHue.Api.Controllers
 					Amount = paymentInfo.amount,
 					Description = description,
 					OrderCode = orderCode,
-					ServicePackageId = servicePackage.Id
 				};
 				int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
 
@@ -134,7 +135,7 @@ namespace PerHue.Api.Controllers
 					var model = new CreateUserSubscriptionModel
 					{
 						UserId = userId,
-						ServicePackageId = servicePackage.Id,
+						ServicePackageId = servicePackageId,
 						Status = !cancel // cancel = false => success = true
 					};
 
@@ -148,8 +149,7 @@ namespace PerHue.Api.Controllers
 						{
 							subscriptionId,
 							userId,
-							packageId = servicePackage.Id,
-							packageName = servicePackage.Name
+							packageId = servicePackageId,
 						}
 					});
 				}
@@ -363,7 +363,151 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		// ============== API THANH TOÁN ==============
+
+
+		// ============== API lấy danh sách subscription ==============
+
+		/// <summary>
+		/// Lấy những subscription đang sử dụng tính đến thời điểm hiện tại
+		/// (Status = true, còn trong thời hạn, còn lượt sử dụng)
+		/// </summary>
+		[HttpGet("user/currently-active")]
+		[Authorize]
+		public async Task<ActionResult<List<UserSubscriptionModel>>> GetCurrentlyActiveSubscriptions()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var subscriptions = await _servicesProvider.UserSubscriptionService
+					.GetCurrentlyActiveSubscriptionsByUserIdAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					message = "Successfully retrieved currently active subscriptions",
+					data = subscriptions,
+					count = subscriptions.Count
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions active (Status = true) của user
+		/// </summary>
+		[HttpGet("user/subscriptions/active")]
+		[Authorize]
+		public async Task<ActionResult<List<UserSubscriptionModel>>> GetActiveSubscriptions()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var subscriptions = await _servicesProvider.UserSubscriptionService
+					.GetAllActiveSubscriptionsForUserAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					message = "Successfully retrieved active subscriptions",
+					data = subscriptions,
+					count = subscriptions.Count
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions inactive (Status = false) của user
+		/// </summary>
+		[HttpGet("user/subscriptions/inactive")]
+		[Authorize]
+		public async Task<ActionResult<List<UserSubscriptionModel>>> GetInactiveSubscriptions()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var subscriptions = await _servicesProvider.UserSubscriptionService
+					.GetAllInactiveSubscriptionsForUserAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					message = "Successfully retrieved inactive subscriptions",
+					data = subscriptions,
+					count = subscriptions.Count
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký (cả active và inactive) của user
+		/// </summary>
+		[HttpGet("user/subscriptions/all")]
+		[Authorize]
+		public async Task<ActionResult<List<UserSubscriptionModel>>> GetAllRegisteredSubscriptions()
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var subscriptions = await _servicesProvider.UserSubscriptionService
+					.GetAllRegisteredSubscriptionsForUserAsync(userId);
+
+				return Ok(new
+				{
+					success = true,
+					message = "Successfully retrieved all registered subscriptions",
+					data = subscriptions,
+					count = subscriptions.Count
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
+		/// <summary>
+		/// Lấy subscriptions với phân trang và filter theo status
+		/// </summary>
+		/// <param name="pageIndex">Trang hiện tại (mặc định: 1)</param>
+		/// <param name="pageSize">Số items mỗi trang (mặc định: 10)</param>
+		/// <param name="status">Filter theo status: true (active), false (inactive), null (tất cả)</param>
+		[HttpGet("user/subscriptions/paginated")]
+		[Authorize]
+		public async Task<ActionResult<PerHue.Application.Models.PaginatedResultV2<UserSubscriptionModel>>> GetSubscriptionsWithPagination(
+			[FromQuery] int pageIndex = 1,
+			[FromQuery] int pageSize = 10,
+			[FromQuery] bool? status = null)
+		{
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var result = await _servicesProvider.UserSubscriptionService
+					.GetUserSubscriptionsWithFilterAsync(userId, pageIndex, pageSize, status);
+
+				return Ok(new
+				{
+					success = true,
+					message = "Successfully retrieved subscriptions with pagination",
+					data = result
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
+		}
+
 
 
 	}
