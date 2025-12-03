@@ -12,6 +12,7 @@ namespace PerHue.Infrastructure.Repositories
 		public UserSubscriptionRepository(PerHueDbContext context) : base(context)
 		{
 		}
+
 		public async Task<IEnumerable<UserSubscription>> GetHistoryUserSubscriptionsByUserIdAsync(int userId)
 		{
 			return await _context.UserSubscriptions

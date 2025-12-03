@@ -11,7 +11,7 @@ public partial class Photo
 
     public string? Type { get; set; }
 
-    public int VerifyInformationId { get; set; }
+    public int? VerifyInformationId { get; set; }
 
-    public virtual VerifyInformation VerifyInformation { get; set; } = null!;
+    public virtual VerifyInformation? VerifyInformation { get; set; }
 }

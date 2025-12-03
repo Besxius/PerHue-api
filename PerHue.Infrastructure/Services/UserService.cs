@@ -70,7 +70,6 @@ namespace PerHue.Infrastructure.Services
 			entity.Username = GenerateUserName(model.Email);
 			entity.Password = HashPassWithSHA256.HashWithSHA256(model.Password);
 			entity.IsActive = true;
-			entity.IsAitested = false;
 			entity.RoleId = 2;
 			entity.CreatedDate = DateTime.UtcNow;
 
@@ -83,7 +82,6 @@ namespace PerHue.Infrastructure.Services
 			entity.Username = GenerateUserName(model.Email);
 			entity.Gender = model.Gender;
 			entity.IsActive = true;
-			entity.IsAitested = false;
 			entity.RoleId = 2;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
@@ -235,7 +233,6 @@ namespace PerHue.Infrastructure.Services
 				Gender = false,
 				ProfilePicture = picture,
 				IsActive = true,
-				IsAitested = false,
 				RoleId = 2,
 			};
 
@@ -319,7 +316,6 @@ namespace PerHue.Infrastructure.Services
 				Dob = user.Dob,
 				Isactive = user.IsActive,
 				Profilepicture = user.ProfilePicture,
-				Isaitested = user.IsAitested,
 				RoleId = user.RoleId,
 				RoleName = user.Role.Name
 			};
