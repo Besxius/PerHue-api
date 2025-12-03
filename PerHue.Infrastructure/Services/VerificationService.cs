@@ -158,11 +158,15 @@ namespace PerHue.Infrastructure.Services
 				throw new InvalidOperationException("User is already an expert.");
 			}
 			
-			if (model.photoAndTypes.Count == 0)
+			if (model.Photo == null
+				|| model.PhotoType == null
+				|| model.Photo.Count == 0
+				|| model.PhotoType.Count == 0
+				|| model.Photo.Count != model.PhotoType.Count)
 			{
-				throw new InvalidOperationException("At least one photo is required for verification.");
-			}	
-			
+				throw new InvalidOperationException("At least one photo and matching type are required for verification.");
+			}
+
 			var verifyInfo = new VerifyInformation
 			{
 				Email = model.Email,
@@ -176,28 +180,35 @@ namespace PerHue.Infrastructure.Services
 
 			var justSavedVerifyInfo = await _unitOfWork.VerificationRepository.CreateVerificationRequestAsync(verifyInfo);
 
-			//Lưu ảnh vào db Photo
-			var imageUrls = new List<string>();
-			var type = new List<string>();
+
+			// Lưu ảnh vào db Photo với URL và Type
 			var photos = new List<Photo>();
-			foreach (var photo in model.photoAndTypes)
+			for (int i = 0; i < model.Photo.Count; i++)
 			{
-				var imageUrl = await _imageUploadService.UploadImageAsync(photo.Photo);
-				imageUrls.Add(imageUrl);
-				if (photo.Type != PhotoTypeEnum.Face.ToString() 
-					&& photo.Type != PhotoTypeEnum.Certification.ToString() 
-					&& photo.Type != PhotoTypeEnum.Identity.ToString())
+				var photoFile = model.Photo[i];
+				var photoType = model.PhotoType[i];
+
+				// Validate photo type
+				if (photoType != PhotoTypeEnum.Face.ToString()
+					&& photoType != PhotoTypeEnum.Certification.ToString()
+					&& photoType != PhotoTypeEnum.Identity.ToString())
 				{
-					throw new InvalidOperationException("Invalid photo type.");
+					throw new InvalidOperationException($"Invalid photo type: {photoType}. Allowed types are Face, Certification, or Identity.");
 				}
-				type.Add(photo.Type);
+
+				// Upload ảnh lên Cloudinary và lấy URL
+				var imageUrl = await _imageUploadService.UploadImageAsync(photoFile);
+
+				// Tạo Photo entity với URL, Type và VerifyInformationId
 				photos.Add(new Photo
 				{
 					PhotoUrl = imageUrl,
-					VerifyInformationId = justSavedVerifyInfo.Id,
-					Type = photo.Type
+					Type = photoType,
+					VerifyInformationId = justSavedVerifyInfo.Id
 				});
 			}
+
+			// Lưu tất cả photos vào database
 			await _unitOfWork.PhotoRepository.CreatePhotosAsync(photos);
 
 			await _unitOfWork.SaveChangesWithTransactionAsync();
