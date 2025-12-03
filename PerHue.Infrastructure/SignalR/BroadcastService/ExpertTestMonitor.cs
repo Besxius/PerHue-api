@@ -28,7 +28,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly ILogger<ExpertTestMonitor> _logger;
 		private const int MaxRetries = 2;
 		private const int RequiredResponses = 3;
-		private const int DaysToWait = 0;
+		private const int DaysToWait = 2;
 
 		public ExpertTestMonitor(IServiceScopeFactory scopeFactory, ILogger<ExpertTestMonitor> logger)
 		{
