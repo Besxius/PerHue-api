@@ -231,16 +231,16 @@ namespace PerHue.Infrastructure.Repositories
 					us.EndDate >= DateTime.Now);
 		}
 
-		public async Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId)
-		{
-			return await _context.UserSubscriptions
-				.Include(us => us.ServicePackage)
-				.Where(us =>
-					us.UserId == userId &&
-					us.Status == true &&
-					us.EndDate >= DateTime.Now)
-				.ToListAsync();
-		}
+		//public async Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId)
+		//{
+		//	return await _context.UserSubscriptions
+		//		.Include(us => us.ServicePackage)
+		//		.Where(us =>
+		//			us.UserId == userId &&
+		//			us.Status == true &&
+		//			us.EndDate >= DateTime.Now)
+		//		.ToListAsync();
+		//}
 
 		public async Task<bool> DisableSubscriptionAsync(int subscriptionId)
 		{
@@ -270,5 +270,91 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(us => us.EndDate)
 				.FirstOrDefaultAsync();
 		}
+
+
+		// ========= An làm
+		/// <summary>
+		/// Lấy tất cả subscriptions đang sử dụng của user tính đến thời điểm hiện tại
+		/// (Status = true, còn trong thời hạn, còn lượt sử dụng)
+		/// </summary>
+		public async Task<List<UserSubscription>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			var now = DateTime.UtcNow;
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId
+					&& us.Status == true
+					&& us.StartDate <= now
+					&& us.EndDate >= now
+					&& us.RemainingUses > 0)
+				.OrderByDescending(us => us.CreateAt)
+				.ToListAsync();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (chỉ active)
+		/// </summary>
+		public async Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId && us.Status == true)
+				.OrderByDescending(us => us.CreateAt)
+				.ToListAsync();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (chỉ inactive)
+		/// </summary>
+		public async Task<List<UserSubscription>> GetAllInactiveSubscriptionsByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId && us.Status == false)
+				.OrderByDescending(us => us.CreateAt)
+				.ToListAsync();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (cả active và inactive)
+		/// </summary>
+		public async Task<List<UserSubscription>> GetAllRegisteredSubscriptionsByUserIdAsync(int userId)
+		{
+			return await _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId)
+				.OrderByDescending(us => us.CreateAt)
+				.ToListAsync();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions với phân trang và filter theo status
+		/// </summary>
+		public async Task<(List<UserSubscription> subscriptions, int totalCount)> GetUserSubscriptionsWithPaginationAsync(
+			int userId,
+			int pageIndex,
+			int pageSize,
+			bool? status = null)
+		{
+			var query = _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId);
+
+			if (status.HasValue)
+			{
+				query = query.Where(us => us.Status == status.Value);
+			}
+
+			var totalCount = await query.CountAsync();
+
+			var subscriptions = await query
+				.OrderByDescending(us => us.CreateAt)
+				.Skip((pageIndex - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return (subscriptions, totalCount);
+		}
+
 	}
 }

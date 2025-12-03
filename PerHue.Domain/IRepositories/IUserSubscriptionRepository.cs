@@ -30,11 +30,41 @@ namespace PerHue.Domain.IRepositories
 		Task<int> AutoExpireSubscriptionsAsync();
 
 		Task<UserSubscription?> GetActiveSubscriptionByPackageIdAsync(int userId, int servicePackageId);
-		Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId);
 		Task<bool> DisableSubscriptionAsync(int subscriptionId);
 		Task<int> GetTotalRemainingUsagesByUserIdAsync(int userId);
 
 		Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot(int userId, int packageId);
+
+
+		// lấy gói theo user id
+		/// <summary>
+		/// Lấy tất cả subscriptions đang sử dụng của user tính đến thời điểm hiện tại
+		/// </summary>
+		Task<List<UserSubscription>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId);
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (chỉ active)
+		/// </summary>
+		Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId);
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (chỉ inactive)
+		/// </summary>
+		Task<List<UserSubscription>> GetAllInactiveSubscriptionsByUserIdAsync(int userId);
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (cả active và inactive)
+		/// </summary>
+		Task<List<UserSubscription>> GetAllRegisteredSubscriptionsByUserIdAsync(int userId);
+
+		/// <summary>
+		/// Lấy tất cả subscriptions với phân trang và filter theo status
+		/// </summary>
+		Task<(List<UserSubscription> subscriptions, int totalCount)> GetUserSubscriptionsWithPaginationAsync(
+			int userId,
+			int pageIndex,
+			int pageSize,
+			bool? status = null);
 
 	}
 }
