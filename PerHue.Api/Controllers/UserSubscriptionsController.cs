@@ -118,26 +118,26 @@ namespace PerHue.Api.Controllers
 					var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
 					//Tạo payment ở dưới db
-					var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
-					{
-						UserId = userId,
-						Amount = paymentInfo.amount,
-						Description = description,
-						OrderCode = orderCode,
-					};
-					int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
+					//var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
+					//{
+					//	UserId = userId,
+					//	Amount = paymentInfo.amount,
+					//	Description = description,
+					//	OrderCode = orderCode,
+					//};
+					//int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
 
-					//Tạo payment log ở dưới db
-					var paymentLogDb = new CreatePaymentLogModel
-					{
-						PaymentId = paymentId,
-						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
-						CreatedAt = DateTime.Now,
-						OldStatus = "Pending",
-						NewStatus = !cancel ? "Cancelled" : "Success", // cancel = false => success = true
-						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
-					};
-					await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
+					////Tạo payment log ở dưới db
+					//var paymentLogDb = new CreatePaymentLogModel
+					//{
+					//	PaymentId = paymentId,
+					//	Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
+					//	CreatedAt = DateTime.Now,
+					//	OldStatus = "Pending",
+					//	NewStatus = !cancel ? "Cancelled" : "Success", // cancel = false => success = true
+					//	Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
+					//};
+					//await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
 					// THANH TOÁN THÀNH CÔNG
 					return Ok(new
 					{
@@ -167,18 +167,18 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-/*		[HttpGet("subscription/success")]
+		[HttpGet("subscription/success")]
 		public async Task<IActionResult> SubscriptionSuccess(
 			[FromQuery] string code,
 			[FromQuery] string id,
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
 			[FromQuery] string orderCode,
-			int packageId
+			int servicePackageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-			var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+			var servicePackage = await _servicesProvider.ServicePackageService.GetByIdAsync(servicePackageId);
 
 			var model = new CreateUserSubscriptionModel
 			{
@@ -202,11 +202,11 @@ namespace PerHue.Api.Controllers
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
 			[FromQuery] string orderCode,
-			int packageId
+			int servicePackageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-			var servicePackage = await _servicesProvider.ServicePackageService.GetByAmountAsync(paymentInfo.amount);
+			var servicePackage = await _servicesProvider.ServicePackageService.GetByIdAsync(servicePackageId);
 
 			var model = new CreateUserSubscriptionModel
 			{
@@ -222,7 +222,7 @@ namespace PerHue.Api.Controllers
 			{
 				Message = "Payment process failed!",
 			});
-		}*/
+		}
 
 		private string CreateDateTimeStringNoSeparator(DateTime dateTime)
 		{
