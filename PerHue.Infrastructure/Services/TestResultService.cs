@@ -55,13 +55,6 @@ namespace PerHue.Infrastructure.Services
 			{
 				var result = _mapper.Map<TestResultModel>(testResult);
 
-				// Lấy CapsulePalettes và Colors từ ColorType
-				var capsulePalettes = await _unitOfWork.CapsulePaletteRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
-				var colors = await _unitOfWork.ColorRepository.GetByColorTypeIdAsync(testResult.ColorTypeId);
-
-				result.CapsulePalettes = _mapper.Map<List<CapsulePaletteModel>>(capsulePalettes);
-				result.Colors = _mapper.Map<List<ColorModel>>(colors);
-
 				resultList.Add(result);
 			}
 

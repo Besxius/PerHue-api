@@ -18,8 +18,6 @@ namespace PerHue.Application.IServices
 		Task<PaginatedResultV2<AiTestModel.AiTestResponseModel>> GetAiTestsWithFilterAsync(AiTestSearchModel searchModel);
 		Task<bool> MarkTestAsCompletedAsync(int testId);
 
-		Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model);
-		Task<AiTestModel.AiTestResponseModel> ProcessAiTestAsync(int testRequestId);
 		Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId);
 		Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId);
 

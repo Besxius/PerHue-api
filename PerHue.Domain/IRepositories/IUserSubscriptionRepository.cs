@@ -16,19 +16,25 @@ namespace PerHue.Domain.IRepositories
 		Task<UserSubscription?> GetActiveSubscriptionAsync(int userId);
 		Task<UserSubscription?> GetActiveSubscriptionByTypeAsync(int userId, string type);
 		Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId);
-		Task<bool> DeductRemainingUsesAsync(int userId);
-		Task<bool> RefundRemainingUsesAsync(int userId);
+		Task<UserSubscription?> GetLatestActiveSubscriptionByPackageAndTypeAsync(int userId, int packageId, string type);
+		Task<bool> DeductRemainingUsesAsync(int userId, int packageId, string type);
+		Task<bool> RefundRemainingUsesAsync(int userId, int packageId, string type);
 
 		Task<List<UserSubscription>> GetaAllActiveSubscriptionsByUserIdAsync(int userId);
 
 		// Đếm tổng lượt sử dụng còn lại theo PackageId
 		Task<Dictionary<int, int>> GetTotalRemainingUsesByPackageAndUserAsync(int userId);
 
-		Task<bool> HasRemainingUsageAsync(int userId);
-
 		Task<List<UserSubscription>> GetAllSubscriptionsWithPackageByUserIdAsync(int userId);
 
 		Task<int> AutoExpireSubscriptionsAsync();
+
+		Task<UserSubscription?> GetActiveSubscriptionByPackageIdAsync(int userId, int servicePackageId);
+		Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId);
+		Task<bool> DisableSubscriptionAsync(int subscriptionId);
+		Task<int> GetTotalRemainingUsagesByUserIdAsync(int userId);
+
+		Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot(int userId, int packageId);
 
 	}
 }
