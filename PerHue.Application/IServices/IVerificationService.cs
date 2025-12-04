@@ -14,5 +14,8 @@ namespace PerHue.Application.IServices
 		Task<bool> AcceptVerificationAsync(int id); // Updated to return bool
         Task<bool> DenyVerificationAsync(int id, string reason); // Updated to return bool
         Task<bool> HasPendingVerificationAsync(int userId);
-    }
+
+		Task Version2SubmitVerificationAsync(int userId, VerifyInformationModel model);
+
+	}
 }
