@@ -22,7 +22,6 @@ public class VerificationController : ControllerBase
 	[HttpPost]
 	[Authorize]
 	[Consumes("multipart/form-data")]
-
 	public async Task<IActionResult> SubmitRequest([FromForm] VerifyRequestModel model)
 	{
 		if (!ModelState.IsValid)
@@ -35,6 +34,29 @@ public class VerificationController : ControllerBase
 		try
 		{
 			await _verificationService.SubmitVerificationAsync(currentUserId, model);
+			return Ok(new { message = "Verification request submitted successfully" });
+		}
+		catch (InvalidOperationException ex)
+		{
+			return BadRequest(new { error = ex.Message });
+		}
+	}
+
+	[HttpPost("model-photo")]
+	[Authorize]
+	[Consumes("multipart/form-data")]
+	public async Task<IActionResult> SubmitRequestHasPhotoModel([FromForm] VerifyInformationModel model)
+	{
+		if (!ModelState.IsValid)
+		{
+			return BadRequest(ModelState);
+		}
+
+		var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+		try
+		{
+			await _verificationService.Version2SubmitVerificationAsync(currentUserId, model);
 			return Ok(new { message = "Verification request submitted successfully" });
 		}
 		catch (InvalidOperationException ex)
