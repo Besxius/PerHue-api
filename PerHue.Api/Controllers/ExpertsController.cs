@@ -96,6 +96,13 @@ namespace PerHue.Api.Controllers
 			var requests = await _servicesProvider.ExpertTestService.GetPendingRequestsAsync(expertId);
 			return Ok(requests);
 		}
+		[HttpGet("all-requests")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetAllRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetAllRequestsAsync(expertId);
+			return Ok(requests);
+		}
 
 		[HttpPost("respond")]
 		public async Task<IActionResult> SubmitResponse([FromBody] CreateTestResponseModel model)

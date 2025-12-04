@@ -80,4 +80,19 @@
 		Approved,
 		Denied
 	}
+
+	public enum ReportStatus
+	{
+		Pending,
+		InProgress,
+		Resolved,
+		Rejected
+	}
+
+	public enum ReportType
+	{
+		CustomerService,
+		Complaint,
+		Support
+	}
 }
