@@ -12,6 +12,7 @@ namespace PerHue.Application.IServices
 	public interface IExpertTestService
 	{
 		Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId);
+		Task<IEnumerable<ExpertAssignmentModel>> GetAllRequestsAsync(int expertId);
 		Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId);
 
 		//Task<IEnumerable<TestResponseModel>> GetExpertResponsesForUserAsync(int testRequestId, int userId);
