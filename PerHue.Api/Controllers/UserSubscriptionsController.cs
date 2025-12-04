@@ -115,40 +115,34 @@ namespace PerHue.Api.Controllers
 						Status = !cancel
 					};
 
-					var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+					int subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
 
 					//Tạo payment ở dưới db
-					//var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
-					//{
-					//	UserId = userId,
-					//	Amount = paymentInfo.amount,
-					//	Description = description,
-					//	OrderCode = orderCode,
-					//};
-					//int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
+					var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
+					{
+						PaymentId = subscriptionId,
+						UserId = userId,
+						Amount = paymentInfo.amount,
+						Description = description,
+						OrderCode = orderCode,
+					};
+					int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
 
-					////Tạo payment log ở dưới db
-					//var paymentLogDb = new CreatePaymentLogModel
-					//{
-					//	PaymentId = paymentId,
-					//	Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
-					//	CreatedAt = DateTime.Now,
-					//	OldStatus = "Pending",
-					//	NewStatus = !cancel ? "Cancelled" : "Success", // cancel = false => success = true
-					//	Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
-					//};
-					//await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
+					//Tạo payment log ở dưới db
+					var paymentLogDb = new CreatePaymentLogModel
+					{
+						PaymentId = paymentId,
+						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
+						CreatedAt = DateTime.Now,
+						OldStatus = "Pending",
+						NewStatus = cancel ? "Cancelled" : "Success", // cancel = false => success = true
+						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
+					};
+					await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
 					// THANH TOÁN THÀNH CÔNG
 					return Ok(new
 					{
-						success = true,
 						message = "Payment successful",
-						data = new
-						{
-							subscriptionId,
-							userId,
-							packageId = servicePackageId,
-						}
 					});
 				}
 				else
@@ -156,7 +150,6 @@ namespace PerHue.Api.Controllers
 					// THANH TOÁN THẤT BẠI
 					return Ok(new
 					{
-						success = false,
 						message = "Payment cancelled",
 					});
 				}
@@ -167,7 +160,7 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		[HttpGet("subscription/success")]
+/*		[HttpGet("subscription/success")]
 		public async Task<IActionResult> SubscriptionSuccess(
 			[FromQuery] string code,
 			[FromQuery] string id,
@@ -222,7 +215,7 @@ namespace PerHue.Api.Controllers
 			{
 				Message = "Payment process failed!",
 			});
-		}
+		}*/
 
 		private string CreateDateTimeStringNoSeparator(DateTime dateTime)
 		{
