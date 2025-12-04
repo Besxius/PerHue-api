@@ -76,7 +76,7 @@ namespace PerHue.Infrastructure.Services
 			await _unitOfWork.TestResponseRepository.CreateAsync(testResponse);
 
 			// 4. Update the ExpertTestRequest status to "Completed"
-			pendingRequest.Status = "Completed";
+			pendingRequest.Status = ExpertTestRequestStatus.Completed.ToString();
 			await _unitOfWork.ExpertTestRequestRepository.UpdateAsync(pendingRequest);
 
 			// 5. Save changes
@@ -379,14 +379,14 @@ namespace PerHue.Infrastructure.Services
 			await _unitOfWork.TestResponseRepository.CreateAsync(reviewResponse);
 
 			// 4. Mark request as completed
-			pendingRequest.Status = "Completed";
+			pendingRequest.Status = ExpertTestRequestStatus.Completed.ToString();
 			await _unitOfWork.ExpertTestRequestRepository.UpdateAsync(pendingRequest);
 
 			// --- STATUS CHANGE: Mark main request back to Completed ---
 			var mainRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(model.TestRequestId);
 			if (mainRequest != null)
 			{
-				mainRequest.Status = "Completed";
+				mainRequest.Status = TestRequestStatus.Completed.ToString();
 				await _unitOfWork.TestRequestRepository.UpdateAsync(mainRequest);
 
 				// --- NOTIFICATION: For the User ---
