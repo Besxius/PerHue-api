@@ -69,7 +69,7 @@ namespace PerHue.Infrastructure.Services
 				Description = model.Description,
 				Status = PaymentStatusEnum.Success.ToString(),
 				TransactionId = model.OrderCode,
-				CreatedAt = DateTime.UtcNow
+				CreatedAt = DateTime.Now
 			};
 			var createdPayment = await _unitOfWork.PaymentRepository.CreateAsync(payment);
 

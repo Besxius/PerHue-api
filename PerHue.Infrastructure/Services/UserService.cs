@@ -71,7 +71,7 @@ namespace PerHue.Infrastructure.Services
 			entity.Password = HashPassWithSHA256.HashWithSHA256(model.Password);
 			entity.IsActive = true;
 			entity.RoleId = 2;
-			entity.CreatedDate = DateTime.UtcNow;
+			entity.CreatedDate = DateTime.Now;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}
@@ -173,7 +173,7 @@ namespace PerHue.Infrastructure.Services
 			var refreshTokenEntity = new RefreshToken
 			{
 				Token = refreshToken,
-				ExpireDate = DateTime.UtcNow.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				ExpireDate = DateTime.Now.AddDays(7), // Set refresh token expiry (e.g., 7 days)
 				UserAccountId = entity.Id
 			};
 
@@ -196,7 +196,7 @@ namespace PerHue.Infrastructure.Services
 			var refreshTokenEntity = new RefreshToken
 			{
 				Token = refreshToken,
-				ExpireDate = DateTime.UtcNow.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				ExpireDate = DateTime.Now.AddDays(7), // Set refresh token expiry (e.g., 7 days)
 				UserAccountId = entity.Id
 			};
 
@@ -233,6 +233,7 @@ namespace PerHue.Infrastructure.Services
 				Gender = false,
 				ProfilePicture = picture,
 				IsActive = true,
+				CreatedDate = DateTime.Now,
 				RoleId = 2,
 			};
 
@@ -258,7 +259,7 @@ namespace PerHue.Infrastructure.Services
 			if (storedRefreshToken.UserAccountId != userId)
 				throw new SecurityTokenException("Refresh token mismatch");
 
-			if (storedRefreshToken.ExpireDate <= DateTime.UtcNow)
+			if (storedRefreshToken.ExpireDate <= DateTime.Now)
 				throw new SecurityTokenException("Refresh token expired");
 
 			// All checks passed. Generate new tokens.
@@ -268,7 +269,7 @@ namespace PerHue.Infrastructure.Services
 
 			// Rotate the refresh token: update the old one with the new value and expiry
 			storedRefreshToken.Token = newRefreshToken;
-			storedRefreshToken.ExpireDate = DateTime.UtcNow.AddDays(7);
+			storedRefreshToken.ExpireDate = DateTime.Now.AddDays(7);
 			await _unitOfWork.RefreshTokenRepository.UpdateAsync(storedRefreshToken);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
