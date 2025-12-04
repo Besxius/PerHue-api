@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.ExpertTestResult;
@@ -18,11 +19,13 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
+		private readonly IConfiguration _configuration;
 
-		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper)
+		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_configuration = configuration;
 		}
 
 		public async Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId)
@@ -32,6 +35,26 @@ namespace PerHue.Infrastructure.Services
 			// Map the underlying TestRequest to TestRequestModel
 			var testRequests = expertRequests.Select(etr => etr.TestRequest);
 			return _mapper.Map<IEnumerable<TestRequestModel>>(testRequests);
+		}
+		public async Task<IEnumerable<ExpertAssignmentModel>> GetAllRequestsAsync(int expertId)
+		{
+			// Fetch the ExpertTestRequests (which contain the Status and Link to TestRequest)
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetAllRequestsForExpertAsync(expertId);
+
+			// Map to the new ExpertAssignmentModel
+			var result = expertRequests.Select(etr =>
+			{
+				// 1. Map the base TestRequest details
+				var model = _mapper.Map<ExpertAssignmentModel>(etr.TestRequest);
+
+				// 2. Populate the Expert-specific details
+				model.ExpertStatus = etr.Status;           // The status from Expert_TestRequest (Completed/Pending/etc)
+				model.AssignmentDate = etr.CreatedDate;    // The date assigned to Expert
+
+				return model;
+			});
+
+			return result;
 		}
 
 		public async Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId)
@@ -175,7 +198,7 @@ namespace PerHue.Infrastructure.Services
 				TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
 			};
 		}
-		public async Task RateExpertResponseAsync(RateExpertResponseModel model, int userId)
+		/*public async Task RateExpertResponseAsync(RateExpertResponseModel model, int userId)
 		{
 			// 1. Get the TestResponse and its parent TestRequest
 			var testResponse = await _unitOfWork.TestResponseRepository.GetByIdAsync(model.TestResponseId);
@@ -221,6 +244,65 @@ namespace PerHue.Infrastructure.Services
 			var newAverage = allRatedResponses.Average(r => r.Rating);
 			expert.Rating = (decimal)newAverage;
 
+			await _unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+			// 6. Save all changes in one transaction
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+		}*/
+		public async Task RateExpertResponseAsync(RateExpertResponseModel model, int userId)
+		{
+			// 1. Get the TestResponse and its parent TestRequest
+			var testResponse = await _unitOfWork.TestResponseRepository.GetByIdAsync(model.TestResponseId);
+			if (testResponse == null) throw new Exception("Test response not found.");
+
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(testResponse.TestRequestId);
+			if (testRequest == null) throw new Exception("Parent test request not found.");
+
+			// 2. Security Check
+			if (testRequest.UserAccountId != userId) throw new UnauthorizedAccessException("You are not authorized to rate this response.");
+
+			// 3. Check if already rated
+			if (testResponse.Rating != null) throw new InvalidOperationException("This response has already been rated.");
+
+			// 4. Save the rating to the TestResponse
+			testResponse.Rating = model.Rating;
+			await _unitOfWork.TestResponseRepository.UpdateAsync(testResponse);
+
+			// 5. Recalculate the Expert's Overall Rating
+			var expert = await _unitOfWork.ExpertRepository.GetByIdAsync(testResponse.ExpertId);
+			if (expert == null) throw new Exception("Expert not found.");
+
+			// A. Calculate Average from "Rated" Responses
+			var allResponses = await _unitOfWork.TestResponseRepository.GetAllByExpertIdAsync(expert.Id);
+			var ratedResponses = allResponses.Where(r => r.Rating != null && r.Rating > 0).ToList();
+
+			decimal averageRating = 0;
+			if (ratedResponses.Any())
+			{
+				averageRating = (decimal)ratedResponses.Average(r => r.Rating!.Value);
+			}
+			else
+			{
+				averageRating = 5.0m;
+			}
+
+			// B. Calculate Total Penalty from "Expired" Requests
+			var expiredRequests = await _unitOfWork.ExpertTestRequestRepository
+				.FindAsync(r => r.ExpertId == expert.Id && r.Status == "Expired");
+
+			int expiredCount = expiredRequests.Count();
+
+			// Get penalty amount from configuration (default 0.2)
+			decimal ratingDeduction = _configuration.GetValue<decimal>("ExpertTestSettings:RatingDeduction");
+			decimal totalPenalty = expiredCount * ratingDeduction;
+
+			// C. Apply Formula: Rating = Average - Penalty
+			decimal finalRating = averageRating - totalPenalty;
+
+			// D. Ensure Rating doesn't drop below 0
+			if (finalRating < 0) finalRating = 0;
+
+			expert.Rating = finalRating;
 			await _unitOfWork.ExpertRepository.UpdateAsync(expert);
 
 			// 6. Save all changes in one transaction
