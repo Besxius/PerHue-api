@@ -64,6 +64,7 @@ namespace PerHue.Infrastructure.Services
 		public async Task<int> CreateSuccessPaymentInDbAsync(PerHue.Application.Models.Payment.An.CreatePaymentModel model) {
 			var payment = new Payment
 			{
+				Id = model.PaymentId,
 				UserId = model.UserId,
 				Amount = model.Amount,
 				Description = model.Description,
