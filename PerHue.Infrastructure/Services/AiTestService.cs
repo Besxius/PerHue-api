@@ -75,7 +75,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = testRequest.Id,
 				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow,
+				CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
 				UserAccountId = testRequest.UserAccountId,
 				Fullname = user.Fullname,
 				TypeOfTest = testRequest.TypeOfTest,
@@ -151,7 +151,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = item.TestRequest.Id,
 				Status = item.TestRequest.Status ?? "Unknown",
-				CreatedDate = item.TestRequest.CreatedDate ?? DateTime.UtcNow,
+				CreatedDate = item.TestRequest.CreatedDate ?? DateTime.Now,
 				UserAccountId = item.TestRequest.UserAccountId,
 				Fullname = user.Fullname,
 				TypeOfTest = item.TestRequest.TypeOfTest,
@@ -185,7 +185,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = t.Id,
 				Status = t.Status ?? "Unknown",
-				CreatedDate = t.CreatedDate ?? DateTime.UtcNow,
+				CreatedDate = t.CreatedDate ?? DateTime.Now,
 				Fullname = t.UserAccount.Fullname,
 				UserAccountId = t.UserAccount.Id,
 				TypeOfTest = t.TypeOfTest,
@@ -258,7 +258,7 @@ namespace PerHue.Infrastructure.Services
 					LipsColor = request.LipsColor,
 					SkinColor = request.SkinColor,
 					Status = TestStatus.Processing.ToString(),
-					CreatedDate = DateTime.UtcNow,
+					CreatedDate = DateTime.Now,
 					TypeOfTest = "AI Test",
 					UserAccountId = userId
 				};
@@ -347,7 +347,7 @@ namespace PerHue.Infrastructure.Services
 					// Lưu kết quả test vào AiTestResult
 					var aiTestResult = new AiTestResult
 					{
-						Date = DateTime.UtcNow,
+						Date = DateTime.Now,
 						ColorTypeId = colorAnalysis.ColorTypeId,
 						SuggestedColor = string.Join(", ", matchedSuggestedColors
 							.Where(c => c.MatchedColor != null)

@@ -34,7 +34,7 @@ namespace PerHue.Infrastructure.Authentication
 			var tokenDescription = new SecurityTokenDescriptor
 			{
 				Subject = claimsIdentity,
-				Expires = DateTime.UtcNow.AddMinutes(_jwtSetting.DurationInMinutes),
+				Expires = DateTime.Now.AddMinutes(_jwtSetting.DurationInMinutes),
 				Issuer = _jwtSetting.Issuer,
 				Audience = _jwtSetting.Audience,
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256)

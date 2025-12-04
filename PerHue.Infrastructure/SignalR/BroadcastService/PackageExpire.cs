@@ -50,7 +50,7 @@ public class PackageExpire : BackgroundService
 			{
 				if (item.EndDate.HasValue)
 				{
-					var daysLeft = (item.EndDate.Value.Date - DateTime.UtcNow.Date).TotalDays;
+					var daysLeft = (item.EndDate.Value.Date - DateTime.Now.Date).TotalDays;
 
 					// 1. HANDLE EXPIRED SUBSCRIPTIONS
 					if (daysLeft <= 0 && item.Status == true) // only process if still active
@@ -156,7 +156,7 @@ public class PackageExpire : BackgroundService
 			}
 			else
 			{
-				DateTime now = DateTime.UtcNow;
+				DateTime now = DateTime.Now;
 				Console.WriteLine($"Scanning Expired User Subcriptions at: {now}");
 			}
 

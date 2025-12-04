@@ -116,13 +116,15 @@ namespace PerHue.Api.Controllers
 			var response = await _servicesProvider.ExpertTestService.SubmitResponseAsync(model, expertId);
 			return Ok(response);
 		}
+
 		[HttpGet("review-requests")]
-		public async Task<IActionResult> GetPendingReviewRequests()
+		public async Task<ActionResult<ReviewTestRequestModel>> GetPendingReviewRequests()
 		{
 			var expertId = await GetCurrentExpertId();
 			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
 			return Ok(requests);
 		}
+
 		[HttpPost("vote")]
 		public async Task<IActionResult> VoteForResponse([FromBody] VoteResponseModel model)
 		{

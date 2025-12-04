@@ -621,8 +621,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
-using PerHue.Infrastructure.AI;
-using System.Text.Json;
 using PerHue.Application.Models;
 
 
@@ -696,7 +694,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			// 1. Check for expired pending requests
 			foreach (var req in pending)
 			{
-				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > DaysToWait)
+				if ((DateTime.Now - req.CreatedDate).TotalDays > DaysToWait)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 					req.Status = "Expired";
