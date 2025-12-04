@@ -13,6 +13,7 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Services;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.SignalR.BroadcastService
 {
@@ -105,7 +106,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 
 					// A. Mark as Expired
-					req.Status = "Expired";
+					req.Status = ExpertTestRequestStatus.Expired.ToString();
 					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
 					changesMade = true;
 
@@ -180,7 +181,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					{
 						ExpertId = newExpert.Id,
 						TestRequestId = testRequest.Id,
-						Status = "Pending",
+						Status = ExpertTestRequestStatus.Pending.ToString(),
 						CreatedDate = DateTime.Now
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
@@ -281,7 +282,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			{
 				_logger.LogError(ex, $"AI Fallback failed for TestRequest {testRequest.Id}.");
 
-				testRequest.Status = "Failed";
+				testRequest.Status = TestRequestStatus.Failed.ToString();
 				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
 
 				var notification = new Notification
@@ -301,7 +302,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 		private async Task FinalizeTestAsync(IUnitOfWork unitOfWork, TestRequest testRequest, string message)
 		{
-			testRequest.Status = "Completed";
+			testRequest.Status = TestRequestStatus.Completed.ToString();
 			await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
 
 			var notification = new Notification

@@ -369,7 +369,7 @@ namespace PerHue.Infrastructure.Services
 				HairColor = parameters.HairColor,
 				EyesColor = parameters.EyesColor,
 				LipsColor = parameters.LipsColor,
-				Status = "Pending",
+				Status = TestRequestStatus.Pending.ToString(),
 				CreatedDate = DateTime.Now,
 				TypeOfTest = "Expert",
 				UserAccountId = parameters.UserId
@@ -409,7 +409,7 @@ namespace PerHue.Infrastructure.Services
 				{
 					ExpertId = expert.Id,
 					TestRequestId = testRequest.Id,
-					Status = "Pending",
+					Status = ExpertTestRequestStatus.Pending.ToString(),
 					CreatedDate = DateTime.Now
 				};
 				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
@@ -467,14 +467,14 @@ namespace PerHue.Infrastructure.Services
 			{
 				ExpertId = selectedExpert.Id,
 				TestRequestId = testRequestId,
-				Status = "PendingReview",
+				Status = ExpertTestRequestStatus.PendingReview.ToString(),
 				CreatedDate = DateTime.Now
 			};
 
 			await _unitOfWork.ExpertTestRequestRepository.CreateAsync(newRequest);
 
 			// --- STATUS CHANGE: Mark main request as Reviewing ---
-			testRequest.Status = "Reviewing";
+			testRequest.Status = TestRequestStatus.Reviewing.ToString();
 			await _unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
 
 			// --- NOTIFICATION: For the 4th Expert ---
