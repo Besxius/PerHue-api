@@ -167,7 +167,7 @@ namespace PerHue.Api.Controllers
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
 			[FromQuery] string orderCode,
-			int servicePackageId
+			[FromQuery] int servicePackageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
@@ -175,7 +175,6 @@ namespace PerHue.Api.Controllers
 
 			var model = new CreateUserSubscriptionModel
 			{
-				//UserId = 2,
 				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = true,
@@ -188,6 +187,7 @@ namespace PerHue.Api.Controllers
 				Message = "Payment process successful!",
 			});
 		}
+
 		[HttpGet("subscription/cancel")]
 		public async Task<IActionResult> SubscriptionCancelAsync(
 			[FromQuery] string code,
@@ -195,7 +195,7 @@ namespace PerHue.Api.Controllers
 			[FromQuery] bool cancel,
 			[FromQuery] string status,
 			[FromQuery] string orderCode,
-			int servicePackageId
+			[FromQuery] int servicePackageId
 			)
 		{
 			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
@@ -203,7 +203,6 @@ namespace PerHue.Api.Controllers
 
 			var model = new CreateUserSubscriptionModel
 			{
-				//UserId = 2,
 				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
 				ServicePackageId = servicePackage.Id,
 				Status = false,

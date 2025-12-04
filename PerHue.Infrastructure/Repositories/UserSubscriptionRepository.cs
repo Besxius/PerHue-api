@@ -31,7 +31,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<UserSubscription?> GetActiveSubscriptionAsync(int userId)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Include(us => us.User)
@@ -49,7 +49,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			return await _context.UserSubscriptions
 				.AnyAsync(us => us.UserId == userId
 					&& us.Status == true
@@ -63,7 +63,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<UserSubscription?> GetLatestActiveSubscriptionByPackageAndTypeAsync(int userId, int packageId, string type)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Include(us => us.User)
@@ -107,7 +107,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<bool> RefundRemainingUsesAsync(int userId, int packageId, string type)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			var subscription = await GetLatestActiveSubscriptionByPackageAndTypeAsync(userId, packageId, type);
 
 			if (subscription == null)
@@ -158,7 +158,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(us => us.ServicePackage)
 				.Where(us => us.UserId == userId
 					&& us.Status == true
-					&& us.EndDate >= DateTime.UtcNow)
+					&& us.EndDate >= DateTime.Now)
 				.OrderBy(us => us.EndDate)
 				.ToListAsync();
 		}
@@ -169,7 +169,7 @@ namespace PerHue.Infrastructure.Repositories
 			var result = await _context.UserSubscriptions
 				.Where(us => us.UserId == userId
 					&& us.Status == true
-					&& us.EndDate >= DateTime.UtcNow)
+					&& us.EndDate >= DateTime.Now)
 				.GroupBy(us => us.ServicePackageId)
 				.Select(g => new
 				{
@@ -193,7 +193,7 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<int> AutoExpireSubscriptionsAsync()
 		{
 			var expiredSubscriptions = await _context.UserSubscriptions
-				.Where(us => us.Status == true && us.EndDate < DateTime.UtcNow)
+				.Where(us => us.Status == true && us.EndDate < DateTime.Now)
 				.ToListAsync();
 
 			foreach (var subscription in expiredSubscriptions)
@@ -280,7 +280,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<List<UserSubscription>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Where(us => us.UserId == userId
