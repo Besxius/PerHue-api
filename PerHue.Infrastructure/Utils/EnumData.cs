@@ -95,4 +95,19 @@
 		Complaint,
 		Support
 	}
+
+	public enum ExpertTestRequestStatus
+	{
+		Pending,
+		PendingReview,
+		Completed,
+		Expired
+	}
+	public enum TestRequestStatus
+	{
+		Pending,
+		Completed,
+		Reviewing,
+		Failed
+	}
 }
