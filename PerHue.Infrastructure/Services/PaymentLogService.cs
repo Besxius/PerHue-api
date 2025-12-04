@@ -70,7 +70,7 @@ namespace PerHue.Infrastructure.Services
 
 			var entity = _mapper.Map<PaymentLog>(model);
 			entity.EventType = EventTypeEnum.StatusChanged.ToString();
-			entity.CreatedAt = DateTime.UtcNow;
+			entity.CreatedAt = DateTime.Now;
 			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}

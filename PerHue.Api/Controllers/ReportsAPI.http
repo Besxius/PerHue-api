@@ -1,0 +1,26 @@
+### User Report APIs
+
+@baseUrl = https://localhost:7000/api
+@token = YOUR_JWT_TOKEN_HERE
+
+### 1. Create a new report (User)
+POST {{baseUrl}}/reports
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "This is a test report about a bug I found in the system.",
+  "type": "Bug"
+}
+
+### 2. Get all my reports (User)
+GET {{baseUrl}}/reports/my-reports
+Authorization: Bearer {{token}}
+
+### 3. Get a specific report by ID (User)
+GET {{baseUrl}}/reports/1
+Authorization: Bearer {{token}}
+
+### 4. Delete a report (User)
+DELETE {{baseUrl}}/reports/1
+Authorization: Bearer {{token}}

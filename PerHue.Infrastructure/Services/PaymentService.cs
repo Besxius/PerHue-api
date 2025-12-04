@@ -64,12 +64,13 @@ namespace PerHue.Infrastructure.Services
 		public async Task<int> CreateSuccessPaymentInDbAsync(PerHue.Application.Models.Payment.An.CreatePaymentModel model) {
 			var payment = new Payment
 			{
+				Id = model.PaymentId,
 				UserId = model.UserId,
 				Amount = model.Amount,
 				Description = model.Description,
 				Status = PaymentStatusEnum.Success.ToString(),
 				TransactionId = model.OrderCode,
-				CreatedAt = DateTime.UtcNow
+				CreatedAt = DateTime.Now
 			};
 			var createdPayment = await _unitOfWork.PaymentRepository.CreateAsync(payment);
 

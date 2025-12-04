@@ -1,0 +1,58 @@
+### Admin Report Management APIs
+
+@baseUrl = https://localhost:7000/api/admin
+@adminToken = YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 1. Get all reports with pagination and filters
+GET {{baseUrl}}/reports?PageIndex=1&PageSize=10&Status=Pending&Type=Bug&SearchKeyword=test
+Authorization: Bearer {{adminToken}}
+
+### 2. Get all reports (simple)
+GET {{baseUrl}}/reports?PageIndex=1&PageSize=10
+Authorization: Bearer {{adminToken}}
+
+### 3. Get a specific report by ID (Admin)
+GET {{baseUrl}}/reports/1
+Authorization: Bearer {{adminToken}}
+
+### 4. Update a report (Admin)
+PUT {{baseUrl}}/reports/1
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "content": "Updated report content",
+  "type": "Feature Request",
+  "status": "In Progress",
+  "notice": "We are working on this issue"
+}
+
+### 5. Update report status only (Admin)
+PATCH {{baseUrl}}/reports/1/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "Resolved",
+  "notice": "This issue has been fixed in the latest update"
+}
+
+### 6. Delete a report (Admin)
+DELETE {{baseUrl}}/reports/1
+Authorization: Bearer {{adminToken}}
+
+### 7. Get reports by specific user
+GET {{baseUrl}}/reports/by-user/5
+Authorization: Bearer {{adminToken}}
+
+### 8. Get reports by status
+GET {{baseUrl}}/reports?Status=Pending&PageIndex=1&PageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 9. Get reports by type
+GET {{baseUrl}}/reports?Type=Bug&PageIndex=1&PageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 10. Search reports by keyword
+GET {{baseUrl}}/reports?SearchKeyword=urgent&PageIndex=1&PageSize=10
+Authorization: Bearer {{adminToken}}
