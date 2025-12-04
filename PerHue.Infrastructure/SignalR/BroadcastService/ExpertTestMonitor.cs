@@ -1,6 +1,327 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration; // [NEW] Added for IConfiguration
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using PerHue.Application.IServices;
+using PerHue.Application.Models;
+using PerHue.Domain.Entities;
+using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.Services;
+
+namespace PerHue.Infrastructure.SignalR.BroadcastService
+{
+	public class ExpertTestMonitor : BackgroundService
+	{
+		private readonly IServiceScopeFactory _scopeFactory;
+		private readonly ILogger<ExpertTestMonitor> _logger;
+		private readonly IConfiguration _configuration; //Configuration field
+
+		//Changed from const to readonly fields
+		private readonly int _maxRetries;
+		private readonly int _requiredResponses;
+		private readonly int _daysToWait;
+		private readonly decimal _ratingDeduction;       
+		private readonly decimal _ratingWarningThreshold; 
+
+		public ExpertTestMonitor(
+			IServiceScopeFactory scopeFactory,
+			ILogger<ExpertTestMonitor> logger,
+			IConfiguration configuration) //Inject Configuration
+		{
+			_scopeFactory = scopeFactory;
+			_logger = logger;
+			_configuration = configuration;
+
+			//Load values from appsettings.json with fallbacks
+			_maxRetries = _configuration.GetValue<int>("ExpertTestSettings:MaxRetries");
+			_requiredResponses = _configuration.GetValue<int>("ExpertTestSettings:RequiredResponses");
+			_daysToWait = _configuration.GetValue<int>("ExpertTestSettings:DaysToWait");
+			_ratingDeduction = _configuration.GetValue<decimal>("ExpertTestSettings:RatingDeduction");
+			_ratingWarningThreshold = _configuration.GetValue<decimal>("ExpertTestSettings:RatingWarningThreshold");
+
+		}
+
+		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+		{
+			_logger.LogInformation($"Expert Test Monitor started. Config: MaxRetries={_maxRetries}, RequiredResponses={_requiredResponses}, DaysToWait={_daysToWait}, Deduct={_ratingDeduction}, Threshold={_ratingWarningThreshold}");
+
+			while (!stoppingToken.IsCancellationRequested)
+			{
+				_logger.LogInformation("Expert Test Monitor is running a check.");
+
+				using (var scope = _scopeFactory.CreateScope())
+				{
+					var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+					var aiAnalysisService = scope.ServiceProvider.GetRequiredService<IAIImageAnalysisService>();
+					var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+
+					try
+					{
+						var pendingTestRequests = await unitOfWork.TestRequestRepository.GetPendingRequestsAsync();
+
+						foreach (var testRequest in pendingTestRequests)
+						{
+							await HandleRequestRetriesAndFinalization(unitOfWork, aiAnalysisService, emailService, testRequest);
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(ex, "Error occurred in Expert Test Monitor.");
+					}
+				}
+
+				// Check every 30 seconds (for testing) or 6 hours (production)
+				await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+			}
+
+			_logger.LogInformation("Expert Test Monitor is stopping.");
+		}
+
+		private async Task HandleRequestRetriesAndFinalization(
+			IUnitOfWork unitOfWork,
+			IAIImageAnalysisService aiService,
+			EmailService emailService,
+			TestRequest testRequest)
+		{
+			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
+			var completedResponses = await unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequest.Id);
+			var pending = expertRequests.Where(etr => etr.Status == "Pending").ToList();
+			var expiredCount = expertRequests.Count(etr => etr.Status == "Expired");
+
+			bool needsNewExpert = false;
+			bool changesMade = false;
+
+			// 1. Check for expired pending requests using _daysToWait
+			foreach (var req in pending)
+			{
+				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > _daysToWait)
+				{
+					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
+
+					// A. Mark as Expired
+					req.Status = "Expired";
+					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
+					changesMade = true;
+
+					// B. Penalize Expert
+					try
+					{
+						var expert = await unitOfWork.ExpertRepository.GetByIdAsync(req.ExpertId);
+						var expertUser = await unitOfWork.UserRepository.GetByIdAsync(req.ExpertId);
+
+						if (expert != null && expertUser != null)
+						{
+							// Deduct Rating
+							//Use configured deduction amount
+							expert.Rating -= _ratingDeduction;
+							if (expert.Rating < 0) expert.Rating = 0;
+							await unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+							// Send In-App Notification
+							var penaltyNotification = new Notification
+							{
+								Title = "Deadline Missed",
+								Content = $"You missed the response deadline for Test Request #{testRequest.Id}. 0.2 rating points have been deducted.",
+								Receiver = expert.Id,
+								TestRequestId = testRequest.Id,
+								ReceivedTime = DateTime.UtcNow,
+								Type = "Penalty",
+								IsRead = false
+							};
+							await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
+
+							// Email Warning
+							// [UPDATED] Use configured threshold
+							if (expert.Rating < _ratingWarningThreshold)
+							{
+								_logger.LogInformation($"Expert {expert.Id} rating dropped to {expert.Rating}. Sending warning email to {expertUser.Email}.");
+
+								var emailSubject = "Action Required: Low Expert Rating Warning";
+								var emailBody = $@"
+                                    <h3>Warning: Low Rating Alert</h3>
+                                    <p>Dear {expertUser.Fullname ?? expertUser.Username},</p>
+                                    <p>Your expert rating has dropped to <strong>{expert.Rating:F1}</strong> due to missed deadlines.</p>
+                                    <p>This rating is below the acceptable threshold of 3.0.</p>
+                                    <p>Please ensure you respond to pending requests promptly to restore your standing.</p>
+                                    <p>Best Regards,<br/>PerHue System</p>";
+
+								await emailService.SendEmailAsync(expertUser.Email, emailSubject, emailBody);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(ex, $"Error processing penalty for Expert {req.ExpertId}");
+					}
+
+					expiredCount++;
+					needsNewExpert = true;
+				}
+			}
+
+			// 2. Handle retries using _maxRetries
+			if (needsNewExpert && expiredCount <= _maxRetries)
+			{
+				var assignedExpertIds = expertRequests.Select(etr => etr.ExpertId).ToList();
+				var allExperts = await unitOfWork.ExpertRepository.GetAllAsync();
+
+				var newExpert = allExperts.FirstOrDefault(e => !assignedExpertIds.Contains(e.Id) && e.Id != testRequest.UserAccountId);
+
+				if (newExpert != null)
+				{
+					_logger.LogInformation($"Retrying TestRequest {testRequest.Id}: assigning to new Expert {newExpert.Id}.");
+					var newExpertRequest = new ExpertTestRequest
+					{
+						ExpertId = newExpert.Id,
+						TestRequestId = testRequest.Id,
+						Status = "Pending",
+						CreatedDate = DateTime.Now
+					};
+					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
+
+					await unitOfWork.SaveChangesWithTransactionAsync();
+					return;
+				}
+				else
+				{
+					_logger.LogWarning($"TestRequest {testRequest.Id}: No new experts available for retry.");
+				}
+			}
+
+			// 3. Finalization Check using _requiredResponses
+			var currentExpertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
+			var pendingCount = currentExpertRequests.Count(etr => etr.Status == "Pending");
+
+			if (completedResponses.Count() >= _requiredResponses) 
+			{
+				await FinalizeTestAsync(unitOfWork, testRequest, "Expert Analysis Completed");
+				return;
+			}
+
+			// Fallback Trigger using _maxRetries
+			if (expiredCount > _maxRetries && pendingCount == 0) 
+			{
+				await PerformAiFallbackAsync(unitOfWork, aiService, testRequest, completedResponses.Count());
+				return;
+			}
+
+			if (changesMade)
+			{
+				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+		}
+
+		private async Task PerformAiFallbackAsync(
+			IUnitOfWork unitOfWork,
+			IAIImageAnalysisService aiService,
+			TestRequest testRequest,
+			int currentResponseCount)
+		{
+			_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {currentResponseCount}/{_requiredResponses}"); // [UPDATED] Log using field
+
+			// Refund Logic
+			var subscription = await unitOfWork.UserSubscriptionRepository.GetSubscriptionForRefundAsync(testRequest.UserAccountId);
+			if (subscription != null)
+			{
+				subscription.RemainingUses++;
+				if (subscription.RemainingUses > 0 && !subscription.Status)
+				{
+					subscription.Status = true;
+				}
+				await unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
+
+				var refundNotification = new Notification
+				{
+					Title = "Service Credit Refunded",
+					Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
+					Receiver = testRequest.UserAccountId,
+					TestRequestId = testRequest.Id,
+					ReceivedTime = DateTime.Now,
+					IsRead = false,
+					Type = "Refund"
+				};
+				await unitOfWork.NotificationRepository.CreateAsync(refundNotification);
+				_logger.LogInformation($"Refunded 1 use to User {testRequest.UserAccountId}.");
+			}
+
+			try
+			{
+				var aiRequest = new AiTestModel.GeminiAnalysisRequest
+				{
+					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
+					HairColor = testRequest.HairColor,
+					EyesColor = testRequest.EyesColor,
+					LipsColor = testRequest.LipsColor,
+					SkinColor = testRequest.SkinColor
+				};
+
+				var aiResultModel = await aiService.AnalyzeColorTypeAsync(aiRequest);
+				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
+
+				var aiTestResult = new AiTestResult
+				{
+					Id = testRequest.Id,
+					Date = DateTime.Now,
+					Note = "AI Assistant Analysis (Fallback)",
+					SuggestedColor = string.Join(",", aiResultModel.SuggestedColor),
+					AvoidedColor = string.Join(",", aiResultModel.AvoidedColor),
+					ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
+				};
+
+				await unitOfWork.AiTestResultRepository.CreateAsync(aiTestResult);
+				await FinalizeTestAsync(unitOfWork, testRequest, "Expert & AI Analysis Completed");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"AI Fallback failed for TestRequest {testRequest.Id}.");
+
+				testRequest.Status = "Failed";
+				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+				var notification = new Notification
+				{
+					Title = "Test Analysis Failed",
+					Content = "We could not complete your analysis at this time.",
+					IsRead = false,
+					ReceivedTime = DateTime.Now,
+					Type = "TestFailed",
+					Receiver = testRequest.UserAccountId,
+					TestRequestId = testRequest.Id
+				};
+				await unitOfWork.NotificationRepository.CreateAsync(notification);
+				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+		}
+
+		private async Task FinalizeTestAsync(IUnitOfWork unitOfWork, TestRequest testRequest, string message)
+		{
+			testRequest.Status = "Completed";
+			await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+			var notification = new Notification
+			{
+				Title = "Your Color Analysis is Ready!",
+				Content = message,
+				IsRead = false,
+				ReceivedTime = DateTime.Now,
+				Type = "TestResult",
+				Receiver = testRequest.UserAccountId,
+				TestRequestId = testRequest.Id
+			};
+			await unitOfWork.NotificationRepository.CreateAsync(notification);
+			await unitOfWork.SaveChangesWithTransactionAsync();
+		}
+	}
+}
+/*using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +330,297 @@ using Microsoft.Extensions.Logging;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
-using System.Text.Json;
+using PerHue.Application.Models;
+using PerHue.Application.IServices;
+using PerHue.Infrastructure.Services; // Ensure this is included for EmailService
+
+namespace PerHue.Infrastructure.SignalR.BroadcastService
+{
+	public class ExpertTestMonitor : BackgroundService
+	{
+		private readonly IServiceScopeFactory _scopeFactory;
+		private readonly ILogger<ExpertTestMonitor> _logger;
+		private const int MaxRetries = 2;
+		private const int RequiredResponses = 3;
+		private const int DaysToWait = 2; 
+
+		public ExpertTestMonitor(IServiceScopeFactory scopeFactory, ILogger<ExpertTestMonitor> logger)
+		{
+			_scopeFactory = scopeFactory;
+			_logger = logger;
+		}
+
+		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+		{
+			_logger.LogInformation("Expert Test Monitor is starting.");
+
+			while (!stoppingToken.IsCancellationRequested)
+			{
+				_logger.LogInformation("Expert Test Monitor is running a check.");
+
+				using (var scope = _scopeFactory.CreateScope())
+				{
+					var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+					var aiAnalysisService = scope.ServiceProvider.GetRequiredService<IAIImageAnalysisService>();
+					// Inject EmailService here
+					var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+
+					try
+					{
+						var pendingTestRequests = await unitOfWork.TestRequestRepository.GetPendingRequestsAsync();
+
+						foreach (var testRequest in pendingTestRequests)
+						{
+							// Pass emailService to the handler
+							await HandleRequestRetriesAndFinalization(unitOfWork, aiAnalysisService, emailService, testRequest);
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(ex, "Error occurred in Expert Test Monitor.");
+					}
+				}
+
+				// Check every 6 hours (Or adjust frequency as needed)
+				//await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
+				await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+			}
+
+			_logger.LogInformation("Expert Test Monitor is stopping.");
+		}
+
+		private async Task HandleRequestRetriesAndFinalization(
+			IUnitOfWork unitOfWork,
+			IAIImageAnalysisService aiService,
+			EmailService emailService,
+			TestRequest testRequest)
+		{
+			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
+			var completedResponses = await unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequest.Id);
+			var pending = expertRequests.Where(etr => etr.Status == "Pending").ToList();
+			var expiredCount = expertRequests.Count(etr => etr.Status == "Expired");
+
+			bool needsNewExpert = false;
+
+			// 1. Check for expired pending requests
+			foreach (var req in pending)
+			{
+				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > DaysToWait)
+				{
+					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
+
+					// A. Mark as Expired
+					req.Status = "Expired";
+					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
+
+					// START PENALTY LOGIC 
+					try
+					{
+						// Fetch Expert and User info (ExpertId == UserAccountId)
+						var expert = await unitOfWork.ExpertRepository.GetByIdAsync(req.ExpertId);
+						var expertUser = await unitOfWork.UserRepository.GetByIdAsync(req.ExpertId);
+
+						if (expert != null && expertUser != null)
+						{
+							// 1. Deduct Rating
+							expert.Rating -= 0.2m;
+							if (expert.Rating < 0) expert.Rating = 0;
+							await unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+							// 2. Send In-App Notification
+							var penaltyNotification = new Notification
+							{
+								Title = "Deadline Missed",
+								Content = $"You missed the response deadline for Test Request #{testRequest.Id}. 0.2 rating points have been deducted.",
+								Receiver = expert.Id,
+								TestRequestId = testRequest.Id,
+								ReceivedTime = DateTime.UtcNow,
+								Type = "Penalty",
+								IsRead = false
+							};
+							await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
+
+							// 3. Check Rating Threshold & Send Email Warning
+							if (expert.Rating < 3.0m)
+							{
+								var emailSubject = "Action Required: Low Expert Rating Warning";
+								var emailBody = $@"
+									<h3>Warning: Low Rating Alert</h3>
+									<p>Dear {expertUser.Fullname ?? expertUser.Username},</p>
+									<p>Your expert rating has dropped to <strong>{expert.Rating:F1}</strong> due to missed deadlines.</p>
+									<p>This rating is below the acceptable threshold of 3.0.</p>
+									<p>Please ensure you respond to pending requests promptly to restore your standing.</p>
+									<p>Best Regards,<br/>PerHue System</p>";
+
+								await emailService.SendEmailAsync(expertUser.Email, emailSubject, emailBody);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(ex, $"Error processing penalty for Expert {req.ExpertId}");
+					}
+					// END PENALTY LOGIC 
+
+					expiredCount++;
+					needsNewExpert = true;
+				}
+			}
+
+			// 2. Handle retries if needed (Try to find real experts first)
+			if (needsNewExpert && expiredCount <= MaxRetries)
+			{
+				var assignedExpertIds = expertRequests.Select(etr => etr.ExpertId).ToList();
+				// Note: Ensure GetAllAsync works or implement fetching IDs to filter
+				var allExperts = await unitOfWork.ExpertRepository.GetAllAsync();
+
+				var newExpert = allExperts.FirstOrDefault(e => !assignedExpertIds.Contains(e.Id) && e.Id != testRequest.UserAccountId);
+
+				if (newExpert != null)
+				{
+					_logger.LogInformation($"Retrying TestRequest {testRequest.Id}: assigning to new Expert {newExpert.Id}.");
+					var newExpertRequest = new ExpertTestRequest
+					{
+						ExpertId = newExpert.Id,
+						TestRequestId = testRequest.Id,
+						Status = "Pending",
+						CreatedDate = DateTime.Now
+					};
+					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
+					await unitOfWork.SaveChangesWithTransactionAsync();
+					return; // Wait for this new expert
+				}
+				else
+				{
+					_logger.LogWarning($"TestRequest {testRequest.Id}: No new experts available for retry.");
+				}
+			}
+
+			// 3. Finalization Check
+			// Re-fetch pending count in case logic above changed things, though local vars are safer for logic flow
+			var currentExpertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
+			var pendingCount = currentExpertRequests.Count(etr => etr.Status == "Pending");
+
+			// Success: We have 3 responses from experts
+			if (completedResponses.Count() >= RequiredResponses)
+			{
+				await FinalizeTestAsync(unitOfWork, testRequest, "Expert Analysis Completed");
+				return;
+			}
+
+			// Fallback Trigger:
+			// If we are out of retries AND no experts are currently pending (everyone expired or failed)
+			if (expiredCount > MaxRetries && pendingCount == 0)
+			{
+				_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {completedResponses.Count()}/{RequiredResponses}");
+
+				// --- REFUND LOGIC ---
+				var subscription = await unitOfWork.UserSubscriptionRepository.GetSubscriptionForRefundAsync(testRequest.UserAccountId);
+				if (subscription != null)
+				{
+					subscription.RemainingUses++;
+					if (subscription.RemainingUses > 0 && !subscription.Status)
+					{
+						subscription.Status = true; // Reactivate if it was closed
+					}
+					await unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
+
+					var refundNotification = new Notification
+					{
+						Title = "Service Credit Refunded",
+						Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
+						Receiver = testRequest.UserAccountId,
+						TestRequestId = testRequest.Id,
+						ReceivedTime = DateTime.Now,
+						IsRead = false,
+						Type = "Refund"
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(refundNotification);
+					_logger.LogInformation($"Refunded 1 use to User {testRequest.UserAccountId}.");
+				}
+
+				try
+				{
+					// Perform AI Analysis
+					var aiRequest = new AiTestModel.GeminiAnalysisRequest
+					{
+						ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
+						HairColor = testRequest.HairColor,
+						EyesColor = testRequest.EyesColor,
+						LipsColor = testRequest.LipsColor,
+						SkinColor = testRequest.SkinColor
+					};
+
+					var aiResultModel = await aiService.AnalyzeColorTypeAsync(aiRequest);
+					var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
+
+					var aiTestResult = new AiTestResult
+					{
+						Id = testRequest.Id,
+						Date = DateTime.Now,
+						Note = "AI Assistant Analysis (Fallback)",
+						SuggestedColor = string.Join(",", aiResultModel.SuggestedColor),
+						AvoidedColor = string.Join(",", aiResultModel.AvoidedColor),
+						ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
+					};
+
+					await unitOfWork.AiTestResultRepository.CreateAsync(aiTestResult);
+					await FinalizeTestAsync(unitOfWork, testRequest, "Expert & AI Analysis Completed");
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(ex, $"AI Fallback failed for TestRequest {testRequest.Id}.");
+
+					testRequest.Status = "Failed";
+					await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+					var notification = new Notification
+					{
+						Title = "Test Analysis Failed",
+						Content = "We could not complete your analysis at this time.",
+						IsRead = false,
+						ReceivedTime = DateTime.Now,
+						Type = "TestFailed",
+						Receiver = testRequest.UserAccountId,
+						TestRequestId = testRequest.Id
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(notification);
+					await unitOfWork.SaveChangesWithTransactionAsync();
+				}
+			}
+		}
+
+		private async Task FinalizeTestAsync(IUnitOfWork unitOfWork, TestRequest testRequest, string message)
+		{
+			testRequest.Status = "Completed";
+			await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+			var notification = new Notification
+			{
+				Title = "Your Color Analysis is Ready!",
+				Content = message,
+				IsRead = false,
+				ReceivedTime = DateTime.Now,
+				Type = "TestResult",
+				Receiver = testRequest.UserAccountId,
+				TestRequestId = testRequest.Id
+			};
+			await unitOfWork.NotificationRepository.CreateAsync(notification);
+			await unitOfWork.SaveChangesWithTransactionAsync();
+		}
+	}
+}*/
+
+/*using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using PerHue.Domain.Entities;
+using PerHue.Domain.UnitOfWork;
 using PerHue.Application.Models;
 
 
@@ -28,7 +639,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly ILogger<ExpertTestMonitor> _logger;
 		private const int MaxRetries = 2;
 		private const int RequiredResponses = 3;
-		private const int DaysToWait = 0;
+		private const int DaysToWait = 2;
 
 		public ExpertTestMonitor(IServiceScopeFactory scopeFactory, ILogger<ExpertTestMonitor> logger)
 		{
@@ -83,7 +694,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			// 1. Check for expired pending requests
 			foreach (var req in pending)
 			{
-				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > DaysToWait)
+				if ((DateTime.Now - req.CreatedDate).TotalDays > DaysToWait)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 					req.Status = "Expired";
@@ -253,169 +864,4 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 	}
 }
 
-/*namespace PerHue.Infrastructure.SignalR.BroadcastService
-{
-	public class ExpertTestMonitor : BackgroundService
-	{
-		private readonly IServiceScopeFactory _scopeFactory;
-		private readonly ILogger<ExpertTestMonitor> _logger;
-		private const int MaxRetries = 2;
-		private const int RequiredResponses = 3;
-		private const int DaysToWait = 2;
-
-		public ExpertTestMonitor(IServiceScopeFactory scopeFactory, ILogger<ExpertTestMonitor> logger)
-		{
-			_scopeFactory = scopeFactory;
-			_logger = logger;
-		}
-
-		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-		{
-			_logger.LogInformation("Expert Test Monitor is starting.");
-
-			while (!stoppingToken.IsCancellationRequested)
-			{
-				_logger.LogInformation("Expert Test Monitor is running a check.");
-
-				using (var scope = _scopeFactory.CreateScope())
-				{
-					var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-					try
-					{
-						var pendingTestRequests = await unitOfWork.TestRequestRepository.GetPendingRequestsAsync();
-
-						foreach (var testRequest in pendingTestRequests)
-						{
-							// We combine both checks into one "Finalize" check
-							await HandleRequestRetriesAndFinalization(unitOfWork, testRequest);
-						}
-					}
-					catch (Exception ex)
-					{
-						_logger.LogError(ex, "Error occurred in Expert Test Monitor.");
-					}
-				}
-
-				await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
-			}
-
-			_logger.LogInformation("Expert Test Monitor is stopping.");
-		}
-
-		private async Task HandleRequestRetriesAndFinalization(IUnitOfWork unitOfWork, TestRequest testRequest)
-		{
-			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
-			var completedResponses = await unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequest.Id);
-			var pending = expertRequests.Where(etr => etr.Status == "Pending").ToList();
-			var expiredCount = expertRequests.Count(etr => etr.Status == "Expired");
-
-			bool needsNewExpert = false;
-
-			// 1. Check for expired pending requests
-			foreach (var req in pending)
-			{
-				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > DaysToWait)
-				{
-					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
-					req.Status = "Expired";
-					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
-					expiredCount++;
-					needsNewExpert = true;
-				}
-			}
-
-			// 2. Handle retries if needed
-			if (needsNewExpert && expiredCount <= MaxRetries)
-			{
-				var assignedExpertIds = expertRequests.Select(etr => etr.ExpertId).ToList();
-				var newExpert = (await unitOfWork.ExpertRepository.GetAllAsync())
-								  .FirstOrDefault(e => !assignedExpertIds.Contains(e.Id));
-
-				if (newExpert != null)
-				{
-					_logger.LogInformation($"Retrying TestRequest {testRequest.Id}: assigning to new Expert {newExpert.Id}.");
-					var newExpertRequest = new ExpertTestRequest
-					{
-						ExpertId = newExpert.Id,
-						TestRequestId = testRequest.Id,
-						Status = "Pending",
-						CreatedDate = DateTime.Now
-					};
-					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
-
-					// A new expert was added, so we save and wait for the next cycle
-					await unitOfWork.SaveChangesWithTransactionAsync();
-					return;
-				}
-				else
-				{
-					_logger.LogWarning($"TestRequest {testRequest.Id}: No new experts available for retry.");
-				}
-			}
-
-			// 3. Check for finalization (Success or Failure)
-			// Re-fetch pending count in case a new expert was just added
-			var pendingCount = (await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id))
-								.Count(etr => etr.Status == "Pending");
-
-			bool shouldFinalize = false;
-			bool didFail = false;
-
-			if (completedResponses.Count() >= RequiredResponses)
-			{
-				shouldFinalize = true;
-				didFail = false; // Success
-			}
-			else if (expiredCount > MaxRetries && pendingCount == 0)
-			{
-				shouldFinalize = true;
-				didFail = true; // Failure
-			}
-
-			if (shouldFinalize)
-			{
-				Notification notification;
-
-				if (didFail)
-				{
-					// Failure: Max retries hit, not enough responses
-					_logger.LogWarning($"TestRequest {testRequest.Id} failed to get {RequiredResponses} expert responses.");
-					testRequest.Status = "Failed";
-
-					notification = new Notification
-					{
-						Title = "Your In-Depth Color Test Failed",
-						Content = "We're sorry, we couldn't get a result for your test at this time. Please try submitting again later.",
-						IsRead = false,
-						ReceivedTime = DateTime.Now,
-						Type = "TestFailed",
-						Receiver = testRequest.UserAccountId,
-						TestRequestId = testRequest.Id
-					};
-				}
-				else
-				{
-					// Success: We have 3+ responses. Mark as completed.
-					_logger.LogInformation($"TestRequest {testRequest.Id} is complete with {completedResponses.Count()} responses.");
-					testRequest.Status = "Completed";
-
-					notification = new Notification
-					{
-						Title = "Your In-Depth Color Test is Ready!",
-						Content = "Your expert color analysis is complete. You can now view your results.",
-						IsRead = false,
-						ReceivedTime = DateTime.Now,
-						Type = "TestResult",
-						Receiver = testRequest.UserAccountId,
-						TestRequestId = testRequest.Id
-					};
-				}
-
-				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
-				await unitOfWork.NotificationRepository.CreateAsync(notification);
-				await unitOfWork.SaveChangesWithTransactionAsync();
-			}
-		}
-	}
-}*/
+*/

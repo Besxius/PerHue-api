@@ -312,7 +312,7 @@ namespace PerHue.Infrastructure.Services
 			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsWithPackageByUserIdAsync(userId);
 
 			var summary = subscriptions
-				.Where(s => s.Status == true && s.EndDate >= DateTime.UtcNow)
+				.Where(s => s.Status == true && s.EndDate >= DateTime.Now)
 				.GroupBy(s => new { s.ServicePackageId, s.ServicePackage.Name })
 				.Select(g => new PackageUsageSummary
 				{

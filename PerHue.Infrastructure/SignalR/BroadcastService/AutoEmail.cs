@@ -46,7 +46,7 @@ public class AutoEmail:BackgroundService
 			//await _emailService.SendEmailAsync(email, subject, body);
 			//await _hubContext.Clients.All.SendAsync("ReceiveEmail", body, cancellationToken: stoppingToken);
 			//Console.WriteLine(body);
-			DateTime now = DateTime.UtcNow;
+			DateTime now = DateTime.Now;
 			Console.WriteLine($"AutoEmail Scanning at : {now}");
 			await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 		}
