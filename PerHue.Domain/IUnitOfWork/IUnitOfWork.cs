@@ -28,10 +28,11 @@ namespace PerHue.Domain.UnitOfWork
 
 		IRefreshTokenRepository RefreshTokenRepository { get; }
 
-		IPhotoRepository PhotoRepository { get; }
+	IPhotoRepository PhotoRepository { get; }
 
+	IReportRepository ReportRepository { get; }
 
-		int SaveChangesWithTransaction();
-		Task<int> SaveChangesWithTransactionAsync();
+	int SaveChangesWithTransaction();
+	Task<int> SaveChangesWithTransactionAsync();
 	}
 }
