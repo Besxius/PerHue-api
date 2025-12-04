@@ -25,8 +25,6 @@ public partial class UserAccount
 
     public string? ProfilePicture { get; set; }
 
-    public bool IsAitested { get; set; }
-
     public DateTime CreatedDate { get; set; }
 
     public int RoleId { get; set; }
@@ -38,6 +36,8 @@ public partial class UserAccount
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+    public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
 
     public virtual Role Role { get; set; } = null!;
 
