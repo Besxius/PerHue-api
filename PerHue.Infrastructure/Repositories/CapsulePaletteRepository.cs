@@ -64,6 +64,39 @@ namespace PerHue.Infrastructure.Repositories
 				.FirstOrDefaultAsync(p => p.Id == id);
 		}
 
+		/// <summary>
+		/// Xóa palette
+		/// </summary>
+		/// <param name="id"></param>
+		/// <returns></returns>
+		public override async Task<bool> DeleteAsync(int id)
+		{
+			await using var transaction = await _context.Database.BeginTransactionAsync();
+			try
+			{
+				var palette = await _context.CapsulePalettes
+					.Include(x => x.Colors)
+					.FirstOrDefaultAsync(x => x.Id == id);
+
+				if (palette == null)
+					return false;
+
+				palette.Colors.Clear();
+				await _context.SaveChangesAsync();
+
+				_context.CapsulePalettes.Remove(palette);
+				await _context.SaveChangesAsync();
+
+				await transaction.CommitAsync();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				await transaction.RollbackAsync();
+				return false;
+			}
+		}
+
 		public async Task<IEnumerable<CapsulePalette>> GetRelativeCapsulePalettes(List<string> selectedColors)
 		{
 			var colorsList = new List<CapsulePalette>();
