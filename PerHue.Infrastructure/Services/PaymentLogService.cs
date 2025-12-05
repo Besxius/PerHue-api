@@ -55,19 +55,6 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task CreatePaymentLogAsync(CreatePaymentLogModel model)
 		{
-			if (model.OldStatus.Equals("Pending") && 
-				model.NewStatus.Equals("Success") )
-			{
-				model.OldStatus = PaymentStatusEnum.Pending.ToString();
-				model.NewStatus = PaymentStatusEnum.Success.ToString();
-			}
-			else if (model.OldStatus.Equals("Pending") &&
-				model.NewStatus.Equals("Cancelled"))
-			{
-				model.OldStatus = PaymentStatusEnum.Pending.ToString();
-				model.NewStatus = PaymentStatusEnum.Cancelled.ToString();
-			}
-
 			var entity = new PaymentLog
 			{
 				PaymentId = model.PaymentId,

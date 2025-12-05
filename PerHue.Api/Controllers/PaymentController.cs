@@ -61,13 +61,7 @@ namespace PerHue.Api.Controllers
 				var payments = await _servicesProvider.PaymentService
 					.GetAllPaymentsByUserIdAsync(userId);
 
-				return Ok(new
-				{
-					success = true,
-					message = "Successfully retrieved all payments",
-					data = payments,
-					count = payments.Count
-				});
+				return Ok(payments);
 			}
 			catch (Exception ex)
 			{
