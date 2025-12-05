@@ -99,7 +99,7 @@ namespace PerHue.Api.Controllers
 		}
 		[HttpGet("requests/{id}")]
 		[Authorize(Roles = "Expert")]
-		public async Task<ActionResult<TestRequestModel>> GetExpertTestResult(int id)
+		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id)
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
@@ -109,13 +109,47 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
-				// This now returns the complete object
+				// Now returns the filtered ExpertTestResultModel
 				var result = await _servicesProvider.ExpertTestService.GetExpertResponsesForExpertAsync(id, userId);
 				return Ok(result);
 			}
 			catch (UnauthorizedAccessException ex)
 			{
 				return Unauthorized(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
+		[HttpPut("response/{id}")]
+		[Authorize(Roles = "Expert")]
+		public async Task<IActionResult> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var expertId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			try
+			{
+				var updatedResponse = await _servicesProvider.ExpertTestService.UpdateResponseAsync(id, model, expertId);
+				return Ok(updatedResponse);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(new { message = ex.Message });
+			}
+			catch (InvalidOperationException ex)
+			{
+				// This catches the "test request is already completed" error
+				return BadRequest(new { message = ex.Message });
 			}
 			catch (Exception ex)
 			{
