@@ -68,9 +68,16 @@ namespace PerHue.Infrastructure.Services
 				model.NewStatus = PaymentStatusEnum.Cancelled.ToString();
 			}
 
-			var entity = _mapper.Map<PaymentLog>(model);
-			entity.EventType = EventTypeEnum.StatusChanged.ToString();
-			entity.CreatedAt = DateTime.Now;
+			var entity = new PaymentLog
+			{
+				PaymentId = model.PaymentId,
+				OldStatus = model.OldStatus,
+				NewStatus = model.NewStatus,
+				Mesage = model.Mesage,
+				Metadata = model.Metadata,
+				EventType = EventTypeEnum.StatusChanged.ToString(),
+				CreatedAt = DateTime.Now
+			};
 			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}
