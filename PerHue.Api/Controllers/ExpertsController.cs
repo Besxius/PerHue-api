@@ -90,11 +90,37 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("requests")]
-		public async Task<IActionResult> GetPendingRequests()
+		[Authorize(Roles = "Expert")]
+		public async Task<ActionResult<IEnumerable<TestRequestModel>>> GetPendingRequests()
 		{
 			var expertId = await GetCurrentExpertId();
 			var requests = await _servicesProvider.ExpertTestService.GetPendingRequestsAsync(expertId);
 			return Ok(requests);
+		}
+		[HttpGet("requests/{id}")]
+		[Authorize(Roles = "Expert")]
+		public async Task<ActionResult<TestRequestModel>> GetExpertTestResult(int id)
+		{
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var userId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			try
+			{
+				// This now returns the complete object
+				var result = await _servicesProvider.ExpertTestService.GetExpertResponsesForExpertAsync(id, userId);
+				return Ok(result);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 		[HttpGet("all-requests")]
 		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetAllRequests()
