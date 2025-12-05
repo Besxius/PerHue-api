@@ -42,6 +42,7 @@ namespace PerHue.Infrastructure.Services
 			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
+			entity.RemainingUses = servicePackage.Uses;
 
 			await _unitOfWork.UserSubscriptionRepository.CreateAsync(entity);
 
