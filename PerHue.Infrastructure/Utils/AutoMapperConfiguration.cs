@@ -57,6 +57,10 @@ namespace PerHue.Infrastructure.Utils
 				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name))
 				.ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type));
 			CreateMap<CreateTestResponseModel, TestResponse>();
+
+			CreateMap<PaymentLogModel, PaymentLog>().ReverseMap();
+
+			CreateMap<CreatePaymentLogModel, PaymentLog>();
 		}
 	}
 }
