@@ -260,10 +260,7 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<bool> DeleteAsync(int id)
 		{
-			var capsulePalette = await _unitOfWork.CapsulePaletteRepository.GetByIdAsync(id);
-			if (capsulePalette == null) return false;
-
-			return await _unitOfWork.CapsulePaletteRepository.RemoveAsync(capsulePalette);
+			return await _unitOfWork.CapsulePaletteRepository.DeleteAsync(id);
 		}
 	}
 }

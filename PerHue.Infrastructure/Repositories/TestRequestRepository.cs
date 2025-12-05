@@ -9,6 +9,7 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.Basic;
 using PerHue.Infrastructure.Persistence;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Repositories
 {
@@ -27,6 +28,12 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(tr => tr.AiTestResult)
 					.ThenInclude(atr => atr.ColorType)
 				.FirstOrDefaultAsync(tr => tr.Id == id);
+		}
+
+		public async Task<bool> IsExpertOfResquest(int id, int expertId)
+		{
+			return await _context.ExpertTestRequests
+				.AnyAsync(tr => tr.TestRequestId == id && tr.ExpertId == expertId && tr.Status !=ExpertTestRequestStatus.Expired.ToString());
 		}
 
 		public async Task<IEnumerable<TestRequest>> GetPendingRequestsAsync()
