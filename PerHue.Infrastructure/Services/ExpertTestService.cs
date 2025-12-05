@@ -122,6 +122,39 @@ namespace PerHue.Infrastructure.Services
 				Responses = responseModels
 			};
 		}
+		public async Task<TestRequestModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
+		{
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
+
+			if (testRequest == null) throw new Exception("Test request not found.");
+			if (! await _unitOfWork.TestRequestRepository.IsExpertOfResquest(testRequestId, userId)) throw new UnauthorizedAccessException("You are not authorized.");
+			//if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
+
+			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
+
+			// --- CHECK FOR AI RESULT ---
+			// Since GetByIdWithDetailsAsync now Includes AiTestResult, we can use it directly
+			if (testRequest.AiTestResult != null)
+			{
+				var aiResponseModel = new TestResponseModel
+				{
+					Id = 0,
+					TestRequestId = testRequestId,
+					ExpertId = 0,
+					Note = testRequest.AiTestResult.Note,
+					CreatedDate = testRequest.AiTestResult.Date,
+					Rating = null,
+					BestColor = testRequest.AiTestResult.SuggestedColor,
+					WorstColor = testRequest.AiTestResult.AvoidedColor,
+					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
+					ColorTypeName = testRequest.AiTestResult.ColorType?.Name ?? "Unknown"
+				};
+				responseModels.Add(aiResponseModel);
+			}
+
+			return _mapper.Map<TestRequestModel>(testRequest);
+		}
 		public async Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync()
 		{
 			var completedTests = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsAsync();
