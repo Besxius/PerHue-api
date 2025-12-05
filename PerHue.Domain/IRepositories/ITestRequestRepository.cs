@@ -30,5 +30,6 @@ namespace PerHue.Domain.IRepositories
 		Task<int> CountByUserIdAsync(int userId);
 		Task<List<TestRequest>> GetPendingTestsByUserIdAsync(int userId);
 		Task<IEnumerable<TestRequest>> GetAllAsync();
+		Task<bool> IsExpertOfResquest(int id, int expertId);
 	}
 }
