@@ -55,22 +55,16 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task CreatePaymentLogAsync(CreatePaymentLogModel model)
 		{
-			if (model.OldStatus.Equals("Pending") && 
-				model.NewStatus.Equals("Success") )
+			var entity = new PaymentLog
 			{
-				model.OldStatus = PaymentStatusEnum.Pending.ToString();
-				model.NewStatus = PaymentStatusEnum.Success.ToString();
-			}
-			else if (model.OldStatus.Equals("Pending") &&
-				model.NewStatus.Equals("Cancelled"))
-			{
-				model.OldStatus = PaymentStatusEnum.Pending.ToString();
-				model.NewStatus = PaymentStatusEnum.Cancelled.ToString();
-			}
-
-			var entity = _mapper.Map<PaymentLog>(model);
-			entity.EventType = EventTypeEnum.StatusChanged.ToString();
-			entity.CreatedAt = DateTime.Now;
+				PaymentId = model.PaymentId,
+				OldStatus = model.OldStatus,
+				NewStatus = model.NewStatus,
+				Mesage = model.Mesage,
+				Metadata = model.Metadata,
+				EventType = EventTypeEnum.StatusChanged.ToString(),
+				CreatedAt = DateTime.Now
+			};
 			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}

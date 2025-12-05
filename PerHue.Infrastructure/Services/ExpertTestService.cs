@@ -122,38 +122,75 @@ namespace PerHue.Infrastructure.Services
 				Responses = responseModels
 			};
 		}
-		public async Task<TestRequestModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
+		public async Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
 		{
+			// 1. Get the Test Request details
 			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
 
 			if (testRequest == null) throw new Exception("Test request not found.");
-			if (! await _unitOfWork.TestRequestRepository.IsExpertOfResquest(testRequestId, userId)) throw new UnauthorizedAccessException("You are not authorized.");
-			//if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
 
-			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
-			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
+			// 2. Authorization: Check if this expert is assigned to this request
+			if (!await _unitOfWork.TestRequestRepository.IsExpertOfResquest(testRequestId, userId))
+				throw new UnauthorizedAccessException("You are not authorized to view this request.");
 
-			// --- CHECK FOR AI RESULT ---
-			// Since GetByIdWithDetailsAsync now Includes AiTestResult, we can use it directly
-			if (testRequest.AiTestResult != null)
+			// 3. Get responses
+			// We fetch responses for the request, then filter for THIS expert's ID only.
+			var allResponses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+
+			var myResponse = allResponses.Where(r => r.ExpertId == userId).ToList();
+			var responseModels = _mapper.Map<List<TestResponseModel>>(myResponse);
+
+			// 4. Return the composite model
+			return new ExpertTestResultModel
 			{
-				var aiResponseModel = new TestResponseModel
-				{
-					Id = 0,
-					TestRequestId = testRequestId,
-					ExpertId = 0,
-					Note = testRequest.AiTestResult.Note,
-					CreatedDate = testRequest.AiTestResult.Date,
-					Rating = null,
-					BestColor = testRequest.AiTestResult.SuggestedColor,
-					WorstColor = testRequest.AiTestResult.AvoidedColor,
-					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
-					ColorTypeName = testRequest.AiTestResult.ColorType?.Name ?? "Unknown"
-				};
-				responseModels.Add(aiResponseModel);
+				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
+				Responses = responseModels // Will be [ {response} ] or []
+			};
+		}
+		public async Task<TestResponseModel> UpdateResponseAsync(int responseId, UpdateTestResponseModel model, int expertId)
+		{
+			// 1. Get the existing response
+			var response = await _unitOfWork.TestResponseRepository.GetByIdAsync(responseId);
+			if (response == null)
+			{
+				throw new Exception("Test response not found.");
 			}
 
-			return _mapper.Map<TestRequestModel>(testRequest);
+			// 2. Security Check: Ensure the expert owns this response
+			if (response.ExpertId != expertId)
+			{
+				throw new UnauthorizedAccessException("You are not authorized to edit this response.");
+			}
+
+			// 3. Get the associated TestRequest to check status
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(response.TestRequestId);
+			if (testRequest == null)
+			{
+				throw new Exception("Associated test request not found.");
+			}
+
+			// 4. Status Check: Only allow editing if NOT "Completed"
+			// Assuming "Completed" is the status where the user receives the result
+			if (testRequest.Status == TestRequestStatus.Completed.ToString())
+			{
+				throw new InvalidOperationException("Cannot edit response. The test request has already been completed and sent to the user.");
+			}
+
+			// 5. Update fields
+			response.BestColor = model.BestColor;
+			response.WorstColor = model.WorstColor;
+			response.ColorTypeId = model.ColorTypeId;
+			response.Note = model.Note;
+			// We generally don't update CreatedDate, or we might update an "UpdatedDate" field if it exists.
+
+			await _unitOfWork.TestResponseRepository.UpdateAsync(response);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			// 6. Return mapped model (Load ColorType for mapping if needed)
+			var colorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(response.ColorTypeId);
+			response.ColorType = colorType;
+
+			return _mapper.Map<TestResponseModel>(response);
 		}
 		public async Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync()
 		{
