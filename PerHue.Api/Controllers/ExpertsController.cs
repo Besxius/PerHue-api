@@ -122,6 +122,40 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
+		[HttpPut("response/{id}")]
+		[Authorize(Roles = "Expert")]
+		public async Task<IActionResult> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (!int.TryParse(userIdString, out var expertId))
+			{
+				return Unauthorized("Invalid User ID format in token.");
+			}
+
+			try
+			{
+				var updatedResponse = await _servicesProvider.ExpertTestService.UpdateResponseAsync(id, model, expertId);
+				return Ok(updatedResponse);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(new { message = ex.Message });
+			}
+			catch (InvalidOperationException ex)
+			{
+				// This catches the "test request is already completed" error
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 		[HttpGet("all-requests")]
 		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetAllRequests()
 		{

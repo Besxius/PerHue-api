@@ -147,6 +147,51 @@ namespace PerHue.Infrastructure.Services
 				Responses = responseModels // Will be [ {response} ] or []
 			};
 		}
+		public async Task<TestResponseModel> UpdateResponseAsync(int responseId, UpdateTestResponseModel model, int expertId)
+		{
+			// 1. Get the existing response
+			var response = await _unitOfWork.TestResponseRepository.GetByIdAsync(responseId);
+			if (response == null)
+			{
+				throw new Exception("Test response not found.");
+			}
+
+			// 2. Security Check: Ensure the expert owns this response
+			if (response.ExpertId != expertId)
+			{
+				throw new UnauthorizedAccessException("You are not authorized to edit this response.");
+			}
+
+			// 3. Get the associated TestRequest to check status
+			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(response.TestRequestId);
+			if (testRequest == null)
+			{
+				throw new Exception("Associated test request not found.");
+			}
+
+			// 4. Status Check: Only allow editing if NOT "Completed"
+			// Assuming "Completed" is the status where the user receives the result
+			if (testRequest.Status == TestRequestStatus.Completed.ToString())
+			{
+				throw new InvalidOperationException("Cannot edit response. The test request has already been completed and sent to the user.");
+			}
+
+			// 5. Update fields
+			response.BestColor = model.BestColor;
+			response.WorstColor = model.WorstColor;
+			response.ColorTypeId = model.ColorTypeId;
+			response.Note = model.Note;
+			// We generally don't update CreatedDate, or we might update an "UpdatedDate" field if it exists.
+
+			await _unitOfWork.TestResponseRepository.UpdateAsync(response);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			// 6. Return mapped model (Load ColorType for mapping if needed)
+			var colorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(response.ColorTypeId);
+			response.ColorType = colorType;
+
+			return _mapper.Map<TestResponseModel>(response);
+		}
 		public async Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync()
 		{
 			var completedTests = await _unitOfWork.TestRequestRepository.GetCompletedExpertTestsAsync();
