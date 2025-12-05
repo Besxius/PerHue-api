@@ -72,11 +72,9 @@ namespace PerHue.Infrastructure.Services
 				TransactionId = model.OrderCode,
 				CreatedAt = DateTime.Now
 			};
-			var createdPayment = await _unitOfWork.PaymentRepository.CreateAsync(payment);
+			var numberOfPaymentCreated = await _unitOfWork.PaymentRepository.CreateAsync(payment);
 
-			await _unitOfWork.SaveChangesWithTransactionAsync();
-
-			return createdPayment;
+			return payment.Id;
 		}
 
 		/// <summary>

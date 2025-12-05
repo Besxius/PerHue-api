@@ -239,8 +239,8 @@ namespace PerHue.Api.Controllers
 						PaymentId = paymentId,
 						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
 						CreatedAt = DateTime.Now,
-						OldStatus = "Pending",
-						NewStatus = cancel ? "Cancelled" : "Success", // cancel = false => success = true
+						OldStatus = PaymentStatusEnum.Pending.ToString(),
+						NewStatus = cancel ? PaymentStatusEnum.Cancelled.ToString() : PaymentStatusEnum.Success.ToString(),
 						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
 					};
 					await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
@@ -473,13 +473,7 @@ namespace PerHue.Api.Controllers
 				var subscriptions = await _servicesProvider.UserSubscriptionService
 					.GetAllInactiveSubscriptionsForUserAsync(userId);
 
-				return Ok(new
-				{
-					success = true,
-					message = "Successfully retrieved inactive subscriptions",
-					data = subscriptions,
-					count = subscriptions.Count
-				});
+				return Ok(subscriptions);
 			}
 			catch (Exception ex)
 			{

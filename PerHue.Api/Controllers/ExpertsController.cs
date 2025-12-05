@@ -124,7 +124,7 @@ namespace PerHue.Api.Controllers
 		}
 		[HttpPut("response/{id}")]
 		[Authorize(Roles = "Expert")]
-		public async Task<IActionResult> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
+		public async Task<ActionResult<TestResponseModel>> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
 		{
 			if (!ModelState.IsValid)
 			{
