@@ -105,14 +105,14 @@ namespace PerHue.Api.Controllers
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackageId}";
 
-				if (!cancel)
+				if (!cancel) //neu cancel = true => !cancel = false 
 				{
 					// Tạo subscription với status tương ứng
 					var model = new CreateUserSubscriptionModel
 					{
 						UserId = userId,
 						ServicePackageId = servicePackageId,
-						Status = !cancel
+						Status = true
 					};
 
 					int subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
@@ -147,6 +147,40 @@ namespace PerHue.Api.Controllers
 				}
 				else
 				{
+					// Tạo subscription với status tương ứng
+					var model = new CreateUserSubscriptionModel
+					{
+						UserId = userId,
+						ServicePackageId = servicePackageId,
+						Status = false
+					};
+
+					int subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+
+					//Tạo payment ở dưới db
+					var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
+					{
+						PaymentId = subscriptionId,
+						UserId = userId,
+						Amount = paymentInfo.amount,
+						Description = description,
+						OrderCode = orderCode,
+					};
+					int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
+
+					//Tạo payment log ở dưới db
+					var paymentLogDb = new CreatePaymentLogModel
+					{
+						PaymentId = paymentId,
+						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
+						CreatedAt = DateTime.Now,
+						OldStatus = "Pending",
+						NewStatus = cancel ? "Cancelled" : "Success", // cancel = false => success = true
+						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
+					};
+					await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
+
+
 					// THANH TOÁN THẤT BẠI
 					return Ok(new
 					{
@@ -160,7 +194,7 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-/*		[HttpGet("subscription/success")]
+		[HttpGet("subscription/success")]
 		public async Task<IActionResult> SubscriptionSuccess(
 			[FromQuery] string code,
 			[FromQuery] string id,
@@ -170,22 +204,56 @@ namespace PerHue.Api.Controllers
 			[FromQuery] int servicePackageId
 			)
 		{
-			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-			var servicePackage = await _servicesProvider.ServicePackageService.GetByIdAsync(servicePackageId);
-
-			var model = new CreateUserSubscriptionModel
+			try
 			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				ServicePackageId = servicePackage.Id,
-				Status = true,
-			};
 
-			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
 
-			return Ok(new
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackageId}";
+
+					// Tạo subscription với status tương ứng
+					var model = new CreateUserSubscriptionModel
+					{
+						UserId = userId,
+						ServicePackageId = servicePackageId,
+						Status = !cancel
+					};
+
+					int subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
+
+					//Tạo payment ở dưới db
+					var paymentDb = new PerHue.Application.Models.Payment.An.CreatePaymentModel
+					{
+						PaymentId = subscriptionId,
+						UserId = userId,
+						Amount = paymentInfo.amount,
+						Description = description,
+						OrderCode = orderCode,
+					};
+					int paymentId = await _servicesProvider.PaymentService.CreateSuccessPaymentInDbAsync(paymentDb);
+
+					//Tạo payment log ở dưới db
+					var paymentLogDb = new CreatePaymentLogModel
+					{
+						PaymentId = paymentId,
+						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
+						CreatedAt = DateTime.Now,
+						OldStatus = PaymentStatusEnum.Pending.ToString(),
+						NewStatus = cancel ? PaymentStatusEnum.Cancelled.ToString() : PaymentStatusEnum.Success.ToString(),
+						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
+					};
+					await _servicesProvider.PaymentLogService.CreatePaymentLogAsync(paymentLogDb);
+					// THANH TOÁN THÀNH CÔNG
+					return Ok(new
+					{
+						message = "Payment successful",
+					});
+			}
+			catch (Exception ex)
 			{
-				Message = "Payment process successful!",
-			});
+				return StatusCode(500, new { success = false, message = ex.Message });
+			}
 		}
 
 		[HttpGet("subscription/cancel")]
@@ -198,23 +266,11 @@ namespace PerHue.Api.Controllers
 			[FromQuery] int servicePackageId
 			)
 		{
-			var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
-			var servicePackage = await _servicesProvider.ServicePackageService.GetByIdAsync(servicePackageId);
-
-			var model = new CreateUserSubscriptionModel
-			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				ServicePackageId = servicePackage.Id,
-				Status = false,
-			};
-
-			var subscriptionId = await _servicesProvider.UserSubscriptionService.CreateAsync(model);
-
 			return Ok(new
 			{
 				Message = "Payment process failed!",
 			});
-		}*/
+		}
 
 		private string CreateDateTimeStringNoSeparator(DateTime dateTime)
 		{
@@ -417,13 +473,7 @@ namespace PerHue.Api.Controllers
 				var subscriptions = await _servicesProvider.UserSubscriptionService
 					.GetAllInactiveSubscriptionsForUserAsync(userId);
 
-				return Ok(new
-				{
-					success = true,
-					message = "Successfully retrieved inactive subscriptions",
-					data = subscriptions,
-					count = subscriptions.Count
-				});
+				return Ok(subscriptions);
 			}
 			catch (Exception ex)
 			{
