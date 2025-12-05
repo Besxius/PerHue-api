@@ -99,7 +99,7 @@ namespace PerHue.Api.Controllers
 		}
 		[HttpGet("requests/{id}")]
 		[Authorize(Roles = "Expert")]
-		public async Task<ActionResult<TestRequestModel>> GetExpertTestResult(int id)
+		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id)
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
@@ -109,7 +109,7 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
-				// This now returns the complete object
+				// Now returns the filtered ExpertTestResultModel
 				var result = await _servicesProvider.ExpertTestService.GetExpertResponsesForExpertAsync(id, userId);
 				return Ok(result);
 			}

@@ -122,38 +122,30 @@ namespace PerHue.Infrastructure.Services
 				Responses = responseModels
 			};
 		}
-		public async Task<TestRequestModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
+		public async Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
 		{
+			// 1. Get the Test Request details
 			var testRequest = await _unitOfWork.TestRequestRepository.GetByIdWithDetailsAsync(testRequestId);
 
 			if (testRequest == null) throw new Exception("Test request not found.");
-			if (! await _unitOfWork.TestRequestRepository.IsExpertOfResquest(testRequestId, userId)) throw new UnauthorizedAccessException("You are not authorized.");
-			//if (testRequest.Status != "Completed") throw new Exception("Test is still being processed.");
 
-			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
-			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
+			// 2. Authorization: Check if this expert is assigned to this request
+			if (!await _unitOfWork.TestRequestRepository.IsExpertOfResquest(testRequestId, userId))
+				throw new UnauthorizedAccessException("You are not authorized to view this request.");
 
-			// --- CHECK FOR AI RESULT ---
-			// Since GetByIdWithDetailsAsync now Includes AiTestResult, we can use it directly
-			if (testRequest.AiTestResult != null)
+			// 3. Get responses
+			// We fetch responses for the request, then filter for THIS expert's ID only.
+			var allResponses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
+
+			var myResponse = allResponses.Where(r => r.ExpertId == userId).ToList();
+			var responseModels = _mapper.Map<List<TestResponseModel>>(myResponse);
+
+			// 4. Return the composite model
+			return new ExpertTestResultModel
 			{
-				var aiResponseModel = new TestResponseModel
-				{
-					Id = 0,
-					TestRequestId = testRequestId,
-					ExpertId = 0,
-					Note = testRequest.AiTestResult.Note,
-					CreatedDate = testRequest.AiTestResult.Date,
-					Rating = null,
-					BestColor = testRequest.AiTestResult.SuggestedColor,
-					WorstColor = testRequest.AiTestResult.AvoidedColor,
-					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
-					ColorTypeName = testRequest.AiTestResult.ColorType?.Name ?? "Unknown"
-				};
-				responseModels.Add(aiResponseModel);
-			}
-
-			return _mapper.Map<TestRequestModel>(testRequest);
+				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
+				Responses = responseModels // Will be [ {response} ] or []
+			};
 		}
 		public async Task<IEnumerable<ExpertTestResultModel>> GetAllCompletedExpertTestsAsync()
 		{
