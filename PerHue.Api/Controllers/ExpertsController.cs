@@ -122,7 +122,7 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
-		[HttpPut("response/{id}")]
+		[HttpPut("requests/{id}/response")]
 		[Authorize(Roles = "Expert")]
 		public async Task<ActionResult<TestResponseModel>> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
 		{
@@ -139,6 +139,7 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
+				// Pass 'id' as 'testRequestId'
 				var updatedResponse = await _servicesProvider.ExpertTestService.UpdateResponseAsync(id, model, expertId);
 				return Ok(updatedResponse);
 			}
@@ -148,7 +149,6 @@ namespace PerHue.Api.Controllers
 			}
 			catch (InvalidOperationException ex)
 			{
-				// This catches the "test request is already completed" error
 				return BadRequest(new { message = ex.Message });
 			}
 			catch (Exception ex)
