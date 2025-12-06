@@ -28,7 +28,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly int _requiredResponses;
 		private readonly int _daysToWait;
 		private readonly decimal _ratingDeduction;       
-		private readonly decimal _ratingWarningThreshold; 
+		private readonly decimal _ratingWarningThreshold;
 
 		public ExpertTestMonitor(
 			IServiceScopeFactory scopeFactory,
@@ -45,7 +45,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			_daysToWait = _configuration.GetValue<int>("ExpertTestSettings:DaysToWait");
 			_ratingDeduction = _configuration.GetValue<decimal>("ExpertTestSettings:RatingDeduction");
 			_ratingWarningThreshold = _configuration.GetValue<decimal>("ExpertTestSettings:RatingWarningThreshold");
-
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -78,7 +77,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				}
 
 				// Check every 30 seconds (for testing) or 6 hours (production)
-				await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+				await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
 			}
 
 			_logger.LogInformation("Expert Test Monitor is stopping.");
