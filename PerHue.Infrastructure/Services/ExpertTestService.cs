@@ -147,16 +147,18 @@ namespace PerHue.Infrastructure.Services
 				Responses = responseModels // Will be [ {response} ] or []
 			};
 		}
-		public async Task<TestResponseModel> UpdateResponseAsync(int responseId, UpdateTestResponseModel model, int expertId)
+		public async Task<TestResponseModel> UpdateResponseAsync(int testRequestId, UpdateTestResponseModel model, int expertId)
 		{
-			// 1. Get the existing response
-			var response = await _unitOfWork.TestResponseRepository.GetByIdAsync(responseId);
+			// 1. [UPDATED] Get the existing response using TestRequestId and ExpertId
+			var response = await _unitOfWork.TestResponseRepository.GetByRequestAndExpertAsync(testRequestId, expertId);
+
 			if (response == null)
 			{
-				throw new Exception("Test response not found.");
+				throw new Exception("Test response not found for this request and expert.");
 			}
 
-			// 2. Security Check: Ensure the expert owns this response
+			// 2. Security Check: Ensure the expert owns this response 
+			// (Technically redundant if fetched by expertId, but good for sanity)
 			if (response.ExpertId != expertId)
 			{
 				throw new UnauthorizedAccessException("You are not authorized to edit this response.");
@@ -170,7 +172,6 @@ namespace PerHue.Infrastructure.Services
 			}
 
 			// 4. Status Check: Only allow editing if NOT "Completed"
-			// Assuming "Completed" is the status where the user receives the result
 			if (testRequest.Status == TestRequestStatus.Completed.ToString())
 			{
 				throw new InvalidOperationException("Cannot edit response. The test request has already been completed and sent to the user.");
@@ -181,12 +182,11 @@ namespace PerHue.Infrastructure.Services
 			response.WorstColor = model.WorstColor;
 			response.ColorTypeId = model.ColorTypeId;
 			response.Note = model.Note;
-			// We generally don't update CreatedDate, or we might update an "UpdatedDate" field if it exists.
 
 			await _unitOfWork.TestResponseRepository.UpdateAsync(response);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
-			// 6. Return mapped model (Load ColorType for mapping if needed)
+			// 6. Return mapped model
 			var colorType = await _unitOfWork.ColorTypeRepository.GetByIdAsync(response.ColorTypeId);
 			response.ColorType = colorType;
 
