@@ -48,6 +48,11 @@ namespace PerHue.Infrastructure.Repositories
 
 			return await query.OrderByDescending(r => r.CreatedDate).ToListAsync();
 		}
+		public async Task<TestResponse?> GetByRequestAndExpertAsync(int testRequestId, int expertId)
+		{
+			return await _context.TestResponses
+				.FirstOrDefaultAsync(r => r.TestRequestId == testRequestId && r.ExpertId == expertId);
+		}
 
 	}
 }

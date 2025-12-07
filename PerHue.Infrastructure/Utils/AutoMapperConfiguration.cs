@@ -51,6 +51,9 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<Picture, PictureModel>().ReverseMap();
 			CreateMap<TestRequest, TestRequestModel>().ReverseMap();
 
+			CreateMap<TestRequest, ExpertAssignmentModel>()
+				.IncludeBase<TestRequest, TestRequestModel>();
+
 			CreateMap<TestResponse, TestResponseModel>()
 				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name))
 				.ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type));

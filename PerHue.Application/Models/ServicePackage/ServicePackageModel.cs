@@ -10,6 +10,10 @@
 		public int Price { get; set; }
 
 		public short? Duration { get; set; }
+
+		public short Uses { get; set; }
+
+		public string Type { get; set; }
 		public DateTime? CreatedDate { get; set; }
 
 		public DateTime? UpdatedDate { get; set; }

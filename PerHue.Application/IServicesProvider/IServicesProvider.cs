@@ -1,4 +1,4 @@
-﻿using PerHue.Application.IServices;	
+﻿using PerHue.Application.IServices;
 
 namespace PerHue.Application.IServicesProvider
 {
@@ -19,10 +19,13 @@ namespace PerHue.Application.IServicesProvider
 		IExpertTestService ExpertTestService { get; }
 		IExpertService ExpertService { get; }
 		INotificationService NotificationService { get; }
+		IAiTestService AiTestService { get; }
 
 		// Admin Services
 		IAdminColorService AdminColorService { get; }
 		IAdminCapsulePaletteService AdminCapsulePaletteService { get; }
 		IAdminDashboardService AdminDashboardService { get; }
+
+		IReportService ReportService { get; }
 	}
 }

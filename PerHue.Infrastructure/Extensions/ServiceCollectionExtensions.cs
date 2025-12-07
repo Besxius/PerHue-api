@@ -51,16 +51,18 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IAiPictureRepository, AiPictureRepository>();
 			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 			services.AddScoped<IAiTestResultRepository, AiTestResultRepository>();
-			#endregion
 
+			services.AddScoped<IPhotoRepository, PhotoRepository>();
+			services.AddScoped<IReportRepository, ReportRepository>();
+			#endregion
 			#region Services
-		services.AddScoped<IServicesProvider, ServicesProvider>();
-		services.AddScoped<IUserService, UserService>();
-		services.AddScoped<IAdminUserService, AdminUserService>();
-		services.AddScoped<IAdminColorService, AdminColorService>();
-		services.AddScoped<IAdminCapsulePaletteService, AdminCapsulePaletteService>();
-		services.AddScoped<IAdminDashboardService, AdminDashboardService>();
-		services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
+			services.AddScoped<IServicesProvider, ServicesProvider>();
+			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IAdminUserService, AdminUserService>();
+			services.AddScoped<IAdminColorService, AdminColorService>();
+			services.AddScoped<IAdminCapsulePaletteService, AdminCapsulePaletteService>();
+			services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();
 			services.AddScoped<IPaymentLogService, PaymentLogService>();
@@ -82,8 +84,9 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IVirtualTryOnService, VirtualTryOnService>();
 			services.AddScoped<IAIImageAnalysisService, AiImageAnalysisService>();
 			services.AddScoped<IAiTestService, AiTestService>();
-			#endregion
 
+			services.AddScoped<IReportService, ReportService>();
+			#endregion
 			#region Other Services
 			services.AddAutoMapper(typeof(ServiceCollectionExtensions).Assembly);
 			services.AddScoped<Seeder>();
@@ -93,7 +96,8 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<EmailService>();
 			services.AddScoped<IOtpService, OtpService>();
 			services.AddScoped<IImageUploadService, CloudinaryService>();
-			services.AddSingleton<RedisHelper>(sp => {
+			services.AddSingleton<RedisHelper>(sp =>
+			{
 				var redisHost = configuration["Redis:Host"];
 				var redisPort = configuration["Redis:Port"];
 				var redisPassword = configuration["Redis:Password"];

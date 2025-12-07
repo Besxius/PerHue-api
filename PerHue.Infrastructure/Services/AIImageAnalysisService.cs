@@ -155,8 +155,8 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				var client = new GoogleAi(_apiKey);
-				//var model = client.CreateGenerativeModel("gemini-2.5-flash");
-				var model = client.CreateGenerativeModel("gemini-2.0-flash-exp");
+				var model = client.CreateGenerativeModel("gemini-2.5-flash");
+				//var model = client.CreateGenerativeModel("gemini-2.0-flash-exp");
 
 				var prompt = BuildAnalysisPrompt(request);
 				var parts = new List<GenerativeAI.Types.Part>

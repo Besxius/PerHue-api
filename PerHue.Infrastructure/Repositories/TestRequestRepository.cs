@@ -9,6 +9,7 @@ using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.Basic;
 using PerHue.Infrastructure.Persistence;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Repositories
 {
@@ -29,6 +30,12 @@ namespace PerHue.Infrastructure.Repositories
 				.FirstOrDefaultAsync(tr => tr.Id == id);
 		}
 
+		public async Task<bool> IsExpertOfResquest(int id, int expertId)
+		{
+			return await _context.ExpertTestRequests
+				.AnyAsync(tr => tr.TestRequestId == id && tr.ExpertId == expertId && tr.Status !=ExpertTestRequestStatus.Expired.ToString());
+		}
+
 		public async Task<IEnumerable<TestRequest>> GetPendingRequestsAsync()
 		{
 			// "Pending" means waiting for expert responses
@@ -36,6 +43,17 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(tr => tr.UserAccount)
 				.Include(tr => tr.ExpertTestRequests)
 				.Where(tr => tr.Status == "Pending")
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<TestRequest>> GetAllExpertTestsAsync()
+		{
+			return await _context.TestRequests
+				.Include(tr => tr.UserAccount)
+				.Include(tr => tr.AiPictures)
+				.Include(tr => tr.Pictures)
+				.Where(tr => tr.TypeOfTest == "Expert")
+				.OrderByDescending(tr => tr.CreatedDate)
 				.ToListAsync();
 		}
 
@@ -137,8 +155,6 @@ namespace PerHue.Infrastructure.Repositories
 			return (items, totalCount);
 		}
 
-
-		//==========================================
 
 
 		public async Task<List<TestRequest>> GetByUserIdAsync(int userId)

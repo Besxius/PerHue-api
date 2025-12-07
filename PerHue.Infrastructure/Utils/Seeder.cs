@@ -62,77 +62,59 @@ namespace PerHue.Infrastructure.Utils
 			return new List<ServicePackage>
 			{
 				new() {
-					Name = "Freemium",
-					Price = 0,
-					Description = "Unlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 0,
-					CreatedDate = DateTime.Now
-				},
-				new() {
 					Name = "AI Test 1",
-					Price = 69000,
+					Price = 5000,
 					Description = "Three times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
 					Duration = 3,
 					Uses = 3,
+					Type = ServicePackageTypeEnum.AI.ToString(),
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "AI Test 2",
-					Price = 129000,
+					Price = 10000,
 					Description = "Ten times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
 					Duration = 5,
 					Uses = 5,
+					Type = ServicePackageTypeEnum.AI.ToString(),
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "AI Test 3",
-					Price = 229000,
+					Price = 15000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 10,
 					Uses = 10,
+					Type = ServicePackageTypeEnum.AI.ToString(),
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "Expert Suggestion 1",
-					Price = 199000,
+					Price = 5000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 3,
 					Uses = 1,
+					Type = ServicePackageTypeEnum.Expert.ToString(),
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "Expert Suggestion 2",
-					Price = 299000,
+					Price = 10000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 3,
 					Uses = 5,
+					Type = ServicePackageTypeEnum.Expert.ToString(),
 					CreatedDate = DateTime.Now
 				},
 				new() {
 					Name = "Expert Suggestion 3",
-					Price = 499000,
+					Price = 15000,
 					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
 					Duration = 5,
 					Uses = 10,
+					Type = ServicePackageTypeEnum.Expert.ToString(),
 					CreatedDate = DateTime.Now
-				},
-				new() {
-					Name = "Test system 1",
-					Price = 5000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 10,
-					Uses = 10,
-					CreatedDate = DateTime.Now
-				},
-				new() {
-					Name = "Test System 2",
-					Price = 100000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 10,
-					Uses = 10,
-					CreatedDate = DateTime.Now
-				},
-				
+				}
 			};
 		}
 
@@ -149,7 +131,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 1,
 				},
@@ -164,7 +145,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -179,7 +159,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -194,7 +173,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -209,7 +187,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -224,7 +201,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -239,7 +215,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -254,7 +229,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -269,7 +243,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 2,
 				},
@@ -284,7 +257,6 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 3, 3),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					IsAitested = false,
 					CreatedDate = DateTime.Now,
 					RoleId = 3,
 					Expert = new Expert

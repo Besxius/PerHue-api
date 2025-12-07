@@ -7,7 +7,7 @@ namespace PerHue.Api.Controllers.Admin
 {
 	[Route("api/admin/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "admin")]
+	[Authorize(Roles = "Admin")]
 	public class ServicePackagesController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;

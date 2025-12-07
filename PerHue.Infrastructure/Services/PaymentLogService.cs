@@ -5,6 +5,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.Models.PaymentLog;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -50,6 +51,22 @@ namespace PerHue.Infrastructure.Services
 			var entity = _mapper.Map<PaymentLog>(model);
 			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
 			return entity.Id;
+		}
+
+		public async Task CreatePaymentLogAsync(CreatePaymentLogModel model)
+		{
+			var entity = new PaymentLog
+			{
+				PaymentId = model.PaymentId,
+				OldStatus = model.OldStatus,
+				NewStatus = model.NewStatus,
+				Mesage = model.Mesage,
+				Metadata = model.Metadata,
+				EventType = EventTypeEnum.StatusChanged.ToString(),
+				CreatedAt = DateTime.Now
+			};
+			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}
 	}
 }

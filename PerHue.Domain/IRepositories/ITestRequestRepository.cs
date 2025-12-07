@@ -14,6 +14,8 @@ namespace PerHue.Domain.IRepositories
 		Task<TestRequest> GetByIdWithDetailsAsync(int id);
 		Task<IEnumerable<TestRequest>> GetPendingRequestsAsync();
 
+		Task<IEnumerable<TestRequest>> GetAllExpertTestsAsync();
+
 		Task<IEnumerable<TestRequest>> GetCompletedExpertTestsAsync();
 		Task<(IEnumerable<TestRequest> Items, int TotalCount)> GetCompletedExpertTestsForUserAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate);
 
@@ -28,5 +30,6 @@ namespace PerHue.Domain.IRepositories
 		Task<int> CountByUserIdAsync(int userId);
 		Task<List<TestRequest>> GetPendingTestsByUserIdAsync(int userId);
 		Task<IEnumerable<TestRequest>> GetAllAsync();
+		Task<bool> IsExpertOfResquest(int id, int expertId);
 	}
 }

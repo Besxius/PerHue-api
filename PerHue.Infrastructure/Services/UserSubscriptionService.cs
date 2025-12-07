@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
+using PerHue.Application.Models;
 using PerHue.Application.Models.UserSubscription;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
@@ -27,18 +28,26 @@ namespace PerHue.Infrastructure.Services
 			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId);
 			var servicePackage = await _unitOfWork.ServicePackageRepository.GetByIdAsync(model.ServicePackageId);
 
+			var findUserSubscription = await _unitOfWork.UserSubscriptionRepository
+				.FindSameTypeSubscriptionIsActiveOrNot(user.Id, servicePackage.Id);
+			if (findUserSubscription != null)
+			{
+				findUserSubscription.Status = false;
+				await _unitOfWork.UserSubscriptionRepository.UpdateAsync(findUserSubscription);
+			}
+
 			entity.StartDate = DateTime.Now;
-			entity.EndDate = DateTime.Now.AddDays(servicePackage.Duration);
+			entity.EndDate = DateTime.Now.AddMonths(servicePackage.Duration);
 			entity.CreateAt = DateTime.Now;
 			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
+			entity.RemainingUses = servicePackage.Uses;
 
 			await _unitOfWork.UserSubscriptionRepository.CreateAsync(entity);
 
 			if (model.Status == true)
 			{
-				user.IsAitested = true;
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 			}
 
@@ -132,33 +141,34 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		/// <summary>
-		/// Trừ 1 lượt sử dụng của user
+		/// Trừ 1 lượt sử dụng của user theo packageId và type
 		/// </summary>
 		/// <param name="userId">ID của user</param>
-		/// <param name="isFromExpertTest">True nếu là request từ Expert Test (không trừ lượt)</param>
+		/// <param name="packageId">ID của service package</param>
+		/// <param name="type">Loại package (VD: "AI", "Expert", "Test")</param>
 		/// <returns>True nếu trừ thành công, False nếu không còn lượt hoặc lỗi</returns>
-		public async Task<bool> DeductUsageAsync(int userId)
+		public async Task<bool> DeductUsageAsync(int userId, int packageId, string type)
 		{
 			try
 			{
-				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId);
+				var deducted = await _unitOfWork.UserSubscriptionRepository.DeductRemainingUsesAsync(userId, packageId, type);
 
 				if (!deducted)
 				{
-					_logger.LogWarning($"Failed to deduct usage for user {userId} - No active subscription or no remaining uses");
+					_logger.LogWarning($"Failed to deduct usage for user {userId}, package {packageId}, type {type} - No active subscription or no remaining uses");
 					return false;
 				}
 
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 
 				var remaining = await GetRemainingUsageAsync(userId);
-				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remaining}");
+				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}, package {packageId}, type {type}. Total remaining: {remaining}");
 
 				return true;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, $"Error deducting usage for user {userId}");
+				_logger.LogError(ex, $"Error deducting usage for user {userId}, package {packageId}, type {type}");
 				return false;
 			}
 		}
@@ -166,28 +176,31 @@ namespace PerHue.Infrastructure.Services
 		/// <summary>
 		/// Hoàn trả 1 lượt sử dụng (trong trường hợp lỗi xử lý)
 		/// </summary>
-		public async Task<bool> RefundUsageAsync(int userId)
+		/// <param name="userId">ID của user</param>
+		/// <param name="packageId">ID của service package</param>
+		/// <param name="type">Loại package (VD: "AI", "Expert", "Test")</param>
+		public async Task<bool> RefundUsageAsync(int userId, int packageId, string type)
 		{
 			try
 			{
-				var refunded = await _unitOfWork.UserSubscriptionRepository.RefundRemainingUsesAsync(userId);
+				var refunded = await _unitOfWork.UserSubscriptionRepository.RefundRemainingUsesAsync(userId, packageId, type);
 
 				if (!refunded)
 				{
-					_logger.LogWarning($"Failed to refund usage for user {userId}");
+					_logger.LogWarning($"Failed to refund usage for user {userId}, package {packageId}, type {type}");
 					return false;
 				}
 
 				await _unitOfWork.SaveChangesWithTransactionAsync();
 
 				var remaining = await GetRemainingUsageAsync(userId);
-				_logger.LogInformation($"Successfully refunded 1 usage for user {userId}. Remaining: {remaining}");
+				_logger.LogInformation($"Successfully refunded 1 usage for user {userId}, package {packageId}, type {type}. Total remaining: {remaining}");
 
 				return true;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, $"Error refunding usage for user {userId}");
+				_logger.LogError(ex, $"Error refunding usage for user {userId}, package {packageId}, type {type}");
 				return false;
 			}
 		}
@@ -216,5 +229,174 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
+
+		// ========================= PAYMENT ============================
+
+		// Lấy TỔNG lượt sử dụng còn lại (tất cả packages)
+		public async Task<int> GetAllActiveRemainingUsageByUserIdAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetaAllActiveSubscriptionsByUserIdAsync(userId);
+			return subscriptions.Sum(s => s.RemainingUses);
+		}
+
+		// Lấy lượt sử dụng còn lại THEO TỪNG PACKAGE
+		public async Task<Dictionary<int, PackageUsageInfo>> GetRemainingUsageByPackageAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetaAllActiveSubscriptionsByUserIdAsync(userId);
+
+			var packageUsage = subscriptions
+				.GroupBy(s => s.ServicePackageId)
+				.ToDictionary(
+					g => g.Key,
+					g => new PackageUsageInfo
+					{
+						PackageId = g.Key,
+						PackageName = g.First().ServicePackage?.Name ?? "Unknown",
+						TotalRemaining = g.Sum(s => s.RemainingUses),
+						SubscriptionCount = g.Count()
+					}
+				);
+
+			return packageUsage;
+		}
+
+		// Trừ 1 lượt sử dụng
+		/*public async Task<bool> DeductUsageAsync(int userId)
+		{
+			try
+			{
+				var deducted = await _repository.DeductRemainingUsesAsync(userId);
+
+				if (deducted)
+				{
+					var remaining = await GetRemainingUsageAsync(userId);
+					_logger.LogInformation($"Deducted 1 usage for user {userId}. Total remaining: {remaining}");
+				}
+				else
+				{
+					_logger.LogWarning($"Failed to deduct usage for user {userId} - No active subscriptions");
+				}
+
+				return deducted;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Error deducting usage for user {userId}");
+				return false;
+			}
+		}*/
+
+		// Hoàn trả 1 lượt sử dụng
+		/*public async Task<bool> RefundUsageAsync(int userId)
+		{
+			try
+			{
+				var refunded = await _repository.RefundRemainingUsesAsync(userId);
+
+				if (refunded)
+				{
+					_logger.LogInformation($"Refunded 1 usage for user {userId}");
+				}
+
+				return refunded;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Error refunding usage for user {userId}");
+				return false;
+			}
+		}*/
+
+		// Lấy thông tin tổng hợp sử dụng theo package
+		public async Task<List<PackageUsageSummary>> GetUsageSummaryAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsWithPackageByUserIdAsync(userId);
+
+			var summary = subscriptions
+				.Where(s => s.Status == true && s.EndDate >= DateTime.Now)
+				.GroupBy(s => new { s.ServicePackageId, s.ServicePackage.Name })
+				.Select(g => new PackageUsageSummary
+				{
+					PackageId = g.Key.ServicePackageId,
+					PackageName = g.Key.Name,
+					TotalPurchased = g.Sum(s => s.ServicePackage.Uses),
+					TotalUsed = g.Sum(s => s.ServicePackage.Uses - s.RemainingUses),
+					TotalRemaining = g.Sum(s => s.RemainingUses),
+					ActiveSubscriptionCount = g.Count(),
+					EarliestExpiry = g.Min(s => s.EndDate),
+					LatestExpiry = g.Max(s => s.EndDate)
+				})
+				.ToList();
+
+			return summary;
+		}
+
+
+		//lấy gói theo user id
+		/// <summary>
+		/// Lấy tất cả subscriptions đang sử dụng của user tính đến thời điểm hiện tại
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetCurrentlyActiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions active của user
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllActiveSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllActiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions inactive của user
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllInactiveSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllInactiveSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy tất cả subscriptions đã đăng ký của user (cả active và inactive)
+		/// </summary>
+		public async Task<List<UserSubscriptionModel>> GetAllRegisteredSubscriptionsForUserAsync(int userId)
+		{
+			var subscriptions = await _unitOfWork.UserSubscriptionRepository
+				.GetAllRegisteredSubscriptionsByUserIdAsync(userId);
+
+			return subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+		}
+
+		/// <summary>
+		/// Lấy subscriptions với phân trang và filter
+		/// </summary>
+		public async Task<PaginatedResultV2<UserSubscriptionModel>> GetUserSubscriptionsWithFilterAsync(
+			int userId,
+			int pageIndex,
+			int pageSize,
+			bool? status = null)
+		{
+			var (subscriptions, totalCount) = await _unitOfWork.UserSubscriptionRepository
+				.GetUserSubscriptionsWithPaginationAsync(userId, pageIndex, pageSize, status);
+
+			var models = subscriptions.Select(s => _mapper.Map<UserSubscriptionModel>(s)).ToList();
+
+			return new PaginatedResultV2<UserSubscriptionModel>
+			{
+				List = models,
+				Total = totalCount,
+				Current = pageIndex
+			};
+		}
 	}
 }

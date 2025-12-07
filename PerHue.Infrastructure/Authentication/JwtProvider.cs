@@ -25,7 +25,7 @@ namespace PerHue.Infrastructure.Authentication
 					new Claim("TokenId", Guid.NewGuid().ToString()),
 					new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 					new Claim(ClaimTypes.Email, user.Email),
-					new Claim(ClaimTypes.Name, user.Username!),
+					new Claim(ClaimTypes.Name, user.Fullname ?? user.Username),
 					new Claim(ClaimTypes.Role, user.Role.Name),
 				},
 				JwtBearerDefaults.AuthenticationScheme
@@ -34,7 +34,7 @@ namespace PerHue.Infrastructure.Authentication
 			var tokenDescription = new SecurityTokenDescriptor
 			{
 				Subject = claimsIdentity,
-				Expires = DateTime.UtcNow.AddMinutes(_jwtSetting.DurationInMinutes),
+				Expires = DateTime.Now.AddMinutes(_jwtSetting.DurationInMinutes),
 				Issuer = _jwtSetting.Issuer,
 				Audience = _jwtSetting.Audience,
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256)
