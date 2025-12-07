@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
@@ -54,6 +55,12 @@ namespace PerHue.Infrastructure.Utils
 				.ForMember(dest => dest.ColorTypeName, opt => opt.MapFrom(src => src.ColorType.Name))
 				.ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type));
 			CreateMap<CreateTestResponseModel, TestResponse>();
+
+			CreateMap<PaymentLogModel, PaymentLog>().ReverseMap();
+
+			CreateMap<CreatePaymentLogModel, PaymentLog>();
+
+			CreateMap<AiTestResultResponseModel, AiTestResult>().ReverseMap();
 		}
 	}
 }

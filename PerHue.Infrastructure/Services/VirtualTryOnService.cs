@@ -1,6 +1,5 @@
 ﻿using GenerativeAI;
-using Google.GenAI;
-using Google.GenAI.Types;
+using GenerativeAI.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -31,192 +30,221 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		public async Task<VirtualTryOnResponse> GenerateVirtualTryOnImagesAsync(VirtualTryOnRequest request)
-    {
-        try
-        {
-            // ✅ SỬ DỤNG MODEL HỖ TRỢ IMAGE GENERATION
-            var client = new GoogleAi(_apiKey);
-            var model = client.CreateGenerativeModel("gemini-2.5-flash-image");
-            var response = new VirtualTryOnResponse();
+		{
+			// PRINT THE LAST 4 CHARS OF THE KEY TO CONSOLE
+			var keyLast4 = _apiKey.Length > 4 ? _apiKey.Substring(_apiKey.Length - 4) : "INVALID";
+			_logger.LogWarning($"[DEBUG] Using API Key ending in: ...{keyLast4}");
+			try
+			{
+				// ✅ SỬ DỤNG MODEL HỖ TRỢ IMAGE GENERATION
+				var client = new GoogleAi(_apiKey);
+				var model = client.CreateGenerativeModel("gemini-2.5-flash");
+				//var model = client.CreateGenerativeModel("gemini-3-pro-image-preview");
+				//var model = client.CreateGenerativeModel("gemini-2.0-flash-exp");
 
-            // ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
-            var selectedColors = request.SuggestedColorHexCodes
-                .OrderBy(x => Guid.NewGuid())
-                .Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
-                .ToList();
+				var response = new VirtualTryOnResponse();
 
-            // Chọn ngẫu nhiên 1 environment
-            var environment = request.Environments.OrderBy(x => Guid.NewGuid()).FirstOrDefault() ?? "outdoor_sunny";
+				// ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
+				var selectedColors = request.SuggestedColorHexCodes
+					.OrderBy(x => Guid.NewGuid())
+					.Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
+					.ToList();
 
-            _logger.LogInformation("Generating ONE virtual try-on image with {Count} colors in {Environment} environment", 
-                selectedColors.Count, environment);
+				// Chọn ngẫu nhiên 1 environment
+				var environment = request.Environments.OrderBy(x => Guid.NewGuid()).FirstOrDefault() ?? "outdoor_sunny";
 
-            // ✅ TẠO PROMPT CHO 1 ẢNH VỚI NHIỀU MÀU
-            var prompt = BuildVirtualTryOnPromptWithMultipleColors(environment, selectedColors);
+				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors in {Environment} environment",
+					selectedColors.Count, environment);
 
-            try
-            {
-                // Chuẩn bị parts cho Gemini request
-                var parts = new List<Part>();
+				// ✅ TẠO PROMPT CHO 1 ẢNH VỚI NHIỀU MÀU
+				var prompt = BuildVirtualTryOnPromptWithMultipleColors(environment, selectedColors);
 
-                // ✅ THÊM TEXT PROMPT TRƯỚC
-                parts.Add(new Part { Text = prompt });
-
-                // ✅ THÊM USER IMAGE TỪ IFormFile
-                byte[] userImageBytes;
-                using (var memoryStream = new MemoryStream())
-                {
-                    await request.UserImage.CopyToAsync(memoryStream);
-                    userImageBytes = memoryStream.ToArray();
-                }
-
-                // Xác định MIME type từ file
-                var mimeType = request.UserImage.ContentType ?? "image/jpeg";
-                
-                parts.Add(new Part
-                {
-                    InlineData = new Blob
-                    {
-                        MimeType = mimeType,
-						//Data = Convert.ToBase64String(userImageBytes)
-						Data = userImageBytes
+				try
+				{
+					// ✅ THÊM USER IMAGE TỪ IFormFile
+					byte[] userImageBytes;
+					using (var memoryStream = new MemoryStream())
+					{
+						await request.UserImage.CopyToAsync(memoryStream);
+						userImageBytes = memoryStream.ToArray();
 					}
-                });
 
-                _logger.LogInformation("User image loaded from IFormFile: {FileName}, Size: {Size} bytes, MimeType: {MimeType}", 
-                    request.UserImage.FileName, userImageBytes.Length, mimeType);
+					// Xác định MIME type từ file
+					var mimeType = request.UserImage.ContentType ?? "image/jpeg";
 
-                // ✅ QUAN TRỌNG: PHẢI CÓ GenerationConfig VỚI responseModalities
-                var generationConfig = new GenerationConfig
-                {
-					ResponseModalities = new List<Modality> { Modality.TEXT, Modality.IMAGE }
-				};
+					_logger.LogInformation("User image loaded from IFormFile: {FileName}, Size: {Size} bytes, MimeType: {MimeType}",
+						request.UserImage.FileName, userImageBytes.Length, mimeType);
 
-                // ✅ GỌI API VỚI CONFIG ĐÚNG
-                var geminiResponse = await model.GenerateContentAsync(
-                    request: new GenerativeAI.Types.GenerateContentRequest
-                    {
+					// ✅ CHUẨN BỊ PARTS CHO GEMINI REQUEST (SỬ DỤNG ĐÚNG TYPES)
+					var parts = new List<GenerativeAI.Types.Part>
+					{
+						new GenerativeAI.Types.Part { Text = prompt },
+						new GenerativeAI.Types.Part
+						{
+							InlineData = new GenerativeAI.Types.Blob
+							{
+								MimeType = mimeType,
+								Data = Convert.ToBase64String(userImageBytes)
+							}
+						}
+					};
+
+
+					// ✅ QUAN TRỌNG: GenerationConfig VỚI responseModalities
+					/*var generationConfig = new GenerationConfig
+					{
+						ResponseModalities = new List<Modality> { Modality.TEXT, Modality.IMAGE }
+					};*/
+
+					var generationConfig = new GenerationConfig
+					{
+						// Force the model to generate exactly ONE option (saves quota)
+						CandidateCount = 1,
+
+						// Explicitly ask for IMAGE only. 
+						// (Note: Some models might default to adding text anyway, but this sets the preference)
+						ResponseModalities = new List<Modality> { Modality.IMAGE },
+
+						// Lower temperature slightly for better prompt adherence (less random creativity)
+						Temperature = 0.6f
+					};
+
+					// ✅ GỌI API VỚI CONFIG ĐÚNG
+					var geminiResponse = await model.GenerateContentAsync(
+					request: new GenerativeAI.Types.GenerateContentRequest
+					{
 						Contents = new List<GenerativeAI.Types.Content>
 						{
 							new GenerativeAI.Types.Content
 							{
 								Role = "user",
 								Parts = parts.Select(p => new GenerativeAI.Types.Part
-                                {
-                                    Text = p.Text,
-                                    InlineData = p.InlineData == null ? null : new GenerativeAI.Types.Blob
+								{
+									Text = p.Text,
+									InlineData = p.InlineData == null ? null : new GenerativeAI.Types.Blob
 									{
 										MimeType = p.InlineData.MimeType,
-										// FIX: Convert byte[] to base64 string for Data property
-										Data = p.InlineData.Data != null ? Convert.ToBase64String(p.InlineData.Data) : null
+										// FIX: Data is already a base64 string, so just assign it directly
+										Data = p.InlineData.Data
 									}
 									// Copy other relevant properties if needed
 								}).ToList()
 							}
 						},
 					}
-                );
+				);
 
-                // Extract image từ Gemini response
-                string generatedImageUrl;
+					// Extract image từ Gemini response
+					string generatedImageUrl;
 
-                if (geminiResponse?.Candidates?.Count() > 0 &&
-                    geminiResponse.Candidates[0].Content?.Parts?.Count > 0)
-                {
-                    var imagePart = geminiResponse.Candidates[0].Content.Parts
-                        .FirstOrDefault(p => p.InlineData != null);
+					if (geminiResponse?.Candidates?.Count() > 0 &&
+						geminiResponse.Candidates[0].Content?.Parts?.Count > 0)
+					{
+						var candidate = geminiResponse?.Candidates?[0];
 
-                    if (imagePart?.InlineData != null)
-                    {
-                        // Convert base64 to stream và upload lên Cloudinary
-                        var imageBytes = Convert.FromBase64String(imagePart.InlineData.Data);
-                        using var imageStream = new MemoryStream(imageBytes);
+						// Check if the model stopped because of safety or quota issues
+						if (candidate.FinishReason != FinishReason.STOP)
+						{
+							_logger.LogWarning($"Model did not finish cleanly. Reason: {candidate.FinishReason}");
+						}
 
-                        // Tạo IFormFile từ stream để upload
-                        var colorsList = string.Join("_", selectedColors.Select(c => c.Replace("#", "")));
-                        var formFile = new FormFile(
-                            imageStream, 
-                            0, 
-                            imageBytes.Length, 
-                            "image", 
-                            $"virtual_tryon_{colorsList}_{Guid.NewGuid()}.jpg")
-                        {
-                            Headers = new HeaderDictionary(),
-                            ContentType = imagePart.InlineData.MimeType ?? "image/jpeg"
-                        };
+						// Proceed to extract image
+						var imagePart = candidate.Content.Parts.FirstOrDefault(p => p.InlineData != null);
 
-                        generatedImageUrl = await _imageUploadService.UploadImageAsync(formFile);
-                        _logger.LogInformation("Successfully uploaded generated image to Cloudinary: {Url}", generatedImageUrl);
+						if (imagePart?.InlineData != null)
+						{
+							// Convert base64 to stream và upload lên Cloudinary
+							var imageBytes = Convert.FromBase64String(imagePart.InlineData.Data);
+							using var imageStream = new MemoryStream(imageBytes);
 
-                        // ✅ THÊM VÀO RESPONSE (CHỈ 1 ẢNH)
-                        response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
-                        {
-                            ImageUrl = generatedImageUrl,
-                            Environment = environment,
-                            ClothingType = "complete_outfit", // Outfit hoàn chỉnh với nhiều items
-                            ColorHex = string.Join(", ", selectedColors), // Danh sách màu
-                            Prompt = prompt
-                        });
+							// Tạo IFormFile từ stream để upload
+							var colorsList = string.Join("_", selectedColors.Select(c => c.Replace("#", "")));
+							var formFile = new FormFile(
+								imageStream,
+								0,
+								imageBytes.Length,
+								"image",
+								$"virtual_tryon_{colorsList}_{Guid.NewGuid()}.jpg")
+							{
+								Headers = new HeaderDictionary(),
+								ContentType = imagePart.InlineData.MimeType ?? "image/jpeg"
+							};
 
-                        _logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors} in {Environment}",
-                            string.Join(", ", selectedColors), environment);
-                    }
-                    else
-                    {
-                        throw new Exception("No image data found in Gemini response");
-                    }
-                }
-                else
-                {
-                    throw new Exception("Invalid Gemini response structure");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to generate virtual try-on image");
-                throw;
-            }
+							generatedImageUrl = await _imageUploadService.UploadImageAsync(formFile);
+							_logger.LogInformation("Successfully uploaded generated image to Cloudinary: {Url}", generatedImageUrl);
 
-            if (response.GeneratedImages.Count == 0)
-            {
-                throw new Exception("Failed to generate virtual try-on image");
-            }
+							// ✅ THÊM VÀO RESPONSE (CHỈ 1 ẢNH)
+							response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
+							{
+								ImageUrl = generatedImageUrl,
+								Environment = environment,
+								ClothingType = "complete_outfit", // Outfit hoàn chỉnh với nhiều items
+								ColorHex = string.Join(", ", selectedColors), // Danh sách màu
+								Prompt = prompt
+							});
 
-            _logger.LogInformation("Virtual try-on generation completed successfully");
-            return response;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating virtual try-on images");
-            throw new Exception("Failed to generate virtual try-on images", ex);
-        }
-    }
+							_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors} in {Environment}",
+								string.Join(", ", selectedColors), environment);
+						}
+						else
+						{
+							throw new Exception("No image data found in Gemini response");
+						}
+					}
+					else
+					{
+						throw new Exception("Invalid Gemini response structure");
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(ex, "Failed to generate virtual try-on image");
+					throw;
+				}
 
-    private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
-    {
-        var environmentDescriptions = new Dictionary<string, string>
-        {
-            { "indoor", "in a well-lit, modern indoor setting with natural window light" },
-            { "outdoor_sunny", "outdoors on a beautiful sunny day with bright natural sunlight" },
-            { "outdoor_cloudy", "outdoors on a pleasant cloudy day with soft, diffused natural lighting" },
-            { "evening", "in a stylish evening setting with warm, atmospheric lighting" }
-        };
+				if (response.GeneratedImages.Count == 0)
+				{
+					throw new Exception("Failed to generate virtual try-on image");
+				}
 
-        var environmentDesc = environmentDescriptions.GetValueOrDefault(environment, "in a natural outdoor setting");
+				_logger.LogInformation("Virtual try-on generation completed successfully");
+				return response;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error generating virtual try-on images");
+				throw new Exception("Failed to generate virtual try-on images", ex);
+			}
+		}
 
-        // Tạo mô tả cho từng màu với clothing item cụ thể
-        var colorAssignments = new List<string>();
-        var clothingItems = new List<string> { "shirt/top", "pants/skirt", "shoes", "accessories/hat" };
-        
-        for (int i = 0; i < colorHexCodes.Count && i < clothingItems.Count; i++)
-        {
-            colorAssignments.Add($"- {clothingItems[i]} in color {colorHexCodes[i]}");
-        }
+		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
+		{
+			var environmentDescriptions = new Dictionary<string, string>
+		{
+			{ "indoor", "in a well-lit, modern indoor setting with natural window light" },
+			{ "outdoor_sunny", "outdoors on a beautiful sunny day with bright natural sunlight" },
+			{ "outdoor_cloudy", "outdoors on a pleasant cloudy day with soft, diffused natural lighting" },
+			{ "evening", "in a stylish evening setting with warm, atmospheric lighting" }
+		};
 
-        var colorDescriptions = string.Join("\n", colorAssignments);
-        var allColors = string.Join(", ", colorHexCodes);
+			var environmentDesc = environmentDescriptions.GetValueOrDefault(environment, "in a natural outdoor setting");
 
-        return $@"Using the provided reference image of the person, create a photorealistic virtual try-on fashion image showing them wearing a complete coordinated outfit {environmentDesc}.
+			// Tạo mô tả cho từng màu với clothing item cụ thể
+			var colorAssignments = new List<string>();
+			var clothingItems = new List<string> { "shirt/top", "pants/skirt", "shoes", "accessories/hat" };
+
+			for (int i = 0; i < colorHexCodes.Count && i < clothingItems.Count; i++)
+			{
+				colorAssignments.Add($"- {clothingItems[i]} in color {colorHexCodes[i]}");
+			}
+
+			var colorDescriptions = string.Join("\n", colorAssignments);
+			var allColors = string.Join(", ", colorHexCodes);
+
+			return $@"
+OUTPUT FORMAT REQUIREMENT: Generate exactly ONE image. Do not provide any text, descriptions, or explanations. Just the raw image.
+
+Using the provided reference image of the person, create a photorealistic virtual try-on fashion image showing them wearing a complete coordinated outfit {environmentDesc}.
 
 CRITICAL REQUIREMENTS - MUST MAINTAIN FROM REFERENCE IMAGE:
 - Keep the person's EXACT facial features, face shape, and facial structure
@@ -250,10 +278,10 @@ PHOTOGRAPHY STYLE:
 - Background appropriate for {environment} but should not distract from the outfit
 
 IMPORTANT: This is a virtual try-on - maintain the EXACT same person from the reference image, only change their outfit to incorporate the specified colors.";
-    }
+		}
 
-		// Giữ lại method cũ để backward compatibility (nếu cần)
-		private string BuildVirtualTryOnPrompt(string environment, string clothingType, string colorHex)
+		// Giữ lại method cũ để backward compatibility
+/*		private string BuildVirtualTryOnPrompt(string environment, string clothingType, string colorHex)
 		{
 			var environmentDescriptions = new Dictionary<string, string>
 			{
@@ -284,6 +312,6 @@ The image should:
 - Show how the color {colorHex} complements the person's features
 
 Style: Fashion photography, high quality, professional";
-		}
+		}*/
 	}
 }
