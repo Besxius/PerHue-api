@@ -39,7 +39,8 @@ namespace PerHue.Infrastructure.Services
 			IColorMatchingService colorMatchingService,
 			IVirtualTryOnService virtualTryOnService,
 			ITestRequestRepository testRequestRepository,
-			IUserSubscriptionService subscriptionService)
+			IUserSubscriptionService subscriptionService,
+			IUserService userService, IMapper mapper)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -49,6 +50,8 @@ namespace PerHue.Infrastructure.Services
 			_virtualTryOnService = virtualTryOnService;
 			_testRequestRepository = testRequestRepository;
 			_subscriptionService = subscriptionService;
+			_userService = userService;
+			_mapper = mapper;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model)
@@ -429,7 +432,8 @@ namespace PerHue.Infrastructure.Services
 						AvoidedColor = string.Join(", ", matchedAvoidedColors
 							.Where(c => c.MatchedColor != null)
 							.Select(c => c.MatchedColor!.Name)),
-						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}"
+						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}",
+						IdNavigation = testRequest
 					};
 
 					await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
