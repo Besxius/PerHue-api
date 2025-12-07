@@ -22,5 +22,7 @@ namespace PerHue.Domain.IRepositories
 			DateTime? startDate, DateTime? endDate, int? sortBy, int? sortOrder);
 
 		Task CreatePicturesAsync(List<Picture> pictures);
+
+		Task<string?> GetPictureUrlByTestRequestIdAsync(int requestId);
 	}
 }

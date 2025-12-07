@@ -32,19 +32,21 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public IAdminCapsulePaletteService AdminCapsulePaletteService { get; private set; }
 		public IAdminDashboardService AdminDashboardService { get; private set; }
 
+		public IReportService ReportService { get; private set; }
+
 		public ServicesProvider(
-			IUnitOfWork unitOfWork,
-			IUserService userService,
-			IPaymentService paymentService,
-			IServicePackageService servicePackageService,
-			IUserSubscriptionService userSubscriptionService,
-			IPaymentLogService paymentLogService,
-			IRoleService roleService,
-			IColorService colorService,
-			ICapsulePaletteService capsulePaletteService,
-			IColorTypeService colorTypeService,
-			ITestResultService testResultService,
-			IOtpService otpService,
+				IUnitOfWork unitOfWork,
+				IUserService userService,
+				IPaymentService paymentService,
+				IServicePackageService servicePackageService,
+				IUserSubscriptionService userSubscriptionService,
+				IPaymentLogService paymentLogService,
+				IRoleService roleService,
+				IColorService colorService,
+				ICapsulePaletteService capsulePaletteService,
+				IColorTypeService colorTypeService,
+				ITestResultService testResultService,
+				IOtpService otpService,
 
 			IExpertTestService expertTestService,
 			IExpertService expertService,
@@ -53,7 +55,8 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IAiTestService aiTestService,
 			IAdminColorService adminColorService,
 			IAdminCapsulePaletteService adminCapsulePaletteService,
-			IAdminDashboardService adminDashboardService
+			IAdminDashboardService adminDashboardService,
+			IReportService reportService
 			)
 		{
 			_unitOfWork = unitOfWork;
@@ -77,6 +80,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			AdminColorService = adminColorService;
 			AdminCapsulePaletteService = adminCapsulePaletteService;
 			AdminDashboardService = adminDashboardService;
+			ReportService = reportService;
 		}
 
 	}

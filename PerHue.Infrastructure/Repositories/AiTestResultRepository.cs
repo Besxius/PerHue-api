@@ -31,6 +31,7 @@ namespace PerHue.Infrastructure.Repositories
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
 				.Include(t => t.UserAccount)
+				.Include(t => t.Pictures)
 				.FirstOrDefaultAsync(t => t.Id == id);
 		}
 
@@ -40,7 +41,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(t => t.AiTestResult)
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
-				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI Test")
+				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI")
 				.OrderByDescending(t => t.CreatedDate)
 				.ToListAsync();
 		}
@@ -157,6 +158,12 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			await _context.Pictures.AddRangeAsync(pictures);
 			await _context.SaveChangesAsync();
+		}
+
+		public async Task<string?> GetPictureUrlByTestRequestIdAsync(int requestId)
+		{
+			var url = await _context.Pictures.FirstOrDefaultAsync(p => p.TestRequestId == requestId);
+			return url?.Source;
 		}
 	}
 }

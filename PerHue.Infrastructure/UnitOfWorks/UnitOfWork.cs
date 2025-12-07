@@ -30,31 +30,35 @@ namespace PerHue.Infrastructure.UnitOfWorks
 		public IAiTestResultRepository AiTestResultRepository { get; private set; }
 		public IRefreshTokenRepository RefreshTokenRepository { get; private set; }
 
+		public IPhotoRepository PhotoRepository { get; private set; }
+
+		public IReportRepository ReportRepository { get; private set; }
 
 		public UnitOfWork(
-			PerHueDbContext context,
-			IUserRepository userRepository,
-			IServicePackageRepository servicePackageRepository,
-			IPaymentRepository paymentRepository,
-			IUserSubscriptionRepository userSubscriptionRepository,
-			IPaymentLogRepository paymentLogRepository,
-			IRoleRepository roleRepository,
-			IColorRepository colorRepository,
-			ICapsulePaletteRepository capsulePaletteRepository,
-			IColorTypeRepository colorTypeRepository,
-			ITestResultRepository testResultRepository,
-			IVerificationRepository verificationRepository,
-			IExpertRepository expertRepository,
-			INotificationRepository notificationRepository,
+				PerHueDbContext context,
+				IUserRepository userRepository,
+				IServicePackageRepository servicePackageRepository,
+				IPaymentRepository paymentRepository,
+				IUserSubscriptionRepository userSubscriptionRepository,
+				IPaymentLogRepository paymentLogRepository,
+				IRoleRepository roleRepository,
+				IColorRepository colorRepository,
+				ICapsulePaletteRepository capsulePaletteRepository,
+				IColorTypeRepository colorTypeRepository,
+				ITestResultRepository testResultRepository,
+				IVerificationRepository verificationRepository,
+				IExpertRepository expertRepository,
+				INotificationRepository notificationRepository,
 
-			ITestRequestRepository testRequestRepository,
-			ITestResponseRepository testResponseRepository,
-			IExpertTestRequestRepository expertTestRequestRepository,
+				ITestRequestRepository testRequestRepository,
+				ITestResponseRepository testResponseRepository,
+				IExpertTestRequestRepository expertTestRequestRepository,
 
-			IAiPictureRepository aiPictureRepository,
-			IAiTestResultRepository aiTestResultRepository,
-			IRefreshTokenRepository refreshTokenRepository
-			)
+				IAiPictureRepository aiPictureRepository,
+				IAiTestResultRepository aiTestResultRepository,
+				IRefreshTokenRepository refreshTokenRepository,
+				IPhotoRepository photoRepository,
+				IReportRepository reportRepository)
 		{
 			_context = context;
 			UserRepository = userRepository;
@@ -78,8 +82,9 @@ namespace PerHue.Infrastructure.UnitOfWorks
 			AiPictureRepository = aiPictureRepository;
 			AiTestResultRepository = aiTestResultRepository;
 			RefreshTokenRepository = refreshTokenRepository;
+			PhotoRepository = photoRepository;
+			ReportRepository = reportRepository;
 		}
-
 		public int SaveChangesWithTransaction()
 		{
 			int result = -1;

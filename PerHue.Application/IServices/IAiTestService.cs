@@ -18,12 +18,10 @@ namespace PerHue.Application.IServices
 		Task<PaginatedResultV2<AiTestModel.AiTestResponseModel>> GetAiTestsWithFilterAsync(AiTestSearchModel searchModel);
 		Task<bool> MarkTestAsCompletedAsync(int testId);
 
-		Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model);
-		Task<AiTestModel.AiTestResponseModel> ProcessAiTestAsync(int testRequestId);
 		Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId);
 		Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId);
 
-		Task<AiTestCompleteResponse> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request);
+		Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request);
 		Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(int testRequestId, GeminiAnalysisRequest request);
 		Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(int testRequestId, VirtualTryOnRequest request);
 	}

@@ -2,9 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
+using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
-using PerHue.Application.Models.TestRequest;
 using System.Security.Claims;
 
 namespace PerHue.Api.Controllers
@@ -15,69 +16,92 @@ namespace PerHue.Api.Controllers
 	{
 		private readonly IImageUploadService _imageUploadService;
 		private readonly IServicesProvider _servicesProvider;
-		public TestColorsController(IServicesProvider servicesProvider, IImageUploadService imageUploadService)
+		private readonly IAiTestService _aiTestService;
+		public TestColorsController(IServicesProvider servicesProvider, IImageUploadService imageUploadService, IAiTestService aiTestService)
 		{
 			_servicesProvider = servicesProvider;
 			_imageUploadService = imageUploadService;
+			_aiTestService = aiTestService;
 		}
 
-		[HttpPost]
-		[Route("normal-test/simple-color")]
-		public async Task<TestResultModel> NormalTestSimpleColor(ManualTestSimpleColorModel model)
+		[HttpPost("manual-test")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<ActionResult<TestResultModel>> NormalTestSimpleColor(CreateManualTestResultModel model)
 		{
-			var user = User.Identity;
-			var testResult = new CreateManualTestResultModel
+			try
 			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				SelectedColors = model.SelectedColors,
-			};
-			var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(testResult);
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+				model.UserId = userId;
 
-			return result;
-		}
-
-		//[HttpPost]
-		//[Route("normal-test/simple-color/save")]
-		//public async Task<TestResultModel> SaveNormalTestSimpleColor(TestResultModel model)
-		//{
-		//	var result = await _servicesProvider.TestResultService.CreateNormalTestSimpleColorResult(model);
-		//	return result;
-		//}
-
-		[HttpPost]
-		[Route("normal-test/capsule-palette")]
-		public async Task<TestResultModel> NormalTestColorPalette(ManualTestColorPaletteModel model)
-		{
-			var testResult = new CreateManualTestResultModel
+				var result = await _servicesProvider.TestResultService.GetNormalTestSimpleColorResult(model);
+				return Ok(result);
+			}
+			catch (ArgumentException ex)
 			{
-				UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-				SelectedColors = model.SelectedColors,
-				ColorType = model.ColorType
-			};
-			var result = await _servicesProvider.TestResultService.GetNormalTestCapsulePaletteResult(testResult);
-			return result;
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error while processing Manual Test", error = ex.Message });
+			}
 		}
 
-		//[HttpPost]
-		//[Route("normal-test/capsule-palette/save")]
-		//public async Task<TestResultModel> SaveNormalTestColorPalette(TestResultModel model)
-		//{
-		//	var result = await _servicesProvider.TestResultService.CreateNormalTestCapsulePaletteResult(model);
-		//	return result;
-		//}
-
-		[HttpPost]
-		[Route("ai-test/upload-image")]
-		public async Task<string> AiTestUploadImage(AiTestUploadImageModel model)
+		/// <summary>
+		/// Tạo và xử lý toàn bộ luồng AI Test (phân tích màu + matching + virtual try-on)
+		/// </summary>
+		[HttpPost("ai-test")]
+		[Consumes("multipart/form-data")]
+		[Authorize(Roles = "User,Admin")]
+		public async Task<ActionResult<AiTestResultResponseModel>> CreateAndProcessAiTest([FromForm] AiTestCompleteRequest requestDto)
 		{
-			var result = await _servicesProvider.TestResultService.GetAiTestUploadImageResult(model);
-			return result;
+			try
+			{
+				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+				if (userId == 0)
+				{
+					return Unauthorized(new { message = "User not authenticated" });
+				}
+
+				// Validate image files
+				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+				var maxFileSize = 10 * 1024 * 1024; // 10MB
+
+				var image = requestDto.FaceImages;
+				var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+				if (!allowedExtensions.Contains(extension))
+				{
+					return BadRequest(new { message = $"Invalid file type: {image.FileName}. Only JPG, JPEG, and PNG are allowed." });
+				}
+
+				if (image.Length > maxFileSize)
+				{
+					return BadRequest(new { message = $"File too large: {image.FileName}. Maximum size is 10MB." });
+				}
+
+				if (image.Length == 0)
+				{
+					return BadRequest(new { message = $"Empty file: {image.FileName}" });
+				}
+
+				// Gọi service với userId
+				var result = await _aiTestService.ProcessAiTestAsync2(userId, requestDto);
+
+				return Ok(result);
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error processing AI Test", error = ex.Message });
+			}
 		}
 
 		[HttpPost("expert-test")]
 		[Authorize(Roles = "User,Admin")]
-		// Use the new DTO from the correct namespace
-		public async Task<IActionResult> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
+		public async Task<ActionResult<TestRequestModel>> CreateExpertTestRequest([FromForm] CreateExpertTestRequestModel model)
 		{
 			if (model.File == null || model.File.Length == 0)
 			{

@@ -16,6 +16,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
 using PerHue.Infrastructure.Utils;
+using AutoMapper;
+
 
 
 namespace PerHue.Infrastructure.Services
@@ -30,6 +32,8 @@ namespace PerHue.Infrastructure.Services
 		private readonly IVirtualTryOnService _virtualTryOnService;
 		private readonly ITestRequestRepository _testRequestRepository;
 		private readonly IUserSubscriptionService _subscriptionService;
+		private readonly IMapper _mapper;
+		private readonly IUserService _userService;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -54,159 +58,30 @@ namespace PerHue.Infrastructure.Services
 			_mapper = mapper;
 		}
 
-		public async Task<AiTestModel.AiTestResponseModel> CreateAiTestRequestAsync(int userId, AiTestModel.CreateAiTestRequestModel model)
-		{
-			// Validate images
-			if (model.Images == null || model.Images.Count == 0)
-			{
-				throw new ArgumentException("At least one image is required");
-			}
-
-			if (model.Images.Count > 5)
-			{
-				throw new ArgumentException("Maximum 5 images allowed");
-			}
-
-			// Tạo TestRequest
-			var testRequest = new TestRequest
-			{
-				HairColor = model.HairColor,
-				EyesColor = model.EyesColor,
-				LipsColor = model.LipsColor,
-				SkinColor = model.SkinColor,
-				Status = "Processing",
-				CreatedDate = DateTime.UtcNow,
-				TypeOfTest = "AI Test",
-				UserAccountId = userId
-			};
-
-			testRequest = await _aiTestRepository.CreateTestRequestAsync(testRequest);
-
-			// Upload ảnh lên Cloudinary
-			var imageUrls = new List<string>();
-			var aiPictures = new List<AiPicture>();
-
-			foreach (var image in model.Images)
-			{
-				var imageUrl = await _imageUploadService.UploadImageAsync(image);
-				imageUrls.Add(imageUrl);
-
-				aiPictures.Add(new AiPicture
-				{
-					Source = imageUrl,
-					Note = "AI Test Image",
-					TestRequestId = testRequest.Id
-				});
-			}
-
-			// Lưu AiPictures
-			await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
-
-			// Xử lý AI analysis trong background (hoặc gọi trực tiếp)
-			try
-			{
-				await ProcessAiTestAsync(testRequest.Id);
-				// Reload testRequest with all navigation properties
-				testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequest.Id);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, $"Error processing AI test for request {testRequest.Id}");
-				testRequest.Status = "Failed";
-				await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-			}
-
-			return new AiTestModel.AiTestResponseModel
-			{
-				TestRequestId = testRequest.Id,
-				Status = testRequest.Status,
-				CreatedDate = testRequest.CreatedDate.Value,
-				Result = testRequest.AiTestResult != null ? new AiTestResultModel
-				{
-					ColorType = testRequest.AiTestResult.ColorType.Name,
-					ColorTypeId = testRequest.AiTestResult.ColorTypeId,
-					SuggestedColor = testRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
-					AvoidedColor = testRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
-				} : null
-			};
-		}
-
-		public async Task<AiTestModel.AiTestResponseModel> ProcessAiTestAsync(int testRequestId)
-		{
-			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequestId);
-
-			if (testRequest == null)
-			{
-				throw new Exception("Test request not found");
-			}
-
-			if (testRequest.AiTestResult != null)
-			{
-				throw new InvalidOperationException("Test already processed");
-			}
-
-			try
-			{
-				// Gọi Gemini để phân tích
-				var analysisRequest = new AiTestModel.GeminiAnalysisRequest
-				{
-					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
-					HairColor = testRequest.HairColor,
-					EyesColor = testRequest.EyesColor,
-					LipsColor = testRequest.LipsColor,
-					SkinColor = testRequest.SkinColor
-				};
-
-				var analysisResult = await _geminiService.AnalyzeColorTypeAsync(analysisRequest);
-
-				// Lưu kết quả
-				var aiTestResult = new AiTestResult
-				{
-					Id = testRequest.Id,
-					Date = DateTime.UtcNow,
-					ColorTypeId = analysisResult.ColorTypeId,
-					SuggestedColor = string.Join(", ", analysisResult.SuggestedColor),
-					AvoidedColor = string.Join(", ", analysisResult.AvoidedColor),
-					Note = "Analysis completed by AI"
-				};
-
-				await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
-
-				// Update status
-				testRequest.Status = "Completed";
-				await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-
-				return new AiTestModel.AiTestResponseModel
-				{
-					TestRequestId = testRequest.Id,
-					Status = testRequest.Status,
-					CreatedDate = testRequest.CreatedDate.Value,
-					Result = analysisResult
-				};
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, $"Error processing AI test {testRequestId}");
-				testRequest.Status = "Failed";
-				await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-				throw;
-			}
-		}
-
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
 		{
 			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequestId);
+			var user = await _userService.GetByIdAsync(userId);
 
 			if (testRequest == null || testRequest.UserAccountId != userId)
 			{
 				return null;
 			}
 
+			var pictureUrl = await _aiTestRepository.GetPictureUrlByTestRequestIdAsync(testRequest.Id);
+
+			//var picture = await _imageUploadService.DownloadImageAsFormFileAsync(pictureUrl);
+
 			var response = new AiTestModel.AiTestResponseModel
 			{
 				TestRequestId = testRequest.Id,
 				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.UtcNow
+				CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+				UserAccountId = testRequest.UserAccountId,
+				Fullname = user.Fullname,
+				TypeOfTest = testRequest.TypeOfTest,
+				//Image = picture
+				ImageUrl = pictureUrl
 			};
 
 			if (testRequest.AiTestResult != null)
@@ -226,18 +101,68 @@ namespace PerHue.Infrastructure.Services
 		public async Task<List<AiTestModel.AiTestResponseModel>> GetUserAiTestsAsync(int userId)
 		{
 			var testRequests = await _aiTestRepository.GetTestRequestsByUserIdAsync(userId);
+			var user = await _userService.GetByIdAsync(userId);
 
-			return testRequests.Select(t => new AiTestModel.AiTestResponseModel
+			var pictureUrlTasks = testRequests.Select(async tr => new
 			{
-				TestRequestId = t.Id,
-				Status = t.Status ?? "Unknown",
-				CreatedDate = t.CreatedDate ?? DateTime.UtcNow,
-				Result = t.AiTestResult != null ? new AiTestResultModel
+				TestRequest = tr,
+				PictureUrl = await _aiTestRepository.GetPictureUrlByTestRequestIdAsync(tr.Id)
+			});
+
+			var testRequestsWithUrls = await Task.WhenAll(pictureUrlTasks);
+
+			/*// Download tất cả ảnh song song
+			var responseTasks = testRequestsWithUrls.Select(async item =>
+			{
+				IFormFile? picture = null;
+				if (!string.IsNullOrEmpty(item.PictureUrl))
 				{
-					ColorType = t.AiTestResult.ColorType.Name,
-					ColorTypeId = t.AiTestResult.ColorTypeId,
-					SuggestedColor = t.AiTestResult.SuggestedColor.Split(", ").ToList(),
-					AvoidedColor = t.AiTestResult.AvoidedColor.Split(", ").ToList()
+					try
+					{
+						picture = await _imageUploadService.DownloadImageAsFormFileAsync(item.PictureUrl);
+					}
+					catch (Exception ex)
+					{
+						_logger.LogWarning(ex, "Failed to download image for TestRequest {TestRequestId}", item.TestRequest.Id);
+					}
+				}
+
+				return new AiTestModel.AiTestResponseModel
+				{
+					TestRequestId = item.TestRequest.Id,
+					Status = item.TestRequest.Status ?? "Unknown",
+					CreatedDate = item.TestRequest.CreatedDate ?? DateTime.UtcNow,
+					UserAccountId = item.TestRequest.UserAccountId,
+					Fullname = user.Fullname,
+					TypeOfTest = item.TestRequest.TypeOfTest,
+					Image = picture,
+					Result = item.TestRequest.AiTestResult != null ? new AiTestResultModel
+					{
+						ColorType = item.TestRequest.AiTestResult.ColorType.Name,
+						ColorTypeId = item.TestRequest.AiTestResult.ColorTypeId,
+						SuggestedColor = item.TestRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+						AvoidedColor = item.TestRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
+					} : null
+				};
+			});
+
+			return (await Task.WhenAll(responseTasks)).ToList();*/
+
+			return testRequestsWithUrls.Select(item => new AiTestModel.AiTestResponseModel
+			{
+				TestRequestId = item.TestRequest.Id,
+				Status = item.TestRequest.Status ?? "Unknown",
+				CreatedDate = item.TestRequest.CreatedDate ?? DateTime.Now,
+				UserAccountId = item.TestRequest.UserAccountId,
+				Fullname = user.Fullname,
+				TypeOfTest = item.TestRequest.TypeOfTest,
+				ImageUrl = item.PictureUrl, // Trả về URL thay vì IFormFile
+				Result = item.TestRequest.AiTestResult != null ? new AiTestResultModel
+				{
+					ColorType = item.TestRequest.AiTestResult.ColorType.Name,
+					ColorTypeId = item.TestRequest.AiTestResult.ColorTypeId,
+					SuggestedColor = item.TestRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
+					AvoidedColor = item.TestRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
 				} : null
 			}).ToList();
 		}
@@ -261,7 +186,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = t.Id,
 				Status = t.Status ?? "Unknown",
-				CreatedDate = t.CreatedDate ?? DateTime.UtcNow,
+				CreatedDate = t.CreatedDate ?? DateTime.Now,
 				Fullname = t.UserAccount.Fullname,
 				UserAccountId = t.UserAccount.Id,
 				TypeOfTest = t.TypeOfTest,
@@ -295,36 +220,36 @@ namespace PerHue.Infrastructure.Services
 			return true;
 		}
 
-
 		//================================================================
 
-		public async Task<AiTestCompleteResponse> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
+		public async Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
 		{
-			try
+			_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
+
+			// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
+			var userSubscription = await _subscriptionService.GetCurrentUserSubscriptionByUserIdAsync(userId);
+			var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId);
+			if (!hasRemaining)
 			{
-				_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
+				var remaining = await _subscriptionService.GetRemainingUsageAsync(userId);
+				_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
+				throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
+			}
 
-				// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
-				var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId);
-				if (!hasRemaining)
-				{
-					var remaining = await _subscriptionService.GetRemainingUsageAsync(userId);
-					_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
-					throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
-				}
-				await _subscriptionService.DeductUsageAsync(userId);
+			var packageId = userSubscription.ServicePackageId;
+			var packageType = userSubscription.ServicePackage.Type;
 
+			var deducted = await _subscriptionService.DeductUsageAsync(userId, packageId, packageType);
+			if (!deducted)
+			{
+				_logger.LogError("Failed to deduct usage for user {UserId}", userId);
+				throw new InvalidOperationException("Failed to deduct usage. Please try again.");
+			}
 
-				// Validate images
-				if (request.FaceImages == null || request.FaceImages.Count == 0)
-				{
-					throw new ArgumentException("At least one face image is required");
-				}
-
-				if (request.FaceImages.Count > 5)
-				{
-					throw new ArgumentException("Maximum 5 images allowed");
-				}
+			try
+			{				
+				var remainingAfterDeduct = await _subscriptionService.GetRemainingUsageAsync(userId);
+				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remainingAfterDeduct}", userId, remainingAfterDeduct);
 
 				// Tạo TestRequest mới
 				var testRequest = new TestRequest
@@ -334,7 +259,7 @@ namespace PerHue.Infrastructure.Services
 					LipsColor = request.LipsColor,
 					SkinColor = request.SkinColor,
 					Status = TestStatus.Processing.ToString(),
-					CreatedDate = DateTime.UtcNow,
+					CreatedDate = DateTime.Now,
 					TypeOfTest = "AI Test",
 					UserAccountId = userId
 				};
@@ -346,9 +271,9 @@ namespace PerHue.Infrastructure.Services
 				var imageUrls = new List<string>();
 				var pictures = new List<Picture>();
 
-				foreach (var image in request.FaceImages)
+				if (request.FaceImages != null)
 				{
-					var imageUrl = await _imageUploadService.UploadImageAsync(image);
+					var imageUrl = await _imageUploadService.UploadImageAsync(request.FaceImages);
 					imageUrls.Add(imageUrl);
 					_logger.LogInformation("Uploaded user image: {ImageUrl}", imageUrl);
 
@@ -392,12 +317,12 @@ namespace PerHue.Infrastructure.Services
 
 					// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
-					if (request.GenerateVirtualTryOn && request.FaceImages.Count > 0)
+					if (request.FaceImages != null)
 					{
 						// SỬ DỤNG IFormFile TRỰC TIẾP
 						var tryOnRequest = new VirtualTryOnRequest
 						{
-							UserImage = request.FaceImages[0],
+							UserImage = request.FaceImages,
 							SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
 						};
 
@@ -423,8 +348,7 @@ namespace PerHue.Infrastructure.Services
 					// Lưu kết quả test vào AiTestResult
 					var aiTestResult = new AiTestResult
 					{
-						Id = testRequest.Id,
-						Date = DateTime.UtcNow,
+						Date = DateTime.Now,
 						ColorTypeId = colorAnalysis.ColorTypeId,
 						SuggestedColor = string.Join(", ", matchedSuggestedColors
 							.Where(c => c.MatchedColor != null)
@@ -436,21 +360,13 @@ namespace PerHue.Infrastructure.Services
 						IdNavigation = testRequest
 					};
 
-					await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
+					var result = await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
 
 					// Update status thành Completed
 					testRequest.Status = TestStatus.Completed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
 
-					var response = new AiTestCompleteResponse
-					{
-						TestRequestId = testRequest.Id,
-						ColorAnalysis = colorAnalysis,
-						MatchedSuggestedColors = matchedSuggestedColors,
-						MatchedAvoidedColors = matchedAvoidedColors,
-						VirtualTryOnResults = virtualTryOnResults,
-						Status = TestStatus.Completed.ToString()
-					};
+					var response = _mapper.Map<AiTestResultResponseModel>(result);
 
 					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
 						testRequest.Id);
@@ -465,7 +381,7 @@ namespace PerHue.Infrastructure.Services
 					testRequest.Status = TestStatus.Failed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
 
-					var refunded = await _subscriptionService.RefundUsageAsync(userId);
+					var refunded = await _subscriptionService.RefundUsageAsync(userId, packageId, packageType);
 					if (refunded)
 					{
 						_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
@@ -477,7 +393,8 @@ namespace PerHue.Infrastructure.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "Error creating AI Test for UserId: {UserId}", userId);
-				var refunded = await _subscriptionService.RefundUsageAsync(userId);
+
+				var refunded = await _subscriptionService.RefundUsageAsync(userId, packageId, packageType);
 				if (refunded)
 				{
 					_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
