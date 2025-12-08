@@ -72,8 +72,8 @@ namespace PerHue.Api.Controllers
 		/// Generate virtual try-on images
 		/// </summary>
 		[HttpPost("generate-virtual-tryon")]
-		[Consumes("multipart/form-data")]
-		public async Task<IActionResult> GenerateVirtualTryOn([FromBody] VirtualTryOnRequest request)
+		//[Consumes("multipart/form-data")]
+		public async Task<IActionResult> GenerateVirtualTryOn([FromForm] VirtualTryOnRequest request)
 		{
 			try
 			{		
