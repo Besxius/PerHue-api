@@ -71,30 +71,18 @@ namespace PerHue.Api.Controllers
 		/// <summary>
 		/// Generate virtual try-on images
 		/// </summary>
-		[HttpPost("generate-virtual-tryon/{testRequestId}")]
-		public async Task<IActionResult> GenerateVirtualTryOn(int testRequestId, [FromBody] VirtualTryOnRequest request)
+		[HttpPost("generate-virtual-tryon")]
+		[Consumes("multipart/form-data")]
+		public async Task<IActionResult> GenerateVirtualTryOn([FromBody] VirtualTryOnRequest request)
 		{
 			try
-			{
-				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-				var testRequest = await _testRequestRepository.GetByIdAsync(testRequestId);
-				if (testRequest == null)
-				{
-					return NotFound(new { message = "Test request not found" });
-				}
-
-				if (testRequest.UserAccountId != userId)
-				{
-					return Forbid();
-				}
-
+			{		
 				if (!request.SuggestedColorHexCodes.Any())
 				{
 					return BadRequest(new { message = "At least one color hex code is required" });
 				}
 
-				var result = await _aiTestService.GenerateVirtualTryOnAsync(testRequestId, request);
+				var result = await _aiTestService.GenerateVirtualTryOnAsync(request);
 
 				return Ok(new
 				{
