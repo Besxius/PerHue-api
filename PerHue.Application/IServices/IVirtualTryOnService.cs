@@ -6,5 +6,6 @@ namespace PerHue.Application.IServices
 	public interface IVirtualTryOnService
 	{
 		Task<VirtualTryOnResponse> GenerateVirtualTryOnImagesAsync(VirtualTryOnRequest request);
+		Task<HuggingFaceModel.HFVirtualTryOnResponse> HFGenerateVirtualTryOnImagesAsync(VirtualTryOnRequest request);
 	}
 }
