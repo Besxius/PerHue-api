@@ -22,11 +22,10 @@ namespace PerHue.Infrastructure.Services
 		private readonly string _apiKey;
 		private readonly ILogger<VirtualTryOnService> _logger;
 		private readonly IImageUploadService _imageUploadService;
-		private readonly HttpClient _httpClient;
 
 
 		// Các model có thể sử dụng
-		
+
 		private const string MODEL_FLUX = "black-forest-labs/FLUX.1-schnell";
 
 
@@ -38,13 +37,6 @@ namespace PerHue.Infrastructure.Services
 			_apiKey = configuration["Gemini:ApiKey"] ?? throw new ArgumentNullException("Gemini API Key not found");
 			_logger = logger;
 			_imageUploadService = imageUploadService;
-
-			_apiKey = configuration["HuggingFace:ApiKey"]
-				?? throw new ArgumentNullException("HuggingFace API Key not found");
-			_httpClient = new HttpClient();
-			_httpClient.DefaultRequestHeaders.Authorization =
-				new AuthenticationHeaderValue("Bearer", _apiKey);
-			_httpClient.Timeout = TimeSpan.FromMinutes(5); // Tăng timeout vì model cần load
 		}
 
 		public async Task<VirtualTryOnResponse> GenerateVirtualTryOnImagesAsync(VirtualTryOnRequest request)
@@ -371,7 +363,7 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
-/*		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
+		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
 		{
 			var environmentDescriptions = new Dictionary<string, string>
 		{
@@ -432,221 +424,9 @@ PHOTOGRAPHY STYLE:
 - Background appropriate for {environment} but should not distract from the outfit
 
 IMPORTANT: This is a virtual try-on - maintain the EXACT same person from the reference image, only change their outfit to incorporate the specified colors.";
-		}*/
+		}
 
 		//=============================================================
-
-		public async Task<HuggingFaceModel.HFVirtualTryOnResponse> HFGenerateVirtualTryOnImagesAsync(VirtualTryOnRequest request)
-		{
-			var keyLast4 = _apiKey.Length > 4 ? _apiKey.Substring(_apiKey.Length - 4) : "INVALID";
-			_logger.LogWarning($"[DEBUG] Using API Key ending in: ...{keyLast4}");
-
-			try
-			{
-				// Lấy màu và environment
-				var selectedColors = request.SuggestedColorHexCodes
-					.OrderBy(x => Guid.NewGuid())
-					.Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
-					.ToList();
-
-				var environment = request.Environments
-					.OrderBy(x => Guid.NewGuid())
-					.FirstOrDefault() ?? "outdoor_sunny";
-
-				_logger.LogInformation("Generating virtual try-on with {Count} colors", selectedColors.Count);
-
-				// Đọc user image
-				byte[] userImageBytes;
-				using (var memoryStream = new MemoryStream())
-				{
-					await request.UserImage.CopyToAsync(memoryStream);
-					userImageBytes = memoryStream.ToArray();
-				}
-
-				// Tạo prompt
-				var prompt = BuildVirtualTryOnPromptWithMultipleColors(environment, selectedColors);
-
-				// Generate image với retry
-				var imageResult = await GenerateImageWithRetryAsync(prompt, userImageBytes, maxRetries: 3);
-
-				var response = new HuggingFaceModel.HFVirtualTryOnResponse
-				{
-					GeneratedImages = new HuggingFaceModel.HFGeneratedImage
-					{
-						ImageUrl = imageResult.ImageUrl,           // URL nếu có
-						ImageBase64 = imageResult.ImageBase64,     // Base64 nếu có
-						ImageBytes = imageResult.ImageBytes,       // Raw bytes
-						Environment = environment,
-						ClothingType = "complete_outfit",
-						ColorHex = string.Join(", ", selectedColors),
-						Prompt = prompt
-					}
-				};
-
-				_logger.LogInformation("Virtual try-on completed successfully");
-				return response;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Error generating virtual try-on images");
-				throw new Exception("Failed to generate virtual try-on images", ex);
-			}
-		}
-
-		private async Task<ImageResult> GenerateImageWithRetryAsync(
-			string prompt,
-			byte[] userImageBytes,
-			int maxRetries = 3)
-		{
-			Exception lastException = null;
-
-			for (int attempt = 1; attempt <= maxRetries; attempt++)
-			{
-				try
-				{
-					_logger.LogInformation("Attempt {Attempt} of {MaxRetries}", attempt, maxRetries);
-					return await GenerateImageAsync(prompt, userImageBytes);
-				}
-				catch (Exception ex)
-				{
-					lastException = ex;
-					_logger.LogWarning(ex, "Attempt {Attempt} failed", attempt);
-
-					if (attempt < maxRetries)
-					{
-						var delaySeconds = Math.Pow(2, attempt) * 5;
-						_logger.LogInformation("Waiting {Delay}s before retry...", delaySeconds);
-						await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-					}
-				}
-			}
-
-			throw new Exception($"Failed after {maxRetries} attempts", lastException);
-		}
-
-		private async Task<ImageResult> GenerateImageAsync(string prompt, byte[] userImageBytes)
-		{
-			var modelId = MODEL_FLUX; // Hoặc MODEL_SDXL
-			var apiUrl = $"https://api-inference.huggingface.co/models/{modelId}";
-
-			try
-			{
-				// Convert image to base64
-				var base64Image = Convert.ToBase64String(userImageBytes);
-
-				// Payload cho text+image-to-image
-				var payload = new
-				{
-					inputs = new
-					{
-						prompt = prompt,
-						image = base64Image,
-						negative_prompt = BuildNegativePrompt()
-					},
-					parameters = new
-					{
-						num_inference_steps = 25,
-						guidance_scale = 3.5,
-						strength = 0.75,
-						width = 1024,
-						height = 1024
-					},
-					options = new
-					{
-						wait_for_model = true,
-						use_cache = false
-					}
-				};
-
-				var jsonContent = JsonConvert.SerializeObject(payload);
-				var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-				_logger.LogInformation("Calling Hugging Face API: {Model}", modelId);
-
-				var response = await _httpClient.PostAsync(apiUrl, content);
-
-				// Xử lý model loading
-				if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-				{
-					var errorContent = await response.Content.ReadAsStringAsync();
-					_logger.LogWarning("Model is loading: {Error}", errorContent);
-
-					try
-					{
-						var errorObj = JsonConvert.DeserializeObject<HuggingFaceError>(errorContent);
-						if (errorObj?.EstimatedTime > 0)
-						{
-							_logger.LogInformation("Waiting {Time}s for model...", errorObj.EstimatedTime);
-							await Task.Delay(TimeSpan.FromSeconds(errorObj.EstimatedTime + 5));
-							return await GenerateImageAsync(prompt, userImageBytes);
-						}
-					}
-					catch { }
-
-					await Task.Delay(20000);
-					throw new Exception("Model is loading, please retry");
-				}
-
-				if (!response.IsSuccessStatusCode)
-				{
-					var errorContent = await response.Content.ReadAsStringAsync();
-					_logger.LogError("API Error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-					throw new Exception($"API Error {response.StatusCode}: {errorContent}");
-				}
-
-				// Đọc raw image bytes
-				var imageBytes = await response.Content.ReadAsByteArrayAsync();
-				_logger.LogInformation("Received image: {Size} bytes", imageBytes.Length);
-
-				if (imageBytes.Length < 1000)
-				{
-					throw new Exception("Invalid image data received");
-				}
-
-				// Trả về cả 3 formats: bytes, base64, và có thể URL nếu cần
-				return new ImageResult
-				{
-					ImageBytes = imageBytes,
-					ImageBase64 = Convert.ToBase64String(imageBytes),
-					ImageUrl = null // Không có URL, chỉ có raw data
-				};
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Failed to generate image");
-				throw;
-			}
-		}
-
-		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
-		{
-			var environmentDescriptions = new Dictionary<string, string>
-			{
-				{ "indoor", "modern indoor studio with professional lighting" },
-				{ "outdoor_sunny", "sunny outdoor location with natural daylight" },
-				{ "outdoor_cloudy", "outdoor setting with soft diffused lighting" },
-				{ "evening", "evening atmosphere with warm golden hour lighting" }
-			};
-
-			var environmentDesc = environmentDescriptions.GetValueOrDefault(environment, "natural outdoor setting");
-
-			var colorDescriptions = new List<string>();
-			var clothingItems = new List<string> { "fashionable top", "stylish pants", "trendy shoes", "accessories" };
-
-			for (int i = 0; i < colorHexCodes.Count && i < clothingItems.Count; i++)
-			{
-				colorDescriptions.Add($"{clothingItems[i]} in {colorHexCodes[i]} color");
-			}
-
-			var colorDesc = string.Join(", ", colorDescriptions);
-
-			return $@"professional fashion photography, full body portrait, person wearing coordinated outfit with {colorDesc}, {environmentDesc}, high quality, photorealistic, 8k resolution, sharp focus, detailed clothing texture, vibrant colors, modern fashion style, confident pose, natural expression, fashion magazine quality, professional model lighting";
-		}
-
-		private string BuildNegativePrompt()
-		{
-			return @"low quality, blurry, distorted, deformed, ugly, bad anatomy, bad proportions, disfigured, poorly drawn face, mutation, mutated, extra limbs, gross proportions, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck, cross-eyed, mutated hands, bad hands, bad feet, cropped, worst quality, low resolution, jpeg artifacts, watermark, signature, username, text, cartoon, anime, illustration, painting, drawing, 3d render";
-		}
 
 	}
 

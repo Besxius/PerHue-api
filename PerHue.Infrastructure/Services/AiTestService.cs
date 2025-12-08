@@ -422,13 +422,13 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
-		public async Task<HuggingFaceModel.HFVirtualTryOnResponse> GenerateVirtualTryOnAsync(VirtualTryOnRequest request)
+		public async Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(VirtualTryOnRequest request)
 		{
 			try
 			{
 				_logger.LogInformation("Generating virtual try-on");
 
-				var result = await _virtualTryOnService.HFGenerateVirtualTryOnImagesAsync(request);
+				var result = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request);
 
 				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages);
 
@@ -440,6 +440,5 @@ namespace PerHue.Infrastructure.Services
 				throw;
 			}
 		}
-
 	}
 }
