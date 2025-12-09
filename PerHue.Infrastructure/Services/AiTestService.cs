@@ -167,6 +167,71 @@ namespace PerHue.Infrastructure.Services
 					Fullname = userAccount.Fullname,
 					ImageUrl = pictureUrl // FROM Picture.Source
 				};
+				if (testRequest.AiTestResult != null)
+				{
+					var aiTestResult = testRequest.AiTestResult;
+
+					var suggestedHexCodes = aiTestResult.SuggestedColor
+						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+						.ToList();
+
+					var avoidedHexCodes = aiTestResult.AvoidedColor
+						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+						.ToList();
+
+					var matchedSuggestedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(suggestedHexCodes);
+
+					var matchedAvoidedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(avoidedHexCodes);
+
+					// GET SYSTEM HEX CODES FOR PALETTE MATCHING
+					var systemSuggestedHexCodes = matchedSuggestedColors
+						.Where(c => c.MatchedColor != null)
+						.Select(c => c.MatchedColor!.HexCode)
+						.ToList();
+
+					// GET ONE RELATED CAPSULE PALETTE
+
+					List<CapsulePaletteModel> relatedPalettes = null!;
+					if (systemSuggestedHexCodes.Any())
+					{
+						var palettes = await _capsulePaletteService
+							.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
+
+						relatedPalettes = palettes.ToList();
+
+					}
+
+					// BUILD COMPLETE AI TEST RESULT MODEL
+					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel
+					{
+						Id = aiTestResult.Id,
+						Note = aiTestResult.Note,
+						ColorTypeId = aiTestResult.ColorTypeId,
+						SuggestedColor = aiTestResult.SuggestedColor,
+						AvoidedColor = aiTestResult.AvoidedColor,
+
+						// MATCHED colors from system database
+						SuggestedColorsBySystem = matchedSuggestedColors
+							.Where(c => c.MatchedColor != null)
+							.Select(c => new ColorModel
+							{
+								Id = c.MatchedColor!.Id,
+								Name = c.MatchedColor.Name,
+								HexCode = c.MatchedColor.HexCode
+							})
+							.ToList(),
+
+						SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
+					};
+				}
+				else
+				{
+
+					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel();
+				}
+
 				result.Add(response);
 			}		
 
@@ -239,13 +304,14 @@ namespace PerHue.Infrastructure.Services
 					.ToList();
 
 				// GET ONE RELATED CAPSULE PALETTE
-				CapsulePaletteModel? relatedPalette = null;
+
+				List<CapsulePaletteModel> relatedPalettes = null!;
 				if (systemSuggestedHexCodes.Any())
 				{
 					var palettes = await _capsulePaletteService
 						.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
 
-					relatedPalette = palettes.FirstOrDefault();
+					relatedPalettes = palettes.ToList();
 
 					_logger.LogInformation(
 						"Found {Count} related capsule palettes for TestRequestId {TestRequestId}",
@@ -273,7 +339,7 @@ namespace PerHue.Infrastructure.Services
 						.ToList(),
 
 					// ONE suggested capsule palette (first match)
-					SuggestedCapsulePalleteBySystem = relatedPalette ?? new CapsulePaletteModel()
+					SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
 				};
 			}
 			else

@@ -51,6 +51,6 @@ namespace PerHue.Application.Models.AiTest
 
 		public List<ColorModel> SuggestedColorsBySystem { get; set; } = new List<ColorModel>();
 
-		public CapsulePaletteModel SuggestedCapsulePalleteBySystem { get; set; } = new CapsulePaletteModel();
+		public List<CapsulePaletteModel> SuggestedCapsulePalletesBySystem { get; set; } = new List<CapsulePaletteModel>();
 	}
 }

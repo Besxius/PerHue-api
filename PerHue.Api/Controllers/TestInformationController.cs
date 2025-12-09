@@ -118,7 +118,7 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("expert-test/{id}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id) // <-- Changed return type
+		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id)
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var userId))
