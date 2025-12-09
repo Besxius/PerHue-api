@@ -8,7 +8,7 @@ namespace PerHue.Api.Controllers.Admin
 {
     [Route("api/admin/dashboard")]
     [ApiController]
-	[Authorize(Roles = "Admin")]
+	[Authorize(Roles = "Admin, Moderator")]
 	public class AdminDashboardController : ControllerBase
     {
         private readonly IServicesProvider _servicesProvider;
