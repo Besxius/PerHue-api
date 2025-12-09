@@ -41,6 +41,7 @@ namespace PerHue.Infrastructure.Repositories
 				.ThenInclude(ct => ct.CapsulePalettes)
 				.ThenInclude(cp => cp.Colors)
 				.Where(tr => tr.UserId == userId)
+				.OrderByDescending(tr => tr.CreatedDate)
 				.ToListAsync();
 		}
 

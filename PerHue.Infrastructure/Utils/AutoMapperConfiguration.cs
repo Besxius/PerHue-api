@@ -64,6 +64,8 @@ namespace PerHue.Infrastructure.Utils
 			CreateMap<CreatePaymentLogModel, PaymentLog>();
 
 			CreateMap<AiTestResultResponseModel, AiTestResult>().ReverseMap();
+
+			CreateMap<NewTestRequestReponseModel, TestRequest>().ReverseMap();
 		}
 	}
 }

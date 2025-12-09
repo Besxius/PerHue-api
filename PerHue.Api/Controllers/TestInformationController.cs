@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Application.Models.ManualTest;
 using System.Security.Claims;
@@ -61,12 +62,14 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("ai-test/my-history")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<ActionResult<List<AiTestModel.AiTestResponseModel>>> GetMyAiTests()
+		//public async Task<ActionResult<List<AiTestModel.AiTestResponseModel>>> GetMyAiTests()
+		public async Task<ActionResult<List<NewTestRequestReponseModel>>> GetMyAiTests()
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var results = await _services.AiTestService.GetUserAiTestsAsync(userId);
+				//var results = await _services.AiTestService.GetUserAiTestsAsync(userId);
+				var results = await _services.AiTestService.GetListTestRequestByTypeAiAsync(userId);
 				return Ok(results);
 			}
 			catch (Exception ex)
@@ -77,12 +80,13 @@ namespace PerHue.Api.Controllers
 
 		[HttpGet("ai-test/{id}")]
 		[Authorize(Roles = "User,Admin")]
-		public async Task<ActionResult<AiTestModel.AiTestResponseModel?>> GetAiTestResult(int id)
+		//public async Task<ActionResult<AiTestModel.AiTestResponseModel?>> GetAiTestResult(int id)
+		public async Task<ActionResult<NewTestRequestReponseModel>> GetAiTestResult(int id)
 		{
 			try
 			{
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var result = await _services.AiTestService.GetAiTestResultAsync(id, userId);
+				var result = await _services.AiTestService.GetDetailTestRequestByTypeAiAsync(id, userId);
 
 				if (result == null)
 				{
