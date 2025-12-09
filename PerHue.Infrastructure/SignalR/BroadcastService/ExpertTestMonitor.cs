@@ -185,6 +185,18 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
 
+					var notification = new Notification
+					{
+						Title = "New Test Request",
+						Content = "You have received a new color analysis request.",
+						Receiver = newExpert.Id,
+						TestRequestId = testRequest.Id,
+						ReceivedTime = DateTime.Now,
+						IsRead = false,
+						Type = "TestRequest"
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(notification);
+
 					await unitOfWork.SaveChangesWithTransactionAsync();
 					return;
 				}
@@ -223,7 +235,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			TestRequest testRequest,
 			int currentResponseCount)
 		{
-			_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {currentResponseCount}/{_requiredResponses}"); // [UPDATED] Log using field
+			_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {currentResponseCount}/{_requiredResponses}");
 
 			// Refund Logic
 			var subscription = await unitOfWork.UserSubscriptionRepository.GetSubscriptionForRefundAsync(testRequest.UserAccountId);
@@ -252,7 +264,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 			try
 			{
-				var aiRequest = new AiTestModel.GeminiAnalysisRequest
+				// Use the specific GeminiAnalysisRequest model required by AnalyzeColorTypeAsync2
+				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest 
 				{
 					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
 					HairColor = testRequest.HairColor,
@@ -261,7 +274,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					SkinColor = testRequest.SkinColor
 				};
 
-				var aiResultModel = await aiService.AnalyzeColorTypeAsync(aiRequest);
+				// Switch to AnalyzeColorTypeAsync2 which returns GeminiColorAnalysisResponse
+				var aiResultModel = await aiService.AnalyzeColorTypeAsync2(aiRequest);
 				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
 
 				var aiTestResult = new AiTestResult
@@ -269,8 +283,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Id = testRequest.Id,
 					Date = DateTime.Now,
 					Note = "AI Assistant Analysis (Fallback)",
-					SuggestedColor = string.Join(",", aiResultModel.SuggestedColor),
-					AvoidedColor = string.Join(",", aiResultModel.AvoidedColor),
+					SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
+					AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
 					ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
 				};
 

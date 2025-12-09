@@ -105,6 +105,7 @@ namespace PerHue.Infrastructure.Services
 					Id = 0,
 					TestRequestId = testRequestId,
 					ExpertId = 0,
+					Type = "AI", 
 					Note = testRequest.AiTestResult.Note,
 					CreatedDate = testRequest.AiTestResult.Date,
 					Rating = null,
@@ -240,6 +241,7 @@ namespace PerHue.Infrastructure.Services
 						Id = 0, // Indicator for AI
 						TestRequestId = test.Id,
 						ExpertId = 0, // 0 = AI/System
+						Type = "AI",
 						Note = test.AiTestResult.Note,
 						CreatedDate = test.AiTestResult.Date,
 						Rating = null,
