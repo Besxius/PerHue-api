@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration; // [NEW] Added for IConfiguration
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,25 +21,23 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 	{
 		private readonly IServiceScopeFactory _scopeFactory;
 		private readonly ILogger<ExpertTestMonitor> _logger;
-		private readonly IConfiguration _configuration; //Configuration field
+		private readonly IConfiguration _configuration;
 
-		//Changed from const to readonly fields
 		private readonly int _maxRetries;
 		private readonly int _requiredResponses;
 		private readonly int _daysToWait;
-		private readonly decimal _ratingDeduction;       
+		private readonly decimal _ratingDeduction;
 		private readonly decimal _ratingWarningThreshold;
 
 		public ExpertTestMonitor(
 			IServiceScopeFactory scopeFactory,
 			ILogger<ExpertTestMonitor> logger,
-			IConfiguration configuration) //Inject Configuration
+			IConfiguration configuration)
 		{
 			_scopeFactory = scopeFactory;
 			_logger = logger;
 			_configuration = configuration;
 
-			//Load values from appsettings.json with fallbacks
 			_maxRetries = _configuration.GetValue<int>("ExpertTestSettings:MaxRetries");
 			_requiredResponses = _configuration.GetValue<int>("ExpertTestSettings:RequiredResponses");
 			_daysToWait = _configuration.GetValue<int>("ExpertTestSettings:DaysToWait");
@@ -49,7 +47,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 		{
-			_logger.LogInformation($"Expert Test Monitor started. Config: MaxRetries={_maxRetries}, RequiredResponses={_requiredResponses}, DaysToWait={_daysToWait}, Deduct={_ratingDeduction}, Threshold={_ratingWarningThreshold}");
+			_logger.LogInformation($"Expert Test Monitor started.");
 
 			while (!stoppingToken.IsCancellationRequested)
 			{
@@ -76,7 +74,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					}
 				}
 
-				// Check every 30 seconds (for testing) or 6 hours (production)
+				// Check every 60 minutes
 				await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
 			}
 
@@ -97,19 +95,23 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			bool needsNewExpert = false;
 			bool changesMade = false;
 
-			// 1. Check for expired pending requests using _daysToWait
+			// 1. Check for expired pending requests AND Upcoming Deadlines
 			foreach (var req in pending)
 			{
-				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > _daysToWait)
+				var deadline = req.CreatedDate.AddDays(_daysToWait);
+				var timeRemaining = deadline - DateTime.UtcNow;
+
+				// A. Check if Expired
+				if (timeRemaining.TotalSeconds <= 0)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 
-					// A. Mark as Expired
+					// Mark as Expired
 					req.Status = ExpertTestRequestStatus.Expired.ToString();
 					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
 					changesMade = true;
 
-					// B. Penalize Expert
+					// Penalize Expert
 					try
 					{
 						var expert = await unitOfWork.ExpertRepository.GetByIdAsync(req.ExpertId);
@@ -118,7 +120,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						if (expert != null && expertUser != null)
 						{
 							// Deduct Rating
-							//Use configured deduction amount
 							expert.Rating -= _ratingDeduction;
 							if (expert.Rating < 0) expert.Rating = 0;
 							await unitOfWork.ExpertRepository.UpdateAsync(expert);
@@ -127,7 +128,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 							var penaltyNotification = new Notification
 							{
 								Title = "Deadline Missed",
-								Content = $"You missed the response deadline for Test Request #{testRequest.Id}. 0.2 rating points have been deducted.",
+								Content = $"You have exceeded the 2-day limit to respond to the Test Request #{testRequest.Id}. {_ratingDeduction} rating points have been deducted.",
 								Receiver = expert.Id,
 								TestRequestId = testRequest.Id,
 								ReceivedTime = DateTime.UtcNow,
@@ -137,7 +138,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 							await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
 
 							// Email Warning
-							// [UPDATED] Use configured threshold
 							if (expert.Rating < _ratingWarningThreshold)
 							{
 								_logger.LogInformation($"Expert {expert.Id} rating dropped to {expert.Rating}. Sending warning email to {expertUser.Email}.");
@@ -147,7 +147,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
                                     <h3>Warning: Low Rating Alert</h3>
                                     <p>Dear {expertUser.Fullname ?? expertUser.Username},</p>
                                     <p>Your expert rating has dropped to <strong>{expert.Rating:F1}</strong> due to missed deadlines.</p>
-                                    <p>This rating is below the acceptable threshold of 3.0.</p>
+                                    <p>This rating is below the acceptable threshold of {_ratingWarningThreshold}.</p>
                                     <p>Please ensure you respond to pending requests promptly to restore your standing.</p>
                                     <p>Best Regards,<br/>PerHue System</p>";
 
@@ -162,6 +162,37 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 					expiredCount++;
 					needsNewExpert = true;
+				}
+				// Check for Upcoming Deadline (8 Hours Warning)
+				else if (timeRemaining.TotalHours <= 8)
+				{
+					
+					// Fetch notifications for this expert
+					var expertNotifications = await unitOfWork.NotificationRepository.GetByReceiverAsync(req.ExpertId);
+
+					// Filter in memory to check if warning already exists
+					var alreadyWarned = expertNotifications.Any(n =>
+						n.TestRequestId == testRequest.Id &&
+						n.Type == "DeadlineWarning");
+
+					if (!alreadyWarned)
+					{
+						var warningNotification = new Notification
+						{
+							Title = $"Deadline Warning: Test #{testRequest.Id}",
+							Content = $"You have less than 8 hours remaining to respond to Test Request #{testRequest.Id}. Please submit your analysis soon.",
+							Receiver = req.ExpertId,
+							TestRequestId = testRequest.Id,
+							ReceivedTime = DateTime.UtcNow,
+							Type = "DeadlineWarning",
+							IsRead = false
+						};
+
+						await unitOfWork.NotificationRepository.CreateAsync(warningNotification);
+						changesMade = true;
+
+						_logger.LogInformation($"Sent deadline warning for TestRequest {testRequest.Id} to Expert {req.ExpertId}.");
+					}
 				}
 			}
 
@@ -187,8 +218,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 					var notification = new Notification
 					{
-						Title = "New Test Request",
-						Content = "You have received a new color analysis request.",
+						Title = $"New Test Request #{testRequest.Id}",
+						Content = "You need to respond within 2 days from the time you receive the request.",
 						Receiver = newExpert.Id,
 						TestRequestId = testRequest.Id,
 						ReceivedTime = DateTime.Now,
@@ -210,14 +241,14 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			var currentExpertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
 			var pendingCount = currentExpertRequests.Count(etr => etr.Status == "Pending");
 
-			if (completedResponses.Count() >= _requiredResponses) 
+			if (completedResponses.Count() >= _requiredResponses)
 			{
 				await FinalizeTestAsync(unitOfWork, testRequest, "Expert Analysis Completed");
 				return;
 			}
 
 			// Fallback Trigger using _maxRetries
-			if (expiredCount > _maxRetries && pendingCount == 0) 
+			if (expiredCount > _maxRetries && pendingCount == 0)
 			{
 				await PerformAiFallbackAsync(unitOfWork, aiService, testRequest, completedResponses.Count());
 				return;
@@ -264,8 +295,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 			try
 			{
-				// Use the specific GeminiAnalysisRequest model required by AnalyzeColorTypeAsync2
-				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest 
+				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest
 				{
 					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
 					HairColor = testRequest.HairColor,
@@ -274,7 +304,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					SkinColor = testRequest.SkinColor
 				};
 
-				// Switch to AnalyzeColorTypeAsync2 which returns GeminiColorAnalysisResponse
 				var aiResultModel = await aiService.AnalyzeColorTypeAsync2(aiRequest);
 				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
 
