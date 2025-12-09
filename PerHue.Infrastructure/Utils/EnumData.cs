@@ -47,9 +47,12 @@
 	}
 	public enum PhotoTypeEnum
 	{
-		Identity,
-		Certification,
-		Face
+		ID_FRONT,
+		ID_BACK,
+		CERTIFICATE,
+		FACE_FRONT,
+		FACE_LEFT,
+		FACE_RIGHT,
 	}
 	public enum ServicePackageTypeEnum
 	{
