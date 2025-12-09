@@ -26,7 +26,7 @@ namespace PerHue.Infrastructure.Repositories
 
 		public async Task<TestRequest?> GetTestRequestByIdAsync(int id)
 		{
-			return await _context.TestRequests
+			return await _context.TestRequests.Where(t => t.TypeOfTest == "AI Test")
 				.Include(t => t.AiTestResult)
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
@@ -41,7 +41,9 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(t => t.AiTestResult)
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
-				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI")
+				.Include(t => t.Pictures)
+				.Include(t => t.UserAccount)
+				.Where(t => t.UserAccountId == userId && t.TypeOfTest == "AI Test")
 				.OrderByDescending(t => t.CreatedDate)
 				.ToListAsync();
 		}
