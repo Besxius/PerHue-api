@@ -15,7 +15,7 @@ namespace PerHue.Api.Controllers.Admin
 {
 	[Route("api/admin/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "Admin")]
+	[Authorize(Roles = "Admin, Moderator")]
 	public class UsersController : ControllerBase
 	{
 		private readonly IAdminUserService _adminUserService;

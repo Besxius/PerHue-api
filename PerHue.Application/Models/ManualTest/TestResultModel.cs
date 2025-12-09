@@ -4,6 +4,7 @@ using PerHue.Application.Models.ColorType;
 using PerHue.Application.Models.User;
 using PerHue.Domain.Entities;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace PerHue.Application.Models.ManualTest
 {
@@ -27,8 +28,10 @@ namespace PerHue.Application.Models.ManualTest
 
 		public virtual UserModel User { get; set; } = null!;
 
-		public virtual ICollection<CapsulePaletteModel> CapsulePalettes { get; set; } = new List<CapsulePaletteModel>();
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+		public virtual ICollection<CapsulePaletteModel?> CapsulePalettes { get; set; }
 
-		public virtual ICollection<ColorModel> Colors { get; set; } = new List<ColorModel>();
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+		public virtual ICollection<ColorModel?> Colors { get; set; }
 	}
 }

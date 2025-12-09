@@ -125,12 +125,17 @@ namespace PerHue.Application.Models.AiTest
 		public string? Note { get; set; }
 
 		public DateTime? Date { get; set; }
+		public int ColorTypeId { get; set; }
 
 		public string SuggestedColor { get; set; } = null!;
 
 		public string AvoidedColor { get; set; } = null!;
 
 		public List<ColorModel> SuggestedColorsBySystem { get; set; } = new List<ColorModel>();
+
+		public CapsulePaletteModel SuggestedCapsulePalleteBySystem { get; set; } = new CapsulePaletteModel();
+		//dựa vào SuggestedColor, tìm các capsule palette có colorTypeId trùng kết quả AI trả về có độ tương thích cao
+		// ví dụ ColorTypeId có Clean Winter thì trả về danh sách các capsule palette tương ứng của SuggestedColor với color type id = kết quả ai trả về
 
 	}
 }
