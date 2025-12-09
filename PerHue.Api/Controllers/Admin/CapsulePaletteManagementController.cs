@@ -9,7 +9,7 @@ namespace PerHue.Api.Controllers.Admin
 {
 	[Route("api/admin/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "Admin")]
+	[Authorize(Roles = "Admin, Moderator")]
 	public class CapsulePaletteManagementController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;
