@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Azure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.AiTest;
+using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
@@ -84,7 +86,6 @@ namespace PerHue.Infrastructure.Services
 				UserAccountId = testRequest.UserAccountId,
 				Fullname = user.Fullname,
 				TypeOfTest = testRequest.TypeOfTest,
-				//Image = picture
 				ImageUrl = pictureUrl
 			};
 
@@ -115,43 +116,6 @@ namespace PerHue.Infrastructure.Services
 
 			var testRequestsWithUrls = await Task.WhenAll(pictureUrlTasks);
 
-			/*// Download tất cả ảnh song song
-			var responseTasks = testRequestsWithUrls.Select(async item =>
-			{
-				IFormFile? picture = null;
-				if (!string.IsNullOrEmpty(item.PictureUrl))
-				{
-					try
-					{
-						picture = await _imageUploadService.DownloadImageAsFormFileAsync(item.PictureUrl);
-					}
-					catch (Exception ex)
-					{
-						_logger.LogWarning(ex, "Failed to download image for TestRequest {TestRequestId}", item.TestRequest.Id);
-					}
-				}
-
-				return new AiTestModel.AiTestResponseModel
-				{
-					TestRequestId = item.TestRequest.Id,
-					Status = item.TestRequest.Status ?? "Unknown",
-					CreatedDate = item.TestRequest.CreatedDate ?? DateTime.UtcNow,
-					UserAccountId = item.TestRequest.UserAccountId,
-					Fullname = user.Fullname,
-					TypeOfTest = item.TestRequest.TypeOfTest,
-					Image = picture,
-					Result = item.TestRequest.AiTestResult != null ? new AiTestResultModel
-					{
-						ColorType = item.TestRequest.AiTestResult.ColorType.Name,
-						ColorTypeId = item.TestRequest.AiTestResult.ColorTypeId,
-						SuggestedColor = item.TestRequest.AiTestResult.SuggestedColor.Split(", ").ToList(),
-						AvoidedColor = item.TestRequest.AiTestResult.AvoidedColor.Split(", ").ToList()
-					} : null
-				};
-			});
-
-			return (await Task.WhenAll(responseTasks)).ToList();*/
-
 			return testRequestsWithUrls.Select(item => new AiTestModel.AiTestResponseModel
 			{
 				TestRequestId = item.TestRequest.Id,
@@ -170,6 +134,229 @@ namespace PerHue.Infrastructure.Services
 				} : null
 			}).ToList();
 		}
+
+		public async Task<List<NewTestRequestReponseModel>> GetListTestRequestByTypeAiAsync(int userId)
+		{
+			var userAccount = await _userService.GetByIdAsync(userId);
+			if (userAccount == null)
+			{
+				throw new Exception("User not found");
+			}
+
+			var testRequestList = await _aiTestRepository.GetTestRequestsByUserIdAsync(userId);
+			if (testRequestList == null)
+			{
+				throw new Exception("List test request not found");
+			}
+			var result = new List<NewTestRequestReponseModel>();
+
+			foreach (var testRequest in testRequestList)
+			{
+				var pictureUrl = testRequest.Pictures?.FirstOrDefault()?.Source;
+
+				var response = new NewTestRequestReponseModel
+				{
+					Id = testRequest.Id,
+					HairColor = testRequest.HairColor,
+					EyesColor = testRequest.EyesColor,
+					LipsColor = testRequest.LipsColor,
+					SkinColor = testRequest.SkinColor,
+					Status = testRequest.Status ?? "Unknown",
+					CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+					TypeOfTest = testRequest.TypeOfTest,
+					Fullname = userAccount.Fullname,
+					ImageUrl = pictureUrl // FROM Picture.Source
+				};
+				if (testRequest.AiTestResult != null)
+				{
+					var aiTestResult = testRequest.AiTestResult;
+
+					var suggestedHexCodes = aiTestResult.SuggestedColor
+						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+						.ToList();
+
+					var avoidedHexCodes = aiTestResult.AvoidedColor
+						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+						.ToList();
+
+					var matchedSuggestedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(suggestedHexCodes);
+
+					var matchedAvoidedColors = await _colorMatchingService
+						.MatchColorsFromHexCodesAsync(avoidedHexCodes);
+
+					// GET SYSTEM HEX CODES FOR PALETTE MATCHING
+					var systemSuggestedHexCodes = matchedSuggestedColors
+						.Where(c => c.MatchedColor != null)
+						.Select(c => c.MatchedColor!.HexCode)
+						.ToList();
+
+					// GET ONE RELATED CAPSULE PALETTE
+
+					List<CapsulePaletteModel> relatedPalettes = null!;
+					if (systemSuggestedHexCodes.Any())
+					{
+						var palettes = await _capsulePaletteService
+							.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
+
+						relatedPalettes = palettes.ToList();
+
+					}
+
+					// BUILD COMPLETE AI TEST RESULT MODEL
+					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel
+					{
+						Id = aiTestResult.Id,
+						Note = aiTestResult.Note,
+						ColorTypeId = aiTestResult.ColorTypeId,
+						SuggestedColor = aiTestResult.SuggestedColor,
+						AvoidedColor = aiTestResult.AvoidedColor,
+
+						// MATCHED colors from system database
+						SuggestedColorsBySystem = matchedSuggestedColors
+							.Where(c => c.MatchedColor != null)
+							.Select(c => new ColorModel
+							{
+								Id = c.MatchedColor!.Id,
+								Name = c.MatchedColor.Name,
+								HexCode = c.MatchedColor.HexCode
+							})
+							.ToList(),
+
+						SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
+					};
+				}
+				else
+				{
+
+					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel();
+				}
+
+				result.Add(response);
+			}		
+
+				return result;
+		}
+
+		public async Task<NewTestRequestReponseModel> GetDetailTestRequestByTypeAiAsync(int testRequestId, int userId)
+		{
+			var userAccount = await _userService.GetByIdAsync(userId);
+			if (userAccount == null)
+			{
+				throw new Exception("User not found");
+			}
+
+			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(testRequestId);
+			if (testRequest == null)
+			{
+				throw new Exception("Test request not found");
+			}
+
+			if (testRequest.UserAccountId != userId)
+			{
+				throw new UnauthorizedAccessException("This test request does not belong to the specified user");
+			}
+
+			var pictureUrl = testRequest.Pictures?.FirstOrDefault()?.Source;
+
+			var response = new NewTestRequestReponseModel
+			{
+				Id = testRequest.Id,
+				HairColor = testRequest.HairColor,
+				EyesColor = testRequest.EyesColor,
+				LipsColor = testRequest.LipsColor,
+				SkinColor = testRequest.SkinColor,
+				Status = testRequest.Status ?? "Unknown",
+				CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+				TypeOfTest = testRequest.TypeOfTest,
+				Fullname = userAccount.Fullname,
+				ImageUrl = pictureUrl
+			};
+
+			if (testRequest.AiTestResult != null)
+			{
+				var aiTestResult = testRequest.AiTestResult;
+
+				_logger.LogInformation("Processing AI test result for TestRequestId: {TestRequestId}", testRequestId);
+
+				var suggestedHexCodes = aiTestResult.SuggestedColor
+					.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+					.ToList();
+
+				var avoidedHexCodes = aiTestResult.AvoidedColor
+					.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+					.ToList();
+
+				var matchedSuggestedColors = await _colorMatchingService
+					.MatchColorsFromHexCodesAsync(suggestedHexCodes);
+
+				var matchedAvoidedColors = await _colorMatchingService
+					.MatchColorsFromHexCodesAsync(avoidedHexCodes);
+
+				_logger.LogInformation(
+					"Color matching completed for TestRequestId {TestRequestId}: {SuggestedCount} suggested, {AvoidedCount} avoided",
+					testRequestId, matchedSuggestedColors.Count, matchedAvoidedColors.Count);
+
+				// GET SYSTEM HEX CODES FOR PALETTE MATCHING
+				var systemSuggestedHexCodes = matchedSuggestedColors
+					.Where(c => c.MatchedColor != null)
+					.Select(c => c.MatchedColor!.HexCode)
+					.ToList();
+
+				// GET ONE RELATED CAPSULE PALETTE
+
+				List<CapsulePaletteModel> relatedPalettes = null!;
+				if (systemSuggestedHexCodes.Any())
+				{
+					var palettes = await _capsulePaletteService
+						.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
+
+					relatedPalettes = palettes.ToList();
+
+					_logger.LogInformation(
+						"Found {Count} related capsule palettes for TestRequestId {TestRequestId}",
+						palettes.Count(), testRequestId);
+				}
+
+				// BUILD COMPLETE AI TEST RESULT MODEL
+				response.newAiTestResultResponseModel = new NewAiTestResultResponseModel
+				{
+					Id = aiTestResult.Id,
+					Note = aiTestResult.Note,
+					ColorTypeId = aiTestResult.ColorTypeId,
+					SuggestedColor = aiTestResult.SuggestedColor,
+					AvoidedColor = aiTestResult.AvoidedColor,
+
+					// MATCHED colors from system database
+					SuggestedColorsBySystem = matchedSuggestedColors
+						.Where(c => c.MatchedColor != null)
+						.Select(c => new ColorModel
+						{
+							Id = c.MatchedColor!.Id,
+							Name = c.MatchedColor.Name,
+							HexCode = c.MatchedColor.HexCode
+						})
+						.ToList(),
+
+					// ONE suggested capsule palette (first match)
+					SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
+				};
+			}
+			else
+			{
+				// EMPTY RESULT IF NO AI TEST RESULT EXISTS
+				_logger.LogWarning("No AI test result found for TestRequestId: {TestRequestId}", testRequestId);
+
+				response.newAiTestResultResponseModel = new NewAiTestResultResponseModel();
+			}
+
+			_logger.LogInformation(
+				"Successfully retrieved detailed test request {TestRequestId} for user {UserId}",
+				testRequestId, userId);
+
+			return response;
+		}
+
 
 		public async Task<PaginatedResultV2<AiTestModel.AiTestResponseModel>> GetAiTestsWithFilterAsync(AiTestSearchModel searchModel)
 		{
