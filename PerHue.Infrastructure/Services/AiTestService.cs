@@ -44,7 +44,7 @@ namespace PerHue.Infrastructure.Services
 			IVirtualTryOnService virtualTryOnService,
 			ITestRequestRepository testRequestRepository,
 			IUserSubscriptionService subscriptionService,
-			IUserService userService)
+			IUserService userService, IMapper mapper)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -55,6 +55,7 @@ namespace PerHue.Infrastructure.Services
 			_testRequestRepository = testRequestRepository;
 			_subscriptionService = subscriptionService;
 			_userService = userService;
+			_mapper = mapper;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
@@ -314,7 +315,7 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
 						matchedSuggestedColors.Count, matchedAvoidedColors.Count);
 
-					// Generate virtual try-on với IFormFile TRỰC TIẾP
+					/*// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
 					if (request.FaceImages != null)
 					{
@@ -342,7 +343,7 @@ namespace PerHue.Infrastructure.Services
 							await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
 							_logger.LogInformation("Saved {Count} AI-generated images to AiPicture table", aiPictures.Count);
 						}
-					}
+					}*/
 
 					// Lưu kết quả test vào AiTestResult
 					var aiTestResult = new AiTestResult
@@ -355,7 +356,8 @@ namespace PerHue.Infrastructure.Services
 						AvoidedColor = string.Join(", ", matchedAvoidedColors
 							.Where(c => c.MatchedColor != null)
 							.Select(c => c.MatchedColor!.Name)),
-						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}"
+						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}",
+						IdNavigation = testRequest
 					};
 
 					var result = await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
@@ -420,24 +422,23 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
-		public async Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(int testRequestId, VirtualTryOnRequest request)
+		public async Task<VirtualTryOnResponse> GenerateVirtualTryOnAsync(VirtualTryOnRequest request)
 		{
 			try
 			{
-				_logger.LogInformation("Generating virtual try-on for TestRequestId: {TestRequestId}", testRequestId);
+				_logger.LogInformation("Generating virtual try-on");
 
 				var result = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request);
 
-				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages.Count);
+				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages);
 
 				return result;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error generating virtual try-on for TestRequestId: {TestRequestId}", testRequestId);
+				_logger.LogError(ex, "Error generating virtual try-on");
 				throw;
 			}
 		}
-
 	}
 }

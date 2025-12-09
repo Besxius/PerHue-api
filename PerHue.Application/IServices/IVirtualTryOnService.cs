@@ -1,5 +1,4 @@
 using PerHue.Application.Models.AiTest;
-using System.Threading.Tasks;
 
 namespace PerHue.Application.IServices
 {
