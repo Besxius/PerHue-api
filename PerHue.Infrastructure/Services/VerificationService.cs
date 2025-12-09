@@ -157,7 +157,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				throw new InvalidOperationException("User is already an expert.");
 			}
-			
+
 			if (model.Photo == null
 				|| model.PhotoType == null
 				|| model.Photo.Count == 0
@@ -169,6 +169,7 @@ namespace PerHue.Infrastructure.Services
 
 			var verifyInfo = new VerifyInformation
 			{
+				Id = userId,
 				Email = model.Email,
 				Nickname = model.Nickname,
 				Specialization = model.Specialization,
@@ -189,9 +190,12 @@ namespace PerHue.Infrastructure.Services
 				var photoType = model.PhotoType[i];
 
 				// Validate photo type
-				if (photoType != PhotoTypeEnum.Face.ToString()
-					&& photoType != PhotoTypeEnum.Certification.ToString()
-					&& photoType != PhotoTypeEnum.Identity.ToString())
+				if (photoType != PhotoTypeEnum.ID_FRONT.ToString()
+					&& photoType != PhotoTypeEnum.ID_BACK.ToString()
+					&& photoType != PhotoTypeEnum.CERTIFICATE.ToString()
+					&& photoType != PhotoTypeEnum.FACE_FRONT.ToString()
+					&& photoType != PhotoTypeEnum.FACE_RIGHT.ToString()
+					&& photoType != PhotoTypeEnum.FACE_LEFT.ToString())
 				{
 					throw new InvalidOperationException($"Invalid photo type: {photoType}. Allowed types are Face, Certification, or Identity.");
 				}
@@ -328,7 +332,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				throw new InvalidOperationException("User is already an expert.");
 			}
-			
+
 			if (model.PhotoAndType == null)
 			{
 				throw new InvalidOperationException("At least one photo and matching type are required for verification.");
@@ -352,9 +356,12 @@ namespace PerHue.Infrastructure.Services
 			var photos = new List<Photo>();
 			foreach (var item in model.PhotoAndType)
 			{
-				if (item.PhotoType != PhotoTypeEnum.Face.ToString()
-					&& item.PhotoType != PhotoTypeEnum.Certification.ToString()
-					&& item.PhotoType != PhotoTypeEnum.Identity.ToString())
+				if (item.PhotoType != PhotoTypeEnum.ID_FRONT.ToString()
+				&& item.PhotoType != PhotoTypeEnum.ID_BACK.ToString()
+				&& item.PhotoType != PhotoTypeEnum.CERTIFICATE.ToString()
+				&& item.PhotoType != PhotoTypeEnum.FACE_FRONT.ToString()
+				&& item.PhotoType != PhotoTypeEnum.FACE_RIGHT.ToString()
+				&& item.PhotoType != PhotoTypeEnum.FACE_LEFT.ToString())
 				{
 					throw new InvalidOperationException($"Invalid photo type: {item.PhotoType}. Allowed types are Face, Certification, or Identity.");
 				}
