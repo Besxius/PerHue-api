@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
 using PerHue.Application.Models.ExpertTestResult;
@@ -24,14 +26,19 @@ namespace PerHue.Infrastructure.Services
 		private readonly GeminiService _gemini;
 		ILogger<TestResultService> _logger;
 		private readonly IImageUploadService _imageUploadService;
+		private readonly IVirtualTryOnService _virtualTryOnService; // Renamed from _imageGenerationService for clarity
+		private readonly IHttpClientFactory _httpClientFactory;
 
-		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService)
+		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService, IVirtualTryOnService virtualTryOnService,
+			IHttpClientFactory httpClientFactory)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_gemini = gemini;
 			_logger = logger;
 			_imageUploadService = imageUploadService;
+			_virtualTryOnService = virtualTryOnService;
+			_httpClientFactory = httpClientFactory;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -379,6 +386,51 @@ namespace PerHue.Infrastructure.Services
 			testRequest.AiPictures.Add(new AiPicture { Source = parameters.ImageUrl, Note = "Original Photo" });
 			testRequest.Pictures.Add(new Picture { Source = parameters.ImageUrl });
 
+			/*try
+			{
+				// STEP A: Prepare the Image File
+				var httpClient = _httpClientFactory.CreateClient();
+				var imageBytes = await httpClient.GetByteArrayAsync(parameters.ImageUrl);
+
+				using var stream = new MemoryStream(imageBytes);
+				var userImageFile = new FormFile(stream, 0, imageBytes.Length, "image", "temp_input.jpg")
+				{
+					Headers = new HeaderDictionary(),
+					ContentType = "image/jpeg"
+				};
+
+				// STEP B: Prepare the Request Object
+				// FIX: Since parameters doesn't have SuggestedColorHexCodes, 
+				// we use a default set of neutral colors for the initial try-on.
+				var defaultColors = new List<string> { "#FFFFFF", "#000000", "#808080" }; // White, Black, Grey
+
+				var aiRequest = new VirtualTryOnRequest
+				{
+					UserImage = userImageFile,
+					SuggestedColorHexCodes = defaultColors,
+					Environments = new List<string> { "outdoor_sunny" }
+				};
+
+				// STEP C: Call the Service
+				// Make sure _virtualTryOnService is injected in the constructor!
+				var aiResponse = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(aiRequest);
+
+				// STEP D: Add result to list
+				if (aiResponse.GeneratedImages != null && aiResponse.GeneratedImages.Any())
+				{
+					var resultImage = aiResponse.GeneratedImages.First();
+					testRequest.AiPictures.Add(new AiPicture
+					{
+						Source = resultImage.ImageUrl,
+						Note = "AI Generated (Outdoor Sunny)"
+					});
+				}
+			}
+			catch (Exception ex)
+			{
+				// Optional: Handle generation failure without breaking the whole request
+				_logger.LogError(ex, "Failed to generate outdoor_sunny AI image.");
+			}*/
 			await _unitOfWork.TestRequestRepository.CreateAsync(testRequest);
 
 			// 4. DEDUCT USAGE FROM SUBSCRIPTION
@@ -426,7 +478,6 @@ namespace PerHue.Infrastructure.Services
 					Type = "TestRequest"
 				};
 				await _unitOfWork.NotificationRepository.CreateAsync(notification);
-				// -----------------------------------
 			}
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
@@ -445,8 +496,15 @@ namespace PerHue.Infrastructure.Services
 			if (existingReviewResponse) throw new InvalidOperationException("A review has already been completed for this test.");
 
 			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequestId);
-			// Check if 4th request exists
-			if (expertRequests.Count() >= 4)
+			// Filter out EXPIRED requests before counting. 
+			// Counting valid (Pending, Completed, Reviewing) requests.
+			// -----------------------------------------------------------------------
+			var validExpertRequests = expertRequests
+				.Where(er => er.Status != ExpertTestRequestStatus.Expired.ToString())
+				.ToList();
+
+			// Check if 4th valid request exists (3 original + 1 review)
+			if (validExpertRequests.Count >= 4)
 			{
 				throw new InvalidOperationException("A review request has already been submitted for this test.");
 			}

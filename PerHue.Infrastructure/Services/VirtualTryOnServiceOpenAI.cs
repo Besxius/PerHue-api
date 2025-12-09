@@ -63,8 +63,7 @@ namespace PerHue.Infrastructure.Services
 				{
 					string generatedImageUrl = string.Empty;
 
-					//var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://perhue.duckdns.org:8443/v1/images/edits");
-					var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://perhue.duckdns.org:443/v1/images/edits'");
+					var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://perhue.duckdns.org:8443/v1/images/edits");
 					var formData = new MultipartFormDataContent();
 					AppendScalar(formData, "prompt", prompt);
 					AppendScalar(formData, "model", "openai/gpt-image-1-mini");
