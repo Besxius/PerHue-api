@@ -1,6 +1,4 @@
 ﻿using GenerativeAI;
-using Google.GenAI;
-using Google.GenAI.Types;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -37,7 +35,7 @@ namespace PerHue.Infrastructure.Services
 			try
 			{
 				var client = new GoogleAi(_apiKey);
-				var model = client.CreateGenerativeModel("gemini-2.5-flash");
+				var model = client.CreateGenerativeModel("gemini-2.5-flash-lite");
 
 				// Tạo prompt chi tiết cho Gemini
 				var prompt = BuildAnalysisPrompt(request);
@@ -151,6 +149,9 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<GeminiColorAnalysisResponse> AnalyzeColorTypeAsync2(GeminiAnalysisRequest request)
 		{
+			// PRINT THE LAST 4 CHARS OF THE KEY TO CONSOLE
+			var keyLast4 = _apiKey.Length > 4 ? _apiKey.Substring(_apiKey.Length - 4) : "INVALID";
+			_logger.LogWarning($"[DEBUG] Using API Key ending in: ...{keyLast4}");
 			try
 			{
 				var client = new GoogleAi(_apiKey);
