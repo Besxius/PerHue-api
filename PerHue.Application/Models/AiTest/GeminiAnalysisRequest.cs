@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
+using PerHue.Application.Models.CapsulePalette;
+using PerHue.Application.Models.Color;
+using PerHue.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PerHue.Domain.Entities;
 
 namespace PerHue.Application.Models.AiTest
 {
@@ -128,6 +130,7 @@ namespace PerHue.Application.Models.AiTest
 
 		public string AvoidedColor { get; set; } = null!;
 
-		public int ColorTypeId { get; set; }
+		public List<ColorModel> SuggestedColorsBySystem { get; set; } = new List<ColorModel>();
+
 	}
 }
