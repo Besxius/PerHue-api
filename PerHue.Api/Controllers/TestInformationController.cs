@@ -21,7 +21,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("manual-test/my-history")]
-		[Authorize(Roles = "User,Admin")]
+		[Authorize]
 		public async Task<ActionResult<IEnumerable<TestResultModel>>> GetMyManualTests()
 		{
 			try
