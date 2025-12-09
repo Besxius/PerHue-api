@@ -122,7 +122,8 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
-		[HttpPut("requests/{id}/response")]
+
+		[HttpPut("requests/{id}")]
 		[Authorize(Roles = "Expert")]
 		public async Task<ActionResult<TestResponseModel>> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
 		{
