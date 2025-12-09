@@ -469,8 +469,8 @@ namespace PerHue.Infrastructure.Services
 				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
 				var notification = new Notification
 				{
-					Title = "New Test Request",
-					Content = "You have received a new color analysis request.",
+					Title = $"New Test Request #{testRequest.Id}", 
+					Content = "You need to respond within 2 days from the time you receive the request.",
 					Receiver = expert.Id, // Expert ID corresponds to UserAccountId
 					TestRequestId = testRequest.Id,
 					ReceivedTime = DateTime.Now,
