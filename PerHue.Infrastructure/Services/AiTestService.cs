@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.AiTest;
+using PerHue.Application.Models.Color;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Repositories;
+using PerHue.Infrastructure.Utils;
 using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
@@ -15,8 +18,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static PerHue.Application.Models.AiTestModel;
-using PerHue.Infrastructure.Utils;
-using AutoMapper;
 
 
 
@@ -34,6 +35,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUserSubscriptionService _subscriptionService;
 		private readonly IMapper _mapper;
 		private readonly IUserService _userService;
+		private readonly ICapsulePaletteService _capsulePaletteService;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -44,7 +46,8 @@ namespace PerHue.Infrastructure.Services
 			IVirtualTryOnService virtualTryOnService,
 			ITestRequestRepository testRequestRepository,
 			IUserSubscriptionService subscriptionService,
-			IUserService userService, IMapper mapper)
+			IUserService userService, IMapper mapper,
+			ICapsulePaletteService capsulePaletteService)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -56,6 +59,7 @@ namespace PerHue.Infrastructure.Services
 			_subscriptionService = subscriptionService;
 			_userService = userService;
 			_mapper = mapper;
+			_capsulePaletteService = capsulePaletteService;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
@@ -247,7 +251,7 @@ namespace PerHue.Infrastructure.Services
 			}
 
 			try
-			{				
+			{
 				var remainingAfterDeduct = await _subscriptionService.GetRemainingUsageAsync(userId);
 				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remainingAfterDeduct}", userId, remainingAfterDeduct);
 
@@ -315,6 +319,11 @@ namespace PerHue.Infrastructure.Services
 					_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
 						matchedSuggestedColors.Count, matchedAvoidedColors.Count);
 
+					// ✅ LẤY CAPSULE PALETTES LIÊN QUAN DỰA VÀO SUGGESTED COLORS
+					var relatedPalettes = await _capsulePaletteService
+						.GetRelativeCapsulePalettes(colorAnalysis.SuggestedColorHexCodes);
+
+
 					/*// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
 					if (request.FaceImages != null)
@@ -350,13 +359,9 @@ namespace PerHue.Infrastructure.Services
 					{
 						Date = DateTime.Now,
 						ColorTypeId = colorAnalysis.ColorTypeId,
-						SuggestedColor = string.Join(", ", matchedSuggestedColors
-							.Where(c => c.MatchedColor != null)
-							.Select(c => c.MatchedColor!.Name)),
-						AvoidedColor = string.Join(", ", matchedAvoidedColors
-							.Where(c => c.MatchedColor != null)
-							.Select(c => c.MatchedColor!.Name)),
-						Note = $"Analysis completed by AI. Raw hex codes - Suggested: {string.Join(", ", colorAnalysis.SuggestedColorHexCodes)}, Avoided: {string.Join(", ", colorAnalysis.AvoidedColorHexCodes)}",
+						SuggestedColor = string.Join(", ", colorAnalysis.SuggestedColorHexCodes),
+						AvoidedColor = string.Join(", ", colorAnalysis.AvoidedColorHexCodes),
+						Note = $"Analysis completed by AI. Raw hex codes",
 						IdNavigation = testRequest
 					};
 
@@ -366,7 +371,34 @@ namespace PerHue.Infrastructure.Services
 					testRequest.Status = TestStatus.Completed.ToString();
 					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
 
+					// 1. Lấy hex codes từ matched colors (để tìm palettes)
+					var suggestedHexCodes = matchedSuggestedColors
+						.Where(c => c.MatchedColor != null)
+						.Select(c => c.MatchedColor!.HexCode)
+						.ToList();
+
+					_logger.LogInformation("Finding related palettes for {Count} suggested colors: {Colors}",
+						suggestedHexCodes.Count, string.Join(", ", suggestedHexCodes));
+
+					// 2. Tìm capsule palettes dựa trên matched colors
+					var relatedPalettesByColors = await _capsulePaletteService
+						.GetRelativeCapsulePalettes(suggestedHexCodes);
+
+					_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
+						relatedPalettesByColors.Count());
+
+					// 3. Map response
 					var response = _mapper.Map<AiTestResultResponseModel>(result);
+
+					response.SuggestedColorsBySystem = matchedSuggestedColors
+						.Where(c => c.MatchedColor != null)
+						.Select(c => new ColorModel
+						{
+							Id = c.MatchedColor!.Id,
+							Name = c.MatchedColor.Name,
+							HexCode = c.MatchedColor.HexCode
+						})
+						.ToList();
 
 					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
 						testRequest.Id);
