@@ -107,7 +107,15 @@ namespace PerHue.Api.Controllers
 		{
 			try
 			{
-				var results = await _services.ExpertTestService.GetAllExpertTestRequestsAsync();
+				// Retrieve User ID from Token Claims
+				var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (!int.TryParse(userIdString, out var userId))
+				{
+					return Unauthorized("Invalid User ID.");
+				}
+
+				// Call the new service method filtered by User ID
+				var results = await _services.ExpertTestService.GetExpertTestRequestsByUserIdAsync(userId);
 				return Ok(results);
 			}
 			catch (Exception ex)
