@@ -219,6 +219,17 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<IEnumerable<TestRequestModel>>(requests);
 		}
 
+		public async Task<IEnumerable<TestRequestModel>> GetExpertTestRequestsByUserIdAsync(int userId)
+		{
+			// 1. Use GetByUserIdAsync (Method defined in ITestRequestRepository)
+			var requests = await _unitOfWork.TestRequestRepository.GetByUserIdAsync(userId);
+
+			// 2. Filter using "Expert" (Matches the string used in Repository queries)
+			var expertRequests = requests.Where(r => r.TypeOfTest == "Expert");
+
+			return _mapper.Map<IEnumerable<TestRequestModel>>(expertRequests);
+		}
+
 		public async Task<PaginatedResult<ExpertTestResultModel>> GetMyCompletedExpertTestsAsync(int userId, int pageIndex, int pageSize, DateTime? fromDate, DateTime? toDate)
 		{
 			// 1. Get Paged Test Requests
