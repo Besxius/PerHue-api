@@ -74,8 +74,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					}
 				}
 
-				// Check every 60 minutes
-				await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
+				// [CHANGED] Check every 24 hours
+				await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 			}
 
 			_logger.LogInformation("Expert Test Monitor is stopping.");
@@ -163,10 +163,9 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					expiredCount++;
 					needsNewExpert = true;
 				}
-				// Check for Upcoming Deadline (8 Hours Warning)
-				else if (timeRemaining.TotalHours <= 8)
+				// B. Check for Upcoming Deadline (24 Hours Warning)
+				else if (timeRemaining.TotalHours <= 24)
 				{
-					
 					// Fetch notifications for this expert
 					var expertNotifications = await unitOfWork.NotificationRepository.GetByReceiverAsync(req.ExpertId);
 
@@ -180,7 +179,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						var warningNotification = new Notification
 						{
 							Title = $"Deadline Warning: Test #{testRequest.Id}",
-							Content = $"You have less than 8 hours remaining to respond to Test Request #{testRequest.Id}. Please submit your analysis soon.",
+							Content = $"You have less than 24 hours remaining to respond to Test Request #{testRequest.Id}. Please submit your analysis soon.", // Updated content
 							Receiver = req.ExpertId,
 							TestRequestId = testRequest.Id,
 							ReceivedTime = DateTime.UtcNow,
@@ -237,18 +236,15 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				}
 			}
 
-			// 3. Finalization Check using _requiredResponses
+			// 3. Fallback Trigger using _maxRetries
+			// Logic to check if experts FAILED to respond (Expired > MaxRetries) AND no one is left pending.
 			var currentExpertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
 			var pendingCount = currentExpertRequests.Count(etr => etr.Status == "Pending");
 
-			if (completedResponses.Count() >= _requiredResponses)
-			{
-				await FinalizeTestAsync(unitOfWork, testRequest, "Expert Analysis Completed");
-				return;
-			}
+			int requiredResponses = _configuration.GetValue<int>("ExpertTestSettings:RequiredResponses");
+			if (requiredResponses == 0) requiredResponses = 3;
 
-			// Fallback Trigger using _maxRetries
-			if (expiredCount > _maxRetries && pendingCount == 0)
+			if (expiredCount > _maxRetries && pendingCount == 0 && completedResponses.Count() < requiredResponses)
 			{
 				await PerformAiFallbackAsync(unitOfWork, aiService, testRequest, completedResponses.Count());
 				return;

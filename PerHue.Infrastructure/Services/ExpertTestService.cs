@@ -59,28 +59,61 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<TestResponseModel> SubmitResponseAsync(CreateTestResponseModel model, int expertId)
 		{
-			// 1. Verify the expert has a pending request for this test
+			// 1. Verify the expert has a pending request
 			var pendingRequest = await _unitOfWork.ExpertTestRequestRepository.GetPendingRequestAsync(expertId, model.TestRequestId);
 			if (pendingRequest == null)
 			{
 				throw new InvalidOperationException("No pending test request found for this expert and test.");
 			}
 
-			// 2. Map DTO to Entity
+			// 2. Save Response
 			var testResponse = _mapper.Map<TestResponse>(model);
 			testResponse.ExpertId = expertId;
 			testResponse.CreatedDate = DateTime.Now;
 			testResponse.Type = ResponseTypeEnum.Normal.ToString();
 
-			// 3. Save the response
 			await _unitOfWork.TestResponseRepository.CreateAsync(testResponse);
 
-			// 4. Update the ExpertTestRequest status to "Completed"
+			// 3. Update Expert Request Status
 			pendingRequest.Status = ExpertTestRequestStatus.Completed.ToString();
 			await _unitOfWork.ExpertTestRequestRepository.UpdateAsync(pendingRequest);
 
-			// 5. Save changes
+			// 4. Save Changes (Expert's action is done)
 			await _unitOfWork.SaveChangesWithTransactionAsync();
+
+			// 5. Check for Immediate Finalization
+			// Check if we have enough responses to complete the whole test immediately
+			var responses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(model.TestRequestId);
+			int requiredResponses = _configuration.GetValue<int>("ExpertTestSettings:RequiredResponses");
+			if (requiredResponses == 0) requiredResponses = 3; // Fallback default
+
+			if (responses.Count() >= requiredResponses)
+			{
+				var testRequest = await _unitOfWork.TestRequestRepository.GetByIdAsync(model.TestRequestId);
+
+				// Only complete if not already completed
+				if (testRequest != null && testRequest.Status != TestRequestStatus.Completed.ToString())
+				{
+					testRequest.Status = TestRequestStatus.Completed.ToString();
+					await _unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+					// Send Notification to User
+					var notification = new Notification
+					{
+						Title = "Your Color Analysis is Ready!",
+						Content = "Expert Analysis Completed",
+						Receiver = testRequest.UserAccountId,
+						TestRequestId = testRequest.Id,
+						ReceivedTime = DateTime.Now,
+						IsRead = false,
+						Type = "TestResult"
+					};
+					await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+					// Save finalization changes
+					await _unitOfWork.SaveChangesWithTransactionAsync();
+				}
+			}
 
 			return _mapper.Map<TestResponseModel>(testResponse);
 		}
