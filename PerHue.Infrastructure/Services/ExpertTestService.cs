@@ -222,7 +222,7 @@ namespace PerHue.Infrastructure.Services
 		public async Task<IEnumerable<TestRequestModel>> GetExpertTestRequestsByUserIdAsync(int userId)
 		{
 			// 1. Use GetByUserIdAsync (Method defined in ITestRequestRepository)
-			var requests = await _unitOfWork.TestRequestRepository.GetByUserIdAsync(userId);
+			var requests = await _unitOfWork.TestRequestRepository.GetByUserIdWithDetailsAsync(userId);
 
 			// 2. Filter using "Expert" (Matches the string used in Repository queries)
 			var expertRequests = requests.Where(r => r.TypeOfTest == "Expert");
