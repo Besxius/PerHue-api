@@ -172,6 +172,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(t => t.AiTestResult)
 					.ThenInclude(r => r.ColorType)
 				.Include(t => t.AiPictures)
+				.Include(t => t.Pictures) // Added missing include
 				.Where(t => t.UserAccountId == userId)
 				.OrderByDescending(t => t.CreatedDate)
 				.ToListAsync();
