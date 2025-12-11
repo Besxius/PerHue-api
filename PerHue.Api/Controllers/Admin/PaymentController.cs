@@ -25,7 +25,7 @@ namespace PerHue.Api.Controllers.Admin
 		/// Get all payments (optionally filter by user)
 		/// </summary>
 		[HttpGet]
-		public async Task<ActionResult<PaginatedResultV2<PaymentDetailModel>>> GetPayments([FromQuery] AdminPaymentSearchModel searchModel)
+		public async Task<ActionResult<PaginatedResultV2<PaymentServicePackage>>> GetPayments([FromQuery] AdminPaymentSearchModel searchModel)
 		{
 			try
 			{
