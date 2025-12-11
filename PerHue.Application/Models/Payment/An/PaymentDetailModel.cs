@@ -16,6 +16,7 @@ namespace PerHue.Application.Models.Payment.An
 		public string? Description { get; set; }
 		public string? OrderCode { get; set; }
 		public DateTime? CreatedAt { get; set; }
+		public string? Status { get; set; }
 
 		/// <summary>
 		/// Danh sách payment logs theo thứ tự thời gian giảm dần
