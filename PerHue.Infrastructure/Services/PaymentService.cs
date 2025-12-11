@@ -223,86 +223,99 @@ namespace PerHue.Infrastructure.Services
 		/// </summary>
 		/// <param name="searchModel"></param>
 		/// <returns></returns>
-		public Task<PaginatedResultV2<PaymentDetailModel>> GetPaymentsForAdminAsync(AdminPaymentSearchModel searchModel)
+		public async Task<PaginatedResultV2<PaymentServicePackage>> GetPaymentsForAdminAsync(
+	AdminPaymentSearchModel searchModel)
 		{
-			var baseQuery = _unitOfWork.PaymentRepository.GetQueryable();
-			IQueryable<Payment> query = baseQuery.Include(x => x.User);
+			var query = _unitOfWork.UserSubscriptionRepository.GetQueryable()
+				.Where(x => x.Payment != null)
+				.Select(x => new
+				{
+					x.Id,
+					x.UserId,
+					UserFullname = x.User.Fullname,
+					UserEmail = x.User.Email,
+					Amount = x.Payment.Amount,
+					Description = x.Payment.Description,
+					OrderCode = x.Payment.TransactionId,
+					CreatedAt = x.Payment.CreatedAt,
+					Status = x.Payment.Status,
+					ServicePackageId = x.ServicePackage.Id,
+					ServicePackageName = x.ServicePackage.Name
+				});
 
-			// Apply search filters
+			// SEARCH FILTER
 			if (!string.IsNullOrEmpty(searchModel.SearchTerm))
 			{
+				var term = searchModel.SearchTerm;
+
 				switch (searchModel.SearchBy?.ToLower())
 				{
 					case "userid":
-						if (int.TryParse(searchModel.SearchTerm, out int userId))
-						{
-							query = query.Where(p => p.UserId == userId);
-						}
+						if (int.TryParse(term, out int userId))
+							query = query.Where(x => x.UserId == userId);
 						break;
+
 					case "transactionid":
-						query = query.Where(p => p.TransactionId.Contains(searchModel.SearchTerm));
+						query = query.Where(x => x.OrderCode.Contains(term));
 						break;
+
 					case "status":
-						query = query.Where(p => p.Status.Contains(searchModel.SearchTerm));
+						query = query.Where(x => x.Status.Contains(term));
 						break;
+
 					default:
-						query = query.Where(p => p.TransactionId.Contains(searchModel.SearchTerm) ||
-												 p.Status.Contains(searchModel.SearchTerm));
+						query = query.Where(x =>
+							x.OrderCode.Contains(term) ||
+							x.Status.Contains(term));
 						break;
 				}
 			}
-			// Apply sorting
-			IOrderedQueryable<Payment> orderedQuery;
-			switch (searchModel.SortBy?.ToLower())
+
+			// SORTING
+			query = (searchModel.SortBy?.ToLower(), searchModel.SortOrder?.ToLower()) switch
 			{
-				case "amount":
-					orderedQuery = searchModel.SortOrder?.ToLower() == "asc"
-						? query.OrderBy(p => p.Amount)
-						: query.OrderByDescending(p => p.Amount);
-					break;
-				case "createdat":
-					orderedQuery = searchModel.SortOrder?.ToLower() == "asc"
-						? query.OrderBy(p => p.CreatedAt)
-						: query.OrderByDescending(p => p.CreatedAt);
-					break;
-				case "id":
-					orderedQuery = searchModel.SortOrder?.ToLower() == "asc"
-						? query.OrderBy(p => p.Id)
-						: query.OrderByDescending(p => p.Id);
-					break;
-				default:
-					orderedQuery = query.OrderByDescending(p => p.CreatedAt);
-					break;
-			}
+				("amount", "asc") => query.OrderBy(x => x.Amount),
+				("amount", _) => query.OrderByDescending(x => x.Amount),
 
-			// Get total count
-			var totalCount = orderedQuery.Count();
+				("createdat", "asc") => query.OrderBy(x => x.CreatedAt),
+				("createdat", _) => query.OrderByDescending(x => x.CreatedAt),
 
-			// Apply pagination
-			var payments = orderedQuery
+				("id", "asc") => query.OrderBy(x => x.Id),
+				("id", _) => query.OrderByDescending(x => x.Id),
+
+				_ => query.OrderByDescending(x => x.CreatedAt)
+			};
+
+			// COUNT + PAGINATION
+			var totalCount = query.Count();
+
+			var items = query
 				.Skip((searchModel.PageIndex - 1) * searchModel.PageSize)
 				.Take(searchModel.PageSize)
 				.ToList();
 
-			var models = payments.Select(p => new PaymentDetailModel
+			// MAP RESULT
+			var result = items.Select(x => new PaymentServicePackage
 			{
-				Id = p.Id,
-				UserId = p.UserId,
-				UserFullname = p.User?.Fullname ?? string.Empty,
-				UserEmail = p.User?.Email ?? string.Empty,
-				Amount = p.Amount,
-				Description = p.Description,
-				OrderCode = p.TransactionId,
-				CreatedAt = p.CreatedAt,
-				Status = p.Status
+				Id = x.Id,
+				UserId = x.UserId,
+				UserFullname = x.UserFullname ?? "",
+				UserEmail = x.UserEmail ?? "",
+				Amount = x.Amount,
+				Description = x.Description,
+				OrderCode = x.OrderCode,
+				CreatedAt = x.CreatedAt,
+				Status = x.Status,
+				ServicePackageId = x.ServicePackageId,
+				ServicePackageName = x.ServicePackageName
 			}).ToList();
 
-			return Task.FromResult(new PaginatedResultV2<PaymentDetailModel>
+			return new PaginatedResultV2<PaymentServicePackage>
 			{
-				List = models,
+				List = result,
 				Total = totalCount,
 				Current = searchModel.PageIndex
-			});
+			};
 		}
 	}
 }
