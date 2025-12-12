@@ -216,7 +216,20 @@ namespace PerHue.Infrastructure.Utils
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					CreatedDate = DateTime.Now,
-					RoleId = 2,
+					RoleId = 3,
+					Expert = new Expert
+					{
+						Nickname = "NQKA",
+						Specialization = "Personal color expert",
+						Bio = "Hi, I’m NQKA, your personal color decoder and confidence booster.\r\n\r\nI specialize in moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter) to pinpoint your precise Undertone and optimal color palette. Simply put:\r\n\r\nI help you stop buying clothes that make you look like you haven't slept in three days.\r\n\r\nMy Philosophy: The right colors don't just highlight your beauty—they elevate your self-assurance. Stop guessing and start glowing.\r\n\r\nCore Services: In-depth personal color analysis, wardrobe consultations, and color-matched makeup guidance.\r\n\r\nThe Result: A bespoke color palette and the cheat codes to make you look effortlessly radiant, every single time.\r\n\r\nConnect: leeetrong203@gmail.com",
+						YearsOfExperience = 2,
+						Languages = "Vietnamese, English",
+						Rating = (decimal?)5.0,
+						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
+						CreatedDate = DateTime.Now,
+						Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion. She is not just an analyst; she is a confidence architect who builds dazzling looks starting with the perfect color palette.\r\n\r\nHe is Besxius, and she has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections. Today, she will share the secrets to ensure you always glow instead of just... get dressed.\r\n\r\nPlease join me in giving a warm welcome to Personal Color Expert, Besxius!\"",
+						FacebookAccount = "https://www.facebook.com/trong.le.26298/"
+					}
 				},
 				new()
 				{
@@ -239,12 +252,25 @@ namespace PerHue.Infrastructure.Utils
 					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
 					Fullname = "Tran Kien",
 					Phone = "0345678910",
-					Gender = false,
+					Gender = true,
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
 					CreatedDate = DateTime.Now,
-					RoleId = 2,
+					RoleId = 3,
+					Expert = new Expert
+					{
+						Nickname = "TK",
+						Specialization = "Personal color expert",
+						Bio = "Hi, I’m TK, your personal color decoder and confidence booster.\r\n\r\nI specialize in moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter) to pinpoint your precise Undertone and optimal color palette. Simply put:\r\n\r\nI help you stop buying clothes that make you look like you haven't slept in three days.\r\n\r\nMy Philosophy: The right colors don't just highlight your beauty—they elevate your self-assurance. Stop guessing and start glowing.\r\n\r\nCore Services: In-depth personal color analysis, wardrobe consultations, and color-matched makeup guidance.\r\n\r\nThe Result: A bespoke color palette and the cheat codes to make you look effortlessly radiant, every single time.\r\n\r\nConnect: leeetrong203@gmail.com",
+						YearsOfExperience = 2,
+						Languages = "Vietnamese, English",
+						Rating = (decimal?)5.0,
+						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
+						CreatedDate = DateTime.Now,
+						Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion. She is not just an analyst; she is a confidence architect who builds dazzling looks starting with the perfect color palette.\r\n\r\nHe is Besxius, and she has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections. Today, she will share the secrets to ensure you always glow instead of just... get dressed.\r\n\r\nPlease join me in giving a warm welcome to Personal Color Expert, Besxius!\"",
+						FacebookAccount = "https://www.facebook.com/trong.le.26298/"
+					}
 				},
 				new()
 				{
@@ -253,7 +279,7 @@ namespace PerHue.Infrastructure.Utils
 					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
 					Fullname = "Le Duc Trong",
 					Phone = "0345678914",
-					Gender = false,
+					Gender = true,
 					Dob = new DateOnly(2003, 3, 3),
 					ProfilePicture = string.Empty,
 					IsActive = true,
