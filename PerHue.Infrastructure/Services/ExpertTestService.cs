@@ -117,6 +117,122 @@ namespace PerHue.Infrastructure.Services
 
 			return _mapper.Map<TestResponseModel>(testResponse);
 		}
+		private List<(int R, int G, int B)> ParseHexColors(string colorString)
+		{
+			if (string.IsNullOrWhiteSpace(colorString))
+			{
+				return new List<(int R, int G, int B)>();
+			}
+
+			// Tách chuỗi theo dấu phẩy và loại bỏ khoảng trắng thừa
+			var hexCodes = colorString.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+									  .Select(h => h.Trim())
+									  .ToList();
+
+			var rgbList = new List<(int R, int G, int B)>();
+
+			foreach (var hex in hexCodes)
+			{
+				var rgb = ColorCalculationHelper.HexToRgb(hex);
+				if (rgb.HasValue)
+				{
+					rgbList.Add(rgb.Value);
+				}
+			}
+			return rgbList;
+		}
+		private double CalculateListSimilarity(string listAString, string listBString)
+		{
+			var rgbA = ParseHexColors(listAString);
+			var rgbB = ParseHexColors(listBString);
+
+			// Xử lý trường hợp rỗng
+			if (rgbA.Count == 0 && rgbB.Count == 0) return 100.0; // Cả hai rỗng: hoàn toàn giống nhau
+			if (rgbA.Count == 0 || rgbB.Count == 0) return 0.0;   // Một rỗng, một không: không giống nhau
+
+			// Đặt danh sách ngắn hơn làm nguồn (source) và danh sách dài hơn làm đích (target)
+			var sourceList = rgbA.Count <= rgbB.Count ? rgbA : rgbB;
+			var targetList = rgbA.Count <= rgbB.Count ? rgbB : rgbA;
+
+			var unmatchedTargetIndices = Enumerable.Range(0, targetList.Count).ToList();
+			double totalSimilarity = 0;
+
+			// Thực hiện Greedy Matching: Ghép mỗi màu trong Source với màu chưa được ghép tốt nhất trong Target
+			foreach (var sourceColor in sourceList)
+			{
+				double maxSimilarity = 0;
+				int bestMatchIndex = -1;
+
+				// Tìm màu gần nhất trong danh sách Target chưa được ghép
+				foreach (int index in unmatchedTargetIndices)
+				{
+					var targetColor = targetList[index];
+					// Tận dụng hàm đã có: CalculateColorSimilarity (trả về 0-100)
+					double similarity = ColorCalculationHelper.CalculateColorSimilarity(sourceColor, targetColor);
+
+					if (similarity > maxSimilarity)
+					{
+						maxSimilarity = similarity;
+						bestMatchIndex = index;
+					}
+				}
+
+				// Nếu tìm thấy cặp ghép tốt nhất, cộng điểm và đánh dấu là đã ghép
+				if (bestMatchIndex != -1)
+				{
+					totalSimilarity += maxSimilarity;
+					unmatchedTargetIndices.Remove(bestMatchIndex);
+				}
+			}
+
+			// Chuẩn hóa về tỷ lệ 0-100%
+			// Chia cho kích thước của danh sách LỚN HƠN (targetList.Count) để phạt nếu có sự thiếu hụt màu
+			return totalSimilarity / targetList.Count;
+		}
+		private double CalculatePairSimilarity(
+			TestResponseModel resultA,
+			TestResponseModel resultB,
+			double seasonWeight = 0.4,
+			double bestColorWeight = 0.4,
+			double worstColorWeight = 0.2
+		)
+		{
+			// 1. So sánh Màu Mùa (Season Score - S_Season)
+			// Giả định ColorTypeId là mã mùa (ví dụ: Light Spring)
+			double seasonScore = (resultA.ColorTypeId == resultB.ColorTypeId) ? 1.0 : 0.0;
+
+			// 2. So sánh DS Màu Nên Dùng (Recommended Score - S_Rec)
+			double recommendedScore = CalculateListSimilarity(resultA.BestColor, resultB.BestColor) / 100.0;
+
+			// 3. So sánh DS Màu Nên Tránh (Avoided Score - S_Avoid)
+			double avoidedScore = CalculateListSimilarity(resultA.WorstColor, resultB.WorstColor) / 100.0;
+
+			// 4. Tính điểm tổng thể (0-100)
+			double overallSimilarity =
+				(seasonScore * seasonWeight) +
+				(recommendedScore * bestColorWeight) +
+				(avoidedScore * worstColorWeight);
+
+			return overallSimilarity * 100.0;
+		}
+
+		private double? CalculateThreeResultSimilarity(List<TestResponseModel> responses)
+		{
+			if (responses == null || responses.Count < 3)
+			{
+				return null;
+			}
+
+			var r1 = responses[0];
+			var r2 = responses[1];
+			var r3 = responses[2];
+
+			double p12 = CalculatePairSimilarity(r1, r2);
+			double p13 = CalculatePairSimilarity(r1, r3);
+			double p23 = CalculatePairSimilarity(r2, r3);
+
+			return (p12 + p13 + p23) / 3.0;
+		}
 
 		public async Task<ExpertTestResultModel> GetExpertResponsesForUserAsync(int testRequestId, int userId)
 		{
@@ -138,7 +254,7 @@ namespace PerHue.Infrastructure.Services
 					Id = 0,
 					TestRequestId = testRequestId,
 					ExpertId = 0,
-					Type = "AI", 
+					Type = "AI",
 					Note = testRequest.AiTestResult.Note,
 					CreatedDate = testRequest.AiTestResult.Date,
 					Rating = null,
@@ -149,11 +265,21 @@ namespace PerHue.Infrastructure.Services
 				};
 				responseModels.Add(aiResponseModel);
 			}
+			double? similarityScore = null;
+			if (responseModels.Count >= 3)
+			{
+				// Lấy 3 response đầu tiên để tính toán (vì bạn chỉ cần 3 kết quả)
+				var top3Responses = responseModels.Take(3).ToList();
+
+				similarityScore = CalculateThreeResultSimilarity(top3Responses);
+			}
+
 
 			return new ExpertTestResultModel
 			{
 				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
-				Responses = responseModels
+				Responses = responseModels,
+				ResponsesSimilarityScore = similarityScore
 			};
 		}
 		public async Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
@@ -451,6 +577,33 @@ namespace PerHue.Infrastructure.Services
 					PreviousResponses = responseModels
 				});
 			}
+
+			return result;
+		}
+		public async Task<ReviewTestRequestModel> GetPendingReviewRequestsByIdAsync(int expertId, int testRequestId)
+		{
+			// 1. Fetch requests with "PendingReview" status
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetPendingReviewRequestsForExpertAsync(expertId);
+
+			var reviewRequest = expertRequests.FirstOrDefault(p => p.TestRequest.Id == testRequestId);
+
+			// 2. Map the TestRequest
+			var requestModel = _mapper.Map<TestRequestModel>(reviewRequest.TestRequest);
+
+			// 3. Map the Responses (The 3 initial ones)
+			// Note: We filter out any potential 'Review' type responses to be safe, showing only the original work.
+			var previousResponses = reviewRequest.TestRequest.TestResponses
+				.Where(r => r.Type != ResponseTypeEnum.Review.ToString())
+				.ToList();
+
+			var responseModels = _mapper.Map<IEnumerable<TestResponseModel>>(previousResponses);
+
+			var result = new ReviewTestRequestModel
+			{
+				ExpertTestRequestId = reviewRequest.ExpertId,
+				TestRequest = requestModel,
+				PreviousResponses = responseModels
+			};
 
 			return result;
 		}
