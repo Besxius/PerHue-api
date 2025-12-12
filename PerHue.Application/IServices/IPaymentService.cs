@@ -30,5 +30,15 @@ namespace PerHue.Application.IServices
 		/// Lấy tất cả payments của user (không phân trang)
 		/// </summary>
 		Task<List<PerHue.Application.Models.Payment.An.PaymentDetailModel>> GetAllPaymentsByUserIdAsync(int userId);
+
+		/// <summary>
+		/// [ADMIN] Lấy tất cả payments kèm thông tin user (phân trang, lọc user)
+		/// </summary>
+		Task<PaginatedResultV2<PaymentServicePackage>> GetPaymentsForAdminAsync(AdminPaymentSearchModel searchModel);
+
+		/// <summary>
+		/// [ADMIN] Lấy chi tiết payment kèm logs (bỏ qua kiểm tra ownership)
+		/// </summary>
+		Task<PaymentDetailModel?> GetPaymentDetailForAdminAsync(int paymentId);
 	}
 }
