@@ -30,5 +30,6 @@ namespace PerHue.Application.IServices
 		Task<IEnumerable<ReviewTestRequestModel>> GetPendingReviewRequestsAsync(int expertId);
 		Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId);
 		Task<TestResponseModel> UpdateResponseAsync(int testRequestId, UpdateTestResponseModel model, int expertId);
+		Task<ReviewTestRequestModel> GetPendingReviewRequestsByIdAsync(int expertId, int testRequestId);
 	}
 }
