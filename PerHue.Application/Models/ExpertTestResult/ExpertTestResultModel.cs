@@ -14,5 +14,6 @@ namespace PerHue.Application.Models.ExpertTestResult
 	{
 		public TestRequestModel TestRequest { get; set; }
 		public IEnumerable<TestResponseModel> Responses { get; set; }
+		public double? ResponsesSimilarityScore { get; set; }
 	}
 }

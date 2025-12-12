@@ -59,69 +59,145 @@ namespace PerHue.Infrastructure.Utils
 
 		private IEnumerable<ServicePackage> GetPrimaryServicePackages()
 		{
+			var now = DateTime.UtcNow;
+
 			return new List<ServicePackage>
 			{
 				new() {
-					Name = "AI Test 1",
-					Price = 5000,
-					Description = "Three times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 3,
+					Name = "AI Test Trial",
+					Price = 50000,
+					Description = "One-time AI-powered basic color analysis test. Perfect for trying out the core	features	before committing to a paid plan.",
+					Duration = 1, // 1 Month Trial
+					Uses = 1,
+					Type = ServicePackageTypeEnum.AI.ToString(),
+					CreatedDate = now
+				},
+			    
+				new() {
+					Name = "AI Test Basic",
+					Price = 115000,
+					Description = "Three (3) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple 		test color feature.",
+					Duration = 6, // 6 Months (Default requested)
 					Uses = 3,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = now
 				},
+			    
 				new() {
-					Name = "AI Test 2",
-					Price = 10000,
-					Description = "Ten times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand",
-					Duration = 5,
-					Uses = 5,
-					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = DateTime.Now
-				},
-				new() {
-					Name = "AI Test 3",
-					Price = 15000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 10,
+					Name = "AI Test Standard",
+					Price = 415000,
+					Description = "Ten (10) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple  	test color feature.\r\nRelevant color suggestions based on analysis results.",
+					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = now
 				},
+			    
 				new() {
-					Name = "Expert Suggestion 1",
-					Price = 5000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 3,
+					Name = "AI Test Premium & Promotion",
+					Price = 945000,
+					Description = "Twenty-five (25) detailed AI-powered color analysis tests.\r\nPriority AI processing 		speed.\r\nIncludes a brand's product advertising opportunity for 1 month.\r\nNote: This		package is	frequently chosen by brands for internal or promotional use.",
+					Duration = 12, // 6 Months (Default requested)
+					Uses = 25,
+					Type = ServicePackageTypeEnum.AI.ToString(),
+					CreatedDate = now
+				},
+			    
+				new() {
+					Name = "Expert Single Analysis",
+					Price = 100000,
+					Description = "One (1) Expert-led Personal Color Analysis test.\r\nIncludes a detailed report and   	primary color palette from a certified expert.",
+					Duration = 6, // 6 Months (Default requested)
 					Uses = 1,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = now
 				},
+			    
 				new() {
-					Name = "Expert Suggestion 2",
-					Price = 10000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 3,
+					Name = "Expert 5-Test Bundle",
+					Price = 350000,
+					Description = "Five (5) Expert-led Personal Color Analysis tests (can be used for different		profiles).  \r\nIncludes access to the top-rated expert pool.",
+					Duration = 6, // 6 Months (Default requested)
 					Uses = 5,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = now
 				},
+			    
 				new() {
-					Name = "Expert Suggestion 3",
-					Price = 15000,
-					Description = "Advertising brand's product for a month\r\n\r\nTen times AI-powered detailed color analysis\r\n\r\nUnlimited normal test color\r\n\r\nRelevant suggestions from the brand\r\n\r\nNote: This is frequently for brands which want to advertise their products",
-					Duration = 5,
+					Name = "Expert 10-Test Professional",
+					Price = 650000,
+					Description = "Ten (10) Expert-led Personal Color Analysis tests.\r\nPriority expert assignment and 		review.\r\nIncludes a 1-month dedicated consultation channel with a certified expert.",
+					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = now
 				}
 			};
 		}
 
 		private IEnumerable<UserAccount> GetPrimaryUser()
 		{
+			var now = DateTime.Now;
+
+			var trongExpertProfile = new Expert
+			{
+				Nickname = "Besxius",
+				Specialization = "Personal Color Expert",
+				Bio = "Hi, I’m Besxius, your personal color decoder and confidence booster.\r\n\r\nI specialize in moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter) to pinpoint your precise Undertone and optimal color palette. Simply put:\r\n\r\nI help you stop buying clothes that make you look like you haven't slept in three days.",
+				YearsOfExperience = 5,
+				Languages = "Vietnamese, English",
+				Rating = (decimal?)5.0,
+				Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
+				CreatedDate = now,
+				Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion... He is Besxius, and he has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections.\"",
+				FacebookAccount = "https://www.facebook.com/kien.tran.expert/"
+			};
+
+			var hungExpertProfile = new Expert
+			{
+				Nickname = "Color Hunter",
+				Specialization = "Styling & Wardrobe Integration",
+				Bio = "Expert in integrating personal color into everyday fashion and wardrobe. I help you build a capsule wardrobe based on your optimal color palette.",
+				YearsOfExperience = 4,
+				Languages = "Vietnamese, English",
+				Rating = (decimal?)4.9,
+				Certification = "Certified Image Consultant",
+				CreatedDate = now,
+				Introduction = "I will turn your personal color palette into an unbeatable style advantage.",
+				FacebookAccount = "https://www.facebook.com/hung.color.stylist/"
+			};
+
+			var anExpertProfile = new Expert
+			{
+				Nickname = "Hue Master",
+				Specialization = "Soft/Muted Tones & Makeup",
+				Bio = "Focuses on Soft/Muted Tones such as Summer and Soft Autumn. I also provide in-depth consultation on cosmetic colors suitable for your palette.",
+				YearsOfExperience = 2,
+				Languages = "Vietnamese",
+				Rating = (decimal?)5.0,
+				Certification = "Makeup Artistry Certification, Personal Color Expert",
+				CreatedDate = now,
+				Introduction = "Let me help you shine with the gentlest and most sophisticated tones.",
+				FacebookAccount = "https://www.facebook.com/an.hue.master/"
+			};
+
+			var kienExpertProfile = new Expert
+			{
+				Nickname = "The Manalyst",
+				Specialization = "12 Season Deep Analysis",
+				Bio = "Specialized color analyst using the 12-season system. I focus on determining the precise cool/warm undertones, light/dark values, and chroma to provide your most accurate color palette.",
+				YearsOfExperience = 3,
+				Languages = "Vietnamese",
+				Rating = (decimal?)4.8,
+				Certification = "Certified 12-Season Analyst",
+				CreatedDate = now,
+				Introduction = "Welcome to the color analyst who will help you discover your deepest shades.",
+				FacebookAccount = "https://www.facebook.com/trong.ld.analyst/"
+			};
+
 			return new List<UserAccount>{
-				new(){
+				new()
+				{
 					Email = "perhue2025@gmail.com",
 					Username = "Perhue",
 					Password = HashPassWithSHA256.HashWithSHA256("Admin12345!"),
@@ -131,37 +207,26 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
 					RoleId = 1,
 				},
+
 				new()
 				{
 					Email = "trongldse173125@fpt.edu.vn",
 					Username = "trongldse173125",
-					Password =  HashPassWithSHA256.HashWithSHA256("Trong12345!"),
+					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
 					Fullname = "Le Duc Trong",
 					Phone = "0378661398",
 					Gender = true,
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
-					RoleId = 2,
+					CreatedDate = now,
+					RoleId = 3,
+					Expert = trongExpertProfile
 				},
-				new()
-				{
-					Email = "trongle1161@gmail.com",
-					Username = "trongle1161",
-					Password =  HashPassWithSHA256.HashWithSHA256("Trong12345!"),
-					Fullname = "Le Duc Trong",
-					Phone = "0378661398",
-					Gender = true,
-					Dob = new DateOnly(2003, 6, 16),
-					ProfilePicture = string.Empty,
-					IsActive = true,
-					CreatedDate = DateTime.Now,
-					RoleId = 2,
-				},
+
 				new()
 				{
 					Email = "hungndse173155@fpt.edu.vn",
@@ -173,9 +238,58 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
+					RoleId = 3,
+					Expert = hungExpertProfile
+				},
+
+				new()
+				{
+					Email = "annqkhe180905@fpt.edu.vn",
+					Username = "annqkhe180905",
+					Password = HashPassWithSHA256.HashWithSHA256("An12345!"),
+					Fullname = "Nguyen Quang Khanh An",
+					Phone = "0345678911",
+					Gender = false, // Changed Gender to false based on name context
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					CreatedDate = now,
+					RoleId = 3,
+					Expert = anExpertProfile
+				},
+
+				new()
+				{
+					Email = "kientse171441@fpt.edu.vn",
+					Username = "kientse171441",
+					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
+					Fullname = "Tran Kien",
+					Phone = "0345678912",
+					Gender = true,
+					Dob = new DateOnly(2003, 1, 11),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					CreatedDate = now,
+					RoleId = 3,
+					Expert = kienExpertProfile
+				},
+
+				new()
+				{
+					Email = "trongle1161@gmail.com",
+					Username = "trongle1161",
+					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
+					Fullname = "Le Duc Trong",
+					Phone = "0378661398",
+					Gender = true,
+					Dob = new DateOnly(2003, 6, 16),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					CreatedDate = now,
 					RoleId = 2,
 				},
+
 				new()
 				{
 					Email = "nguyenduchungdh2103@gmail.com",
@@ -187,106 +301,95 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
 					RoleId = 2,
 				},
-				new()
-				{
-					Email = "annqkhe180905@fpt.edu.vn",
-					Username = "annqkhe180905",
-					Password = HashPassWithSHA256.HashWithSHA256("An12345!"),
-					Fullname = "Nguyen Quang Khanh An",
-					Phone = "0345678910",
-					Gender = false,
-					Dob = new DateOnly(2003, 1, 11),
-					ProfilePicture = string.Empty,
-					IsActive = true,
-					CreatedDate = DateTime.Now,
-					RoleId = 2,
-				},
+
 				new()
 				{
 					Email = "annqk569@gmail.com",
 					Username = "annqk569",
 					Password = HashPassWithSHA256.HashWithSHA256("An12345!"),
 					Fullname = "Nguyen Quang Khanh An",
-					Phone = "0345678910",
+					Phone = "0345678913",
 					Gender = false,
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
 					RoleId = 2,
 				},
-				new()
-				{
-					Email = "kientse171441@fpt.edu.vn",
-					Username = "kientse171441",
-					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
-					Fullname = "Tran Kien",
-					Phone = "0345678910",
-					Gender = false,
-					Dob = new DateOnly(2003, 1, 11),
-					ProfilePicture = string.Empty,
-					IsActive = true,
-					CreatedDate = DateTime.Now,
-					RoleId = 2,
-				},
+
 				new()
 				{
 					Email = "trankien214@gmail.com",
 					Username = "trankien214",
 					Password = HashPassWithSHA256.HashWithSHA256("Kien12345!"),
 					Fullname = "Tran Kien",
-					Phone = "0345678910",
-					Gender = false,
+					Phone = "0345678914",
+					Gender = true,
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
 					RoleId = 2,
 				},
+
 				new()
 				{
 					Email = "leeetrong203@gmail.com",
 					Username = "leeetrong203",
 					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
 					Fullname = "Le Duc Trong",
-					Phone = "0345678914",
-					Gender = false,
+					Phone = "0345678915",
+					Gender = true,
 					Dob = new DateOnly(2003, 3, 3),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = DateTime.Now,
+					CreatedDate = now,
 					RoleId = 3,
 					Expert = new Expert
 					{
-						Nickname = "Besxius",
-						Specialization = "Personal color expert",
-						Bio = "Hi, I’m Besxius, your personal color decoder and confidence booster.\r\n\r\nI specialize in moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter) to pinpoint your precise Undertone and optimal color palette. Simply put:\r\n\r\nI help you stop buying clothes that make you look like you haven't slept in three days.\r\n\r\nMy Philosophy: The right colors don't just highlight your beauty—they elevate your self-assurance. Stop guessing and start glowing.\r\n\r\nCore Services: In-depth personal color analysis, wardrobe consultations, and color-matched makeup guidance.\r\n\r\nThe Result: A bespoke color palette and the cheat codes to make you look effortlessly radiant, every single time.\r\n\r\nConnect: leeetrong203@gmail.com",
-						YearsOfExperience = 2,
+						Nickname = "Tony Lee",
+						Specialization = "Personal Color Expert",
+						Bio = "Hi, I’m Besxius, your personal color decoder and confidence booster.\r\n\r\nI	specialize in	moving beyond the basic Seasonal Analysis (Spring, Summer, Autumn, Winter)	to pinpoint your	 precise Undertone and optimal color palette. Simply put:\r\n\r\nI help		you stop buying clothes	 that make you look like you haven't slept in three days.",
+						YearsOfExperience = 5,
 						Languages = "Vietnamese, English",
 						Rating = (decimal?)5.0,
-						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
-						CreatedDate = DateTime.Now,
-						Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion. She is not just an analyst; she is a confidence architect who builds dazzling looks starting with the perfect color palette.\r\n\r\nHe is Besxius, and she has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections. Today, she will share the secrets to ensure you always glow instead of just... get dressed.\r\n\r\nPlease join me in giving a warm welcome to Personal Color Expert, Besxius!\"",
-						FacebookAccount = "https://www.facebook.com/trong.le.26298/"
+						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry   	Certification",
+						CreatedDate = now,
+						Introduction = "\"Please welcome a guest who is about to save you time, money, and your			complexion... He is Besxius, and he has successfully guided hundreds of clients to discover			their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into		radiant		collections.\"",
+						FacebookAccount = "https://www.facebook.com/kien.tran.expert/"
 					}
 				},
-				//new()
-				//{
-				//	Email = "ouroborus.free@gmail.com",
-				//	Username = "ouroborus.free",
-				//	Password = "PerHueDefaultPassword",
-				//	Fullname = "Oroborus",
-				//	Phone = "0345678917",
-				//	Gender = true,
-				//	Dob = new DateOnly(1999, 11, 11),
-				//	ProfilePicture = string.Empty,
-				//	IsActive = true,
-				//	IsAitested = false,
-				//	RoleId = 4,
-				//}
+
+				new()
+				{
+					Email = "trongleee203@gmail.com",
+					Username = "trongleee203",
+					Password = HashPassWithSHA256.HashWithSHA256("Trong12345!"),
+					Fullname = "Le Duc Trong",
+					Phone = "0345678916",
+					Gender = true,
+					Dob = new DateOnly(2003, 3, 3),
+					ProfilePicture = string.Empty,
+					IsActive = true,
+					CreatedDate = now,
+					RoleId = 3,
+					Expert = new Expert
+					{
+						Nickname = "Trongle Colorist",
+						Specialization = "International Color Systems",
+						Bio = "Cung cấp phân tích dựa trên các tiêu chuẩn màu sắc quốc tế. Dịch vụ tư vấn từ xa cho		khách	hàng toàn cầu. Kinh nghiệm làm việc với đa dạng sắc tộc và tông da.",
+						YearsOfExperience = 6,
+						Languages = "English, French",
+						Rating = (decimal?)4.7,
+						Certification = "Master Color Analyst (International Certification)",
+						CreatedDate = now,
+						Introduction = "Tìm kiếm bảng màu hoàn hảo cho bạn, bất kể bạn ở đâu.",
+						FacebookAccount = "https://www.facebook.com/global.colorist.trong/"
+					}
+				},
 			};
 		}
 
