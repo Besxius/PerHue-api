@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Net.payOS.Types;
+using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.Payment;
@@ -61,7 +61,8 @@ namespace PerHue.Infrastructure.Services
 
 		// ========= AN LÀM
 
-		public async Task<int> CreateSuccessPaymentInDbAsync(PerHue.Application.Models.Payment.An.CreatePaymentModel model) {
+		public async Task<int> CreateSuccessPaymentInDbAsync(PerHue.Application.Models.Payment.An.CreatePaymentModel model)
+		{
 			var payment = new Payment
 			{
 				Id = model.PaymentId,
@@ -185,5 +186,136 @@ namespace PerHue.Infrastructure.Services
 			}).ToList();
 		}
 
+		public async Task<PaymentDetailModel?> GetPaymentDetailForAdminAsync(int paymentId)
+		{
+			var payment = await _unitOfWork.PaymentRepository.GetPaymentByIdWithLogsAsync(paymentId);
+
+			if (payment == null)
+			{
+				return null;
+			}
+
+			return new PaymentDetailModel
+			{
+				Id = payment.Id,
+				UserId = payment.UserId,
+				UserFullname = payment.User?.Fullname ?? string.Empty,
+				UserEmail = payment.User?.Email ?? string.Empty,
+				Amount = payment.Amount,
+				Description = payment.Description,
+				OrderCode = payment.TransactionId,
+				CreatedAt = payment.CreatedAt,
+				PaymentLogs = payment.PaymentLogs?.Select(pl => new PaymentLogDetailModel
+				{
+					Id = pl.Id,
+					PaymentId = pl.PaymentId,
+					Message = pl.Mesage,
+					CreatedAt = pl.CreatedAt,
+					OldStatus = pl.OldStatus,
+					NewStatus = pl.NewStatus,
+					Metadata = pl.Metadata
+				}).OrderByDescending(pl => pl.CreatedAt).ToList() ?? new()
+			};
+		}
+
+		/// <summary>
+		/// [ADMIN] Lấy danh sách các khách hàng thanh toán
+		/// </summary>
+		/// <param name="searchModel"></param>
+		/// <returns></returns>
+		public async Task<PaginatedResultV2<PaymentServicePackage>> GetPaymentsForAdminAsync(
+	AdminPaymentSearchModel searchModel)
+		{
+			var query = _unitOfWork.UserSubscriptionRepository.GetQueryable()
+				.Where(x => x.Payment != null)
+				.Select(x => new
+				{
+					x.Id,
+					x.UserId,
+					UserFullname = x.User.Fullname,
+					UserEmail = x.User.Email,
+					Amount = x.Payment.Amount,
+					Description = x.Payment.Description,
+					OrderCode = x.Payment.TransactionId,
+					CreatedAt = x.Payment.CreatedAt,
+					Status = x.Payment.Status,
+					ServicePackageId = x.ServicePackage.Id,
+					ServicePackageName = x.ServicePackage.Name
+				});
+
+			// SEARCH FILTER
+			if (!string.IsNullOrEmpty(searchModel.SearchTerm))
+			{
+				var term = searchModel.SearchTerm;
+
+				switch (searchModel.SearchBy?.ToLower())
+				{
+					case "userid":
+						if (int.TryParse(term, out int userId))
+							query = query.Where(x => x.UserId == userId);
+						break;
+
+					case "transactionid":
+						query = query.Where(x => x.OrderCode.Contains(term));
+						break;
+
+					case "status":
+						query = query.Where(x => x.Status.Contains(term));
+						break;
+
+					default:
+						query = query.Where(x =>
+							x.OrderCode.Contains(term) ||
+							x.Status.Contains(term));
+						break;
+				}
+			}
+
+			// SORTING
+			query = (searchModel.SortBy?.ToLower(), searchModel.SortOrder?.ToLower()) switch
+			{
+				("amount", "asc") => query.OrderBy(x => x.Amount),
+				("amount", _) => query.OrderByDescending(x => x.Amount),
+
+				("createdat", "asc") => query.OrderBy(x => x.CreatedAt),
+				("createdat", _) => query.OrderByDescending(x => x.CreatedAt),
+
+				("id", "asc") => query.OrderBy(x => x.Id),
+				("id", _) => query.OrderByDescending(x => x.Id),
+
+				_ => query.OrderByDescending(x => x.CreatedAt)
+			};
+
+			// COUNT + PAGINATION
+			var totalCount = query.Count();
+
+			var items = query
+				.Skip((searchModel.PageIndex - 1) * searchModel.PageSize)
+				.Take(searchModel.PageSize)
+				.ToList();
+
+			// MAP RESULT
+			var result = items.Select(x => new PaymentServicePackage
+			{
+				Id = x.Id,
+				UserId = x.UserId,
+				UserFullname = x.UserFullname ?? "",
+				UserEmail = x.UserEmail ?? "",
+				Amount = x.Amount,
+				Description = x.Description,
+				OrderCode = x.OrderCode,
+				CreatedAt = x.CreatedAt,
+				Status = x.Status,
+				ServicePackageId = x.ServicePackageId,
+				ServicePackageName = x.ServicePackageName
+			}).ToList();
+
+			return new PaginatedResultV2<PaymentServicePackage>
+			{
+				List = result,
+				Total = totalCount,
+				Current = searchModel.PageIndex
+			};
+		}
 	}
 }
