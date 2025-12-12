@@ -134,5 +134,127 @@ namespace PerHue.Infrastructure.Utils
 			double similarity = CalculateColorSimilarity(inputColor, dbColor);
 			return similarity * weight;
 		}
+
+		public static double CalculateListSimilarity(List<string> listA, List<string> listB)
+		{
+			if (listA == null || listB == null || listA.Count == 0 || listB.Count == 0)
+			{
+				return 0;
+			}
+
+			// 1. Chuyển đổi Hex sang RGB để sử dụng ColorCalculationHelper
+			var rgbA = listA.Select(ColorCalculationHelper.HexToRgb).Where(r => r.HasValue).Select(r => r.Value).ToList();
+			var rgbB = listB.Select(ColorCalculationHelper.HexToRgb).Where(r => r.HasValue).Select(r => r.Value).ToList();
+
+			if (rgbA.Count == 0 || rgbB.Count == 0)
+			{
+				return 0;
+			}
+
+			// Đặt danh sách ngắn hơn làm nguồn (source) và danh sách dài hơn làm đích (target)
+			var sourceList = rgbA.Count <= rgbB.Count ? rgbA : rgbB;
+			var targetList = rgbA.Count <= rgbB.Count ? rgbB : rgbA;
+
+			var unmatchedTargetIndices = Enumerable.Range(0, targetList.Count).ToList();
+			double totalSimilarity = 0;
+
+			// 2. Thực hiện Greedy Matching: Ghép mỗi màu trong Source với màu chưa được ghép tốt nhất trong Target
+			foreach (var sourceColor in sourceList)
+			{
+				double maxSimilarity = 0;
+				int bestMatchIndex = -1;
+
+				// Tìm màu gần nhất trong danh sách Target chưa được ghép
+				foreach (int index in unmatchedTargetIndices)
+				{
+					var targetColor = targetList[index];
+					// Tận dụng hàm đã có, điểm similarity là 0-100
+					double similarity = ColorCalculationHelper.CalculateColorSimilarity(sourceColor, targetColor);
+
+					if (similarity > maxSimilarity)
+					{
+						maxSimilarity = similarity;
+						bestMatchIndex = index;
+					}
+				}
+
+				// Nếu tìm thấy cặp ghép tốt nhất, thêm điểm và đánh dấu là đã ghép
+				if (bestMatchIndex != -1)
+				{
+					totalSimilarity += maxSimilarity;
+					unmatchedTargetIndices.Remove(bestMatchIndex);
+				}
+				else
+				{
+					// Trường hợp không tìm thấy cặp ghép (chủ yếu khi danh sách rỗng, đã được check ở đầu)
+				}
+			}
+
+			// 3. Chuẩn hóa về tỷ lệ 0-100%
+			// Chia cho kích thước của danh sách LỚN HƠN để đảm bảo kết quả phản ánh sự thiếu hụt nếu danh sách ngắn hơn nhiều
+			// và để điểm số không bao giờ vượt quá 100%.
+			return totalSimilarity / targetList.Count;
+		}
+
+		public static double CalculatePairSimilarity(
+			PersonalColorResult resultA,
+			PersonalColorResult resultB,
+			double seasonWeight = 0.4, // 40%
+			double recommendedWeight = 0.4, // 40%
+			double avoidedWeight = 0.2 // 20%
+		)
+		{
+			// Kiểm tra và chuẩn hóa trọng số (tổng phải là 1.0)
+			double totalWeight = seasonWeight + recommendedWeight + avoidedWeight;
+			if (Math.Abs(totalWeight - 1.0) > 0.001)
+			{
+				// Có thể log warning hoặc chuẩn hóa lại
+			}
+
+			// A. So sánh Màu Mùa (Season Score - S_Season)
+			double seasonScore = (resultA.Season.Equals(resultB.Season, StringComparison.OrdinalIgnoreCase)) ? 1.0 : 0.0;
+
+			// B. So sánh DS Màu Nên Dùng (Recommended Score - S_Rec)
+			// Chia điểm similarity (0-100) cho 100 để đưa về [0, 1]
+			double recommendedScore = CalculateListSimilarity(resultA.RecommendedColors, resultB.RecommendedColors) / 100.0;
+
+			// C. So sánh DS Màu Nên Tránh (Avoided Score - S_Avoid)
+			// Chia điểm similarity (0-100) cho 100 để đưa về [0, 1]
+			double avoidedScore = CalculateListSimilarity(resultA.AvoidedColors, resultB.AvoidedColors) / 100.0;
+
+			// D. Tính điểm tổng thể (0-1.0)
+			double overallSimilarity =
+				(seasonScore * seasonWeight) +
+				(recommendedScore * recommendedWeight) +
+				(avoidedScore * avoidedWeight);
+
+			// Trả về kết quả dưới dạng phần trăm (0-100)
+			return overallSimilarity * 100.0;
+		}
+		public static double CalculateThreeResultSimilarity(
+			PersonalColorResult r1,
+			PersonalColorResult r2,
+			PersonalColorResult r3,
+			double seasonWeight = 0.4,
+			double recommendedWeight = 0.4,
+			double avoidedWeight = 0.2
+		)
+		{
+			// 1. Tính điểm giống nhau cho từng cặp
+			double p12 = CalculatePairSimilarity(r1, r2, seasonWeight, recommendedWeight, avoidedWeight);
+			double p13 = CalculatePairSimilarity(r1, r3, seasonWeight, recommendedWeight, avoidedWeight);
+			double p23 = CalculatePairSimilarity(r2, r3, seasonWeight, recommendedWeight, avoidedWeight);
+
+			// 2. Tính điểm trung bình (trên 3 cặp)
+			double totalSimilarity = (p12 + p13 + p23) / 3.0;
+
+			return totalSimilarity; // Trả về giá trị %
+		}
+	}
+	public class PersonalColorResult
+	{
+		public string Season { get; set; } // Ví dụ: "Light Spring"
+		public List<string> RecommendedColors { get; set; } // List of Hex codes (e.g., "#FF0000")
+		public List<string> AvoidedColors { get; set; }   // List of Hex codes
 	}
 }
