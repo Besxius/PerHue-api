@@ -179,10 +179,18 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("review-requests")]
-		public async Task<ActionResult<ReviewTestRequestModel>> GetPendingReviewRequests()
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetPendingReviewRequests()
 		{
 			var expertId = await GetCurrentExpertId();
 			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("review-requests/{testRequestId}")]
+		public async Task<ActionResult<ReviewTestRequestModel>> GetPendingReviewRequestsById(int testRequestId)
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsByIdAsync(expertId, testRequestId);
 			return Ok(requests);
 		}
 
