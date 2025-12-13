@@ -23,7 +23,7 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
-				.FirstOrDefaultAsync(us => us.UserId == userId && us.Status == true);
+				.FirstOrDefaultAsync(us => us.UserId == userId && us.Status == true && us.ServicePackage.Type == "AI");
 		}
 
 		/// <summary>
