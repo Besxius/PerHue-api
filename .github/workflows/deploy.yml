@@ -19,7 +19,7 @@ jobs:
             buildTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
             commit    = "${{ github.sha }}"
             branch    = "${{ github.ref_name }}"
-            runId     = "${{ github.run_number }}"
+            runId     = [int]${{ github.run_number }}
           } | ConvertTo-Json -Depth 3
 
           $buildInfo | Out-File -Encoding utf8 buildinfo.json
