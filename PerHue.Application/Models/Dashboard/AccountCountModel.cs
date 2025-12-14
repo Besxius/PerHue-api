@@ -16,5 +16,6 @@ namespace PerHue.Application.Models.Dashboard
         public int NewAccountsToday { get; set; }
         public Dictionary<string, int> AccountsByRole { get; set; } = new();
         public Dictionary<string, int> AccountsByDay { get; set; } = new();
+        public Dictionary<string, int> AccountsByMonth { get; set; } = new();
     }
 }
