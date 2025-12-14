@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
@@ -77,10 +77,13 @@ namespace PerHue.Infrastructure.Services
 			var thisMonth = new DateTime(today.Year, today.Month, 1);
 			var thisWeek = today.AddDays(-(int)today.DayOfWeek);
 
+			// Nếu không có startDate, lấy 6 tháng trước
+			var effectiveStartDate = startDate ?? today.AddMonths(-6);
+
 			var totalAccounts = await _context.UserAccounts.CountAsync();
 			var activeAccounts = await _context.UserAccounts.Where(u => u.IsActive).CountAsync();
 			var inactiveAccounts = await _context.UserAccounts.Where(u => !u.IsActive).CountAsync();
-			var bannedAccounts = 0; // Add logic for banned users if field exists
+			var bannedAccounts = 0;
 
 			var expertAccounts = await _context.UserAccounts
 				.Where(u => u.RoleId == 3)
@@ -112,6 +115,25 @@ namespace PerHue.Infrastructure.Services
 				.Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
 				.ToDictionaryAsync(x => x.Date, x => x.Count);
 
+			// THÊM MỚI: accountsByMonth - group theo tháng
+			var accountsByMonth = await _context.UserAccounts
+				.Where(u => u.CreatedDate >= effectiveStartDate &&
+						   (endDate == null || u.CreatedDate <= endDate.Value))
+				.GroupBy(u => new { u.CreatedDate.Year, u.CreatedDate.Month })
+				.Select(g => new {
+					Year = g.Key.Year,
+					Month = g.Key.Month,
+					Count = g.Count()
+				})
+				.OrderBy(x => x.Year).ThenBy(x => x.Month)
+				.ToListAsync();
+
+			// Convert to dictionary sau khi đã lấy dữ liệu về
+			var accountsByMonthDict = accountsByMonth.ToDictionary(
+				x => $"{x.Year:D4}-{x.Month:D2}",
+				x => x.Count
+			);
+
 			return new AccountCountModel
 			{
 				TotalAccounts = totalAccounts,
@@ -124,7 +146,8 @@ namespace PerHue.Infrastructure.Services
 				NewAccountsThisWeek = newAccountsThisWeek,
 				NewAccountsToday = newAccountsToday,
 				AccountsByRole = accountsByRole,
-				AccountsByDay = accountsByDay
+				AccountsByDay = accountsByDay,
+				AccountsByMonth = accountsByMonthDict  // Dùng dictionary đã format
 			};
 		}
 
