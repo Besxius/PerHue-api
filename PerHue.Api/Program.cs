@@ -25,10 +25,10 @@ builder.Services.AddSwaggerGen(options =>
 	var description = buildInfo == null
 	   ? "Build info not available"
 	   : $"""
-        **Last build:** {buildInfo.BuildTime:yyyy-MM-dd HH:mm:ss} UTC  
-        **Branch:** {buildInfo.Branch}  
-        **Commit:** `{buildInfo.Commit[..7]}`  
-        **Run:** #{buildInfo.RunId}
+        **Last build:** {buildInfo?.BuildTime:yyyy-MM-dd HH:mm:ss} UTC  
+        **Branch:** {buildInfo?.Branch}  
+        **Commit:** `{buildInfo?.GetShortCommit()}`  
+        **Run:** #{buildInfo?.RunId}
         """;
 
 	options.SwaggerDoc("v1", new OpenApiInfo { Title = "App.API", Version = "v1", Description = description });
