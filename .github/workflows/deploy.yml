@@ -1,0 +1,39 @@
+name: Build and Deploy (self-hosted Windows runner)
+
+on:
+    push:
+        branches: ["main"]
+
+jobs:
+    build-and-deploy:
+        # concurrency: ci-${{ github.ref }}
+        runs-on: self-hosted
+
+        steps:
+            - name: Checkout 🛎️
+              uses: actions/checkout@v4
+
+            - name: Build & Restart Docker App
+              shell: powershell
+              run: |
+                  docker compose pull
+                  docker compose build --no-cache
+                  docker compose down
+                  docker compose up -d
+
+            # - uses: pnpm/action-setup@v2
+            # - uses: actions/setup-node@v4
+            #   with:
+            #     node-version: lts/*
+            #     cache: pnpm
+
+            # - name: Install and Build 🔧
+            #   run: |
+            #     pnpm install -r
+            #     pnpm run build && pnpm --filter docs run docs:build
+
+            # - name: Deploy 🚀
+            #   uses: JamesIves/github-pages-deploy-action@v4
+            #   with:
+            #     folder: build
+            #     clean: true
