@@ -1,6 +1,8 @@
 ﻿using Microsoft.OpenApi.Models;
 using PerHue.Application.Extensions;
+using PerHue.Domain.Entities;
 using PerHue.Infrastructure.Extensions;
+using PerHue.Infrastructure.Services;
 using PerHue.Infrastructure.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,10 +18,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+var buildInfo = BuildInfoProvider.Load();
 builder.Services.AddSwaggerGen(); 
 builder.Services.AddSwaggerGen(options =>
 {
-	options.SwaggerDoc("v1", new OpenApiInfo { Title = "App.API", Version = "v1" });
+	var description = buildInfo == null
+	   ? "Build info not available"
+	   : $"""
+        **Last build:** {buildInfo.BuildTime:yyyy-MM-dd HH:mm:ss} UTC  
+        **Branch:** {buildInfo.Branch}  
+        **Commit:** `{buildInfo.Commit[..7]}`  
+        **Run:** #{buildInfo.RunId}
+        """;
+
+	options.SwaggerDoc("v1", new OpenApiInfo { Title = "App.API", Version = "v1", Description = description });
 
 	options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 	{
@@ -75,5 +87,10 @@ app.UseAuthorization();
 
 app.MapHub<PerHue.Infrastructure.SignalR.Hub.ServerHub>("/serverhub");
 app.MapControllers();
+app.MapGet("/build-info", () =>
+{
+	var info = BuildInfoProvider.Load();
+	return info is null ? Results.NotFound() : Results.Ok(info);
+});
 
 app.Run();

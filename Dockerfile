@@ -21,7 +21,7 @@ COPY ["PerHue.Infrastructure/PerHue.Infrastructure.csproj", "PerHue.Infrastructu
 
 RUN dotnet restore "PerHue.Api/PerHue.Api.csproj"
 
-# Copy toàn bộ solution
+# Copy toàn bộ solution (BAO GỒM buildinfo.json)
 COPY . .
 
 WORKDIR "/src/PerHue.Api"
@@ -39,6 +39,8 @@ RUN dotnet publish "PerHue.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /
 # ============================
 FROM base AS final
 WORKDIR /app
+
 COPY --from=publish /app/publish .
+COPY buildinfo.json ./buildinfo.json
 
 ENTRYPOINT ["dotnet", "PerHue.Api.dll"]
