@@ -54,12 +54,13 @@ namespace PerHue.Infrastructure.Utils
 				new() { Name = "Admin" },
 				new() { Name = "User" },
 				new() { Name = "Expert" },
+				new() { Name = "Moderator" },
 			};
 		}
 
 		private IEnumerable<ServicePackage> GetPrimaryServicePackages()
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 
 			return new List<ServicePackage>
 			{
@@ -70,9 +71,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 1, // 1 Month Trial
 					Uses = 1,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = now
+					CreatedDate = now  - TimeSpan.FromDays(170),
 				},
-			    
+
 				new() {
 					Name = "AI Test Basic",
 					Price = 115000,
@@ -80,9 +81,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 3,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				},
-			    
+
 				new() {
 					Name = "AI Test Standard",
 					Price = 415000,
@@ -90,9 +91,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				},
-			    
+
 				new() {
 					Name = "AI Test Premium & Promotion",
 					Price = 945000,
@@ -100,9 +101,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 12, // 6 Months (Default requested)
 					Uses = 25,
 					Type = ServicePackageTypeEnum.AI.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				},
-			    
+
 				new() {
 					Name = "Expert Single Analysis",
 					Price = 100000,
@@ -110,9 +111,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 1,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				},
-			    
+
 				new() {
 					Name = "Expert 5-Test Bundle",
 					Price = 350000,
@@ -120,9 +121,9 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 5,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				},
-			    
+
 				new() {
 					Name = "Expert 10-Test Professional",
 					Price = 650000,
@@ -130,7 +131,7 @@ namespace PerHue.Infrastructure.Utils
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
-					CreatedDate = now
+					CreatedDate = now - TimeSpan.FromDays(170)
 				}
 			};
 		}
@@ -148,7 +149,7 @@ namespace PerHue.Infrastructure.Utils
 				Languages = "Vietnamese, English",
 				Rating = (decimal?)5.0,
 				Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry Certification",
-				CreatedDate = now,
+				CreatedDate = now - TimeSpan.FromDays(120),
 				Introduction = "\"Please welcome a guest who is about to save you time, money, and your complexion... He is Besxius, and he has successfully guided hundreds of clients to discover their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into radiant collections.\"",
 				FacebookAccount = "https://www.facebook.com/kien.tran.expert/"
 			};
@@ -162,7 +163,7 @@ namespace PerHue.Infrastructure.Utils
 				Languages = "Vietnamese, English",
 				Rating = (decimal?)4.9,
 				Certification = "Certified Image Consultant",
-				CreatedDate = now,
+				CreatedDate = now - TimeSpan.FromDays(60),
 				Introduction = "I will turn your personal color palette into an unbeatable style advantage.",
 				FacebookAccount = "https://www.facebook.com/hung.color.stylist/"
 			};
@@ -176,7 +177,7 @@ namespace PerHue.Infrastructure.Utils
 				Languages = "Vietnamese",
 				Rating = (decimal?)5.0,
 				Certification = "Makeup Artistry Certification, Personal Color Expert",
-				CreatedDate = now,
+				CreatedDate = now - TimeSpan.FromDays(60),
 				Introduction = "Let me help you shine with the gentlest and most sophisticated tones.",
 				FacebookAccount = "https://www.facebook.com/an.hue.master/"
 			};
@@ -190,7 +191,7 @@ namespace PerHue.Infrastructure.Utils
 				Languages = "Vietnamese",
 				Rating = (decimal?)4.8,
 				Certification = "Certified 12-Season Analyst",
-				CreatedDate = now,
+				CreatedDate = now - TimeSpan.FromDays(30),
 				Introduction = "Welcome to the color analyst who will help you discover your deepest shades.",
 				FacebookAccount = "https://www.facebook.com/trong.ld.analyst/"
 			};
@@ -207,7 +208,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2000, 1, 1),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now - TimeSpan.FromDays(180),
 					RoleId = 1,
 				},
 
@@ -222,7 +223,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 6, 16),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(130),
 					RoleId = 3,
 					Expert = trongExpertProfile
 				},
@@ -238,7 +239,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(70),
 					RoleId = 3,
 					Expert = hungExpertProfile
 				},
@@ -254,7 +255,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(75),
 					RoleId = 3,
 					Expert = anExpertProfile
 				},
@@ -270,7 +271,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 1, 11),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(35),
 					RoleId = 3,
 					Expert = kienExpertProfile
 				},
@@ -346,7 +347,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 3, 3),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(15),
 					RoleId = 3,
 					Expert = new Expert
 					{
@@ -357,7 +358,7 @@ namespace PerHue.Infrastructure.Utils
 						Languages = "Vietnamese, English",
 						Rating = (decimal?)5.0,
 						Certification = "Certified Personal Color expert, Certified Image Consultant, Makeup Artistry   	Certification",
-						CreatedDate = now,
+						CreatedDate = now - TimeSpan.FromDays(5),
 						Introduction = "\"Please welcome a guest who is about to save you time, money, and your			complexion... He is Besxius, and he has successfully guided hundreds of clients to discover			their precise Undertone and optimal color 'Season,' transforming chaotic wardrobes into		radiant		collections.\"",
 						FacebookAccount = "https://www.facebook.com/kien.tran.expert/"
 					}
@@ -374,7 +375,7 @@ namespace PerHue.Infrastructure.Utils
 					Dob = new DateOnly(2003, 3, 3),
 					ProfilePicture = string.Empty,
 					IsActive = true,
-					CreatedDate = now,
+					CreatedDate = now  - TimeSpan.FromDays(20),
 					RoleId = 3,
 					Expert = new Expert
 					{
@@ -385,7 +386,7 @@ namespace PerHue.Infrastructure.Utils
 						Languages = "English, French",
 						Rating = (decimal?)4.7,
 						Certification = "Master Color Analyst (International Certification)",
-						CreatedDate = now,
+						CreatedDate = now  - TimeSpan.FromDays(9),
 						Introduction = "Tìm kiếm bảng màu hoàn hảo cho bạn, bất kể bạn ở đâu.",
 						FacebookAccount = "https://www.facebook.com/global.colorist.trong/"
 					}
