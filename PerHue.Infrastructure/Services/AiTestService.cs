@@ -571,8 +571,10 @@ namespace PerHue.Infrastructure.Services
 					var relatedPalettesByColors = await _capsulePaletteService
 						.GetRelativeCapsulePalettes(suggestedHexCodes);
 
+					var relatedPalettesList = relatedPalettesByColors.ToList();
+
 					_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
-						relatedPalettesByColors.Count());
+						relatedPalettesList.Count);
 
 					// 3. Map response
 					var response = _mapper.Map<AiTestResultResponseModel>(result);
@@ -586,6 +588,9 @@ namespace PerHue.Infrastructure.Services
 							HexCode = c.MatchedColor.HexCode
 						})
 						.ToList();
+
+					// ✅ ASSIGN THE FIRST RELATED CAPSULE PALETTE TO THE RESPONSE
+					response.SuggestedCapsulePalleteBySystem = relatedPalettesList.FirstOrDefault() ?? new CapsulePaletteModel();
 
 					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
 						testRequest.Id);
