@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
+using PerHue.Application.Models.Notification;
 using PerHue.Application.Models.VerifyInformation;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
@@ -17,11 +18,15 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IImageUploadService _imageUploadService;
+		private readonly INotificationService _notificationService;
+		private readonly EmailService _emailService;
 
-		public VerificationService(IUnitOfWork unitOfWork, IImageUploadService imageUploadService)
+		public VerificationService(IUnitOfWork unitOfWork, IImageUploadService imageUploadService, INotificationService notificationService, EmailService emailService)
 		{
 			_unitOfWork = unitOfWork;
 			_imageUploadService = imageUploadService;
+			_notificationService = notificationService;
+			_emailService = emailService;
 		}
 
 		public async Task<PaginatedResultV2<VerifyRequestModel>> GetAllAsync(VerificationSearchModel searchModel)
@@ -255,6 +260,34 @@ namespace PerHue.Infrastructure.Services
 				}
 			}
 
+			//send in-app notification
+			var notiModel = new CreateNotificationModel
+			{
+				Title = "Verification Approved",
+				Content = "Your identity verification has been approved. You can now access all verified-user features.",
+				Receiver = verifyInfo.Id
+			};
+			await _notificationService.CreateAsync(notiModel);
+
+			//send email
+			var emailModel = new EmailServiceRequestModel
+			{
+				ToEmail = verifyInfo.Email,
+				Subject = "[PerHue] Your verification is approved",
+				Body =
+@"Hi " + verifyInfo.Nickname + @",
+
+Good news! Your identity verification has been approved.
+
+You can now access all features that require a verified account.
+
+If you have any questions, reply to this email or contact our Support Center.
+
+Best regards,
+PerHue Team"
+			};
+			await _emailService.SendEmailAsync(emailModel.ToEmail, emailModel.Subject, emailModel.Body);
+
 			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id, true);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 			return true;
@@ -271,13 +304,37 @@ namespace PerHue.Infrastructure.Services
 			var notification = new Notification
 			{
 				Receiver = id,
-				Title = "Expert Verification Request Denied",
+				Title = "Verification Denied",
 				Content = $"Your verification request has been denied. Reason: {reason}",
 				ReceivedTime = DateTime.Now,
 				IsRead = false
 			};
 
 			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			//send email
+			var emailModel = new EmailServiceRequestModel
+			{
+				ToEmail = verifyInfo.Email,
+				Subject = "[PerHue] Your verification is denied",
+				Body =
+			@"Hi " + verifyInfo.Nickname + @",
+
+Thank you for submitting your verification request.
+
+After reviewing your information, we’re unable to approve your verification at this time.
+
+Please update and resubmit your verification.
+
+You can resubmit your verification directly in the PerHue app anytime.
+
+If you need help, reply to this email or contact our Support Center.
+
+Best regards,
+PerHue Team"
+			};
+			await _emailService.SendEmailAsync(emailModel.ToEmail, emailModel.Subject, emailModel.Body);
+
 			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id, false);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 			return true;
