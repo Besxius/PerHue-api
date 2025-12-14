@@ -106,11 +106,22 @@ namespace PerHue.Infrastructure.Services
 				.Select(g => new { Role = g.Key, Count = g.Count() })
 				.ToDictionaryAsync(x => x.Role, x => x.Count);
 
+			//var accountsByDay = await _context.UserAccounts
+			//	.Where(u => u.CreatedDate >= today.AddDays(-7))
+			//	.GroupBy(u => u.CreatedDate.Date)
+			//	.Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
+			//	.ToDictionaryAsync(x => x.Date, x => x.Count);
+
 			var accountsByDay = await _context.UserAccounts
-				.Where(u => u.CreatedDate >= today.AddDays(-7))
-				.GroupBy(u => u.CreatedDate.Date)
-				.Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
-				.ToDictionaryAsync(x => x.Date, x => x.Count);
+			.Where(u => u.CreatedDate >= startDate && u.CreatedDate <= endDate)
+			.GroupBy(u => new { Year = u.CreatedDate.Year, Month = u.CreatedDate.Month })
+			.Select(g => new
+			{
+			Date = $"{g.Key.Year}-{g.Key.Month.ToString().PadLeft(2, '0')}",
+			Count = g.Count()
+			})
+			.OrderBy(x => x.Date)
+			.ToDictionaryAsync(x => x.Date, x => x.Count);
 
 			return new AccountCountModel
 			{
