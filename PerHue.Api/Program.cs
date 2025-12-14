@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(options =>
 	var description = buildInfo == null
 	   ? "Build info not available"
 	   : $"""
-        **Last build:** {buildInfo?.BuildTimeUtc} UTC  
+        **Last build:** {buildInfo?.BuildTimeUtc}  
         **Branch:** {buildInfo?.Branch ?? "unknown"}  
         **Commit:** `{buildInfo?.ShortCommit}`  
         **Run:** #{buildInfo?.RunId}
