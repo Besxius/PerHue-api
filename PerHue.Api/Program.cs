@@ -19,15 +19,15 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var buildInfo = BuildInfoProvider.Load();
-builder.Services.AddSwaggerGen(); 
+builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(options =>
 {
 	var description = buildInfo == null
 	   ? "Build info not available"
 	   : $"""
-        **Last build:** {buildInfo?.BuildTime:yyyy-MM-dd HH:mm:ss} UTC  
-        **Branch:** {buildInfo?.Branch}  
-        **Commit:** `{buildInfo?.GetShortCommit()}`  
+        **Last build:** {buildInfo?.BuildTimeUtc} UTC  
+        **Branch:** {buildInfo?.Branch ?? "unknown"}  
+        **Commit:** `{buildInfo?.ShortCommit}`  
         **Run:** #{buildInfo?.RunId}
         """;
 
@@ -55,7 +55,7 @@ builder.Services.AddSwaggerGen(options =>
 				}
 			},
 			new string[] {}
-        }
+		}
 	});
 });
 
