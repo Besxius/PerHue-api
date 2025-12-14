@@ -192,9 +192,9 @@ namespace PerHue.Infrastructure.Services
 		private double CalculatePairSimilarity(
 			TestResponseModel resultA,
 			TestResponseModel resultB,
-			double seasonWeight = 0.4,
-			double bestColorWeight = 0.4,
-			double worstColorWeight = 0.2
+			double seasonWeight = 0.7,
+			double bestColorWeight = 0.2,
+			double worstColorWeight = 0.1
 		)
 		{
 			// 1. So sánh Màu Mùa (Season Score - S_Season)
