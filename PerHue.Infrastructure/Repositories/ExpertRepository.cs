@@ -1,17 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
+using PerHue.Infrastructure.Basic;
 using PerHue.Infrastructure.Persistence;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PerHue.Infrastructure.Repositories
 {
-    public class ExpertRepository : IExpertRepository
+    public class ExpertRepository : GenericRepository<Expert>, IExpertRepository
     {
         private readonly PerHueDbContext _context;
 
-        public ExpertRepository(PerHueDbContext context)
+        public ExpertRepository(PerHueDbContext context) : base(context)
         {
             _context = context;
         }

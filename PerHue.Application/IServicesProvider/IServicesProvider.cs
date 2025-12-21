@@ -25,6 +25,7 @@ namespace PerHue.Application.IServicesProvider
 		IAdminColorService AdminColorService { get; }
 		IAdminCapsulePaletteService AdminCapsulePaletteService { get; }
 		IAdminDashboardService AdminDashboardService { get; }
+		IAdminExpertService AdminExpertService { get; }
 
 		IReportService ReportService { get; }
 	}

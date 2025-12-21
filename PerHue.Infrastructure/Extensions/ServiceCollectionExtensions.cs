@@ -62,6 +62,7 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddScoped<IAdminColorService, AdminColorService>();
 			services.AddScoped<IAdminCapsulePaletteService, AdminCapsulePaletteService>();
 			services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+			services.AddScoped<IAdminExpertService, AdminExpertService>();
 			services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 			services.AddScoped<IPaymentService, PaymentService>();
 			services.AddScoped<IServicePackageService, ServicePackageService>();

@@ -31,9 +31,9 @@ namespace PerHue.Infrastructure.ServicesProviders
 		public IAdminColorService AdminColorService { get; private set; }
 		public IAdminCapsulePaletteService AdminCapsulePaletteService { get; private set; }
 		public IAdminDashboardService AdminDashboardService { get; private set; }
+		public IAdminExpertService AdminExpertService { get; private set; }
 
 		public IReportService ReportService { get; private set; }
-
 		public ServicesProvider(
 				IUnitOfWork unitOfWork,
 				IUserService userService,
@@ -56,6 +56,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			IAdminColorService adminColorService,
 			IAdminCapsulePaletteService adminCapsulePaletteService,
 			IAdminDashboardService adminDashboardService,
+			IAdminExpertService adminExpertService,
 			IReportService reportService
 			)
 		{
@@ -80,6 +81,7 @@ namespace PerHue.Infrastructure.ServicesProviders
 			AdminColorService = adminColorService;
 			AdminCapsulePaletteService = adminCapsulePaletteService;
 			AdminDashboardService = adminDashboardService;
+			AdminExpertService = adminExpertService;
 			ReportService = reportService;
 		}
 
