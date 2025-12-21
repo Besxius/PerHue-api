@@ -12,5 +12,6 @@ namespace PerHue.Application.Models.ExpertTestResult
 		public TestRequestModel TestRequest { get; set; }
 		public IEnumerable<TestResponseModel> PreviousResponses { get; set; }
 		public bool CanEdit { get; set; }
+		public int? VotedResponseId { get; set; }
 	}
 }

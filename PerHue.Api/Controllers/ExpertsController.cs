@@ -210,10 +210,16 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("reviews/{testRequestId}")]
-		public async Task<ActionResult<ReviewTestRequestModel>> GetPendingReviewRequestsById(int testRequestId)
+		public async Task<ActionResult<ReviewTestRequestModel>> GetReviewRequestById(int testRequestId)
 		{
 			var expertId = await GetCurrentExpertId();
-			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsByIdAsync(expertId, testRequestId);
+			var requests = await _servicesProvider.ExpertTestService.GetReviewRequestByIdAsync(expertId, testRequestId);
+
+			if (requests == null)
+			{
+				return NotFound(new { message = "Review request not found or not accessible." });
+			}
+
 			return Ok(requests);
 		}
 
