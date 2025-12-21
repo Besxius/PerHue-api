@@ -13,5 +13,6 @@ namespace PerHue.Application.IServices
 		Task<bool> ExistsAsync(int id);
 		Task<IEnumerable<ExpertModel>> GetAllByRatingDescendingAsync();
 		Task<ExpertSalaryModel> CalculateSalaryAsync(int expertId, DateTime? startDate, DateTime? endDate);
+		Task<IEnumerable<ExpertSalaryModel>> CalculateAllExpertsSalaryAsync(DateTime? startDate, DateTime? endDate);
 	}
 }

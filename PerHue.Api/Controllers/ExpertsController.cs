@@ -69,6 +69,23 @@ namespace PerHue.Api.Controllers
 				return StatusCode(500, $"Internal server error: {ex.Message}");
 			}
 		}
+		[HttpGet("salary-report")]
+		// Assuming this should be accessible by Admin. If public, remove the Authorize attribute.
+		// [Authorize(Roles = "Admin")] 
+		public async Task<ActionResult<IEnumerable<ExpertSalaryModel>>> GetAllExpertsSalary(
+			[FromQuery] DateTime? startDate,
+			[FromQuery] DateTime? endDate)
+		{
+			try
+			{
+				var report = await _servicesProvider.ExpertService.CalculateAllExpertsSalaryAsync(startDate, endDate);
+				return Ok(report);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
 
 		[HttpGet("information")]
 		public async Task<ActionResult<ExpertModel>> GetExpertInformation()
@@ -164,6 +181,35 @@ namespace PerHue.Api.Controllers
 			var requests = await _servicesProvider.ExpertTestService.GetAllRequestsAsync(expertId);
 			return Ok(requests);
 		}
+		[HttpGet("completed-requests")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetCompletedRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetCompletedRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("expired-requests")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetExpiredRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetExpiredRequestsAsync(expertId);
+			return Ok(requests);
+		}
+		[HttpGet("review-requests/expired")]
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetExpiredReviewRequestsList()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetExpiredReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+		[HttpGet("review-history")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetReviewHistory()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetReviewHistoryAsync(expertId);
+			return Ok(requests);
+		}
 
 		[HttpPost("respond")]
 		public async Task<IActionResult> SubmitResponse([FromBody] CreateTestResponseModel model)
@@ -178,11 +224,18 @@ namespace PerHue.Api.Controllers
 			return Ok(response);
 		}
 
-		[HttpGet("review-requests")]
+		[HttpGet("review-requests/pending")]
 		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetPendingReviewRequests()
 		{
 			var expertId = await GetCurrentExpertId();
 			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+		[HttpGet("review-requests/completed")]
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetCompletedReviewRequestsList()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetCompletedReviewRequestsAsync(expertId);
 			return Ok(requests);
 		}
 
@@ -213,5 +266,6 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
+		
 	}
 }

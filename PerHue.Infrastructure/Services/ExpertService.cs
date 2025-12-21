@@ -141,5 +141,23 @@ namespace PerHue.Infrastructure.Services
 
 			return salaryModel;
 		}
+		public async Task<IEnumerable<ExpertSalaryModel>> CalculateAllExpertsSalaryAsync(DateTime? startDate, DateTime? endDate)
+		{
+			// 1. Get all experts (using the existing method logic or repository directly)
+			// We use the repository directly to get entities since we just need IDs for calculation
+			var experts = await _unitOfWork.ExpertRepository.GetAllAsync();
+
+			var reports = new List<ExpertSalaryModel>();
+
+			// 2. Loop through each expert and calculate their salary
+			foreach (var expert in experts)
+			{
+				// Reuse the single calculation logic to avoid code duplication
+				var salaryReport = await CalculateSalaryAsync(expert.Id, startDate, endDate);
+				reports.Add(salaryReport);
+			}
+
+			return reports;
+		}
 	}
 }
