@@ -83,6 +83,5 @@ namespace PerHue.Infrastructure.Repositories
 				.OrderByDescending(etr => etr.CreatedDate)
 				.ToListAsync();
 		}
-
 	}
 }
