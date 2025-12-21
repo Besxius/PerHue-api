@@ -29,7 +29,6 @@ namespace PerHue.Api.Controllers
 			return Ok(experts);
 		}
 
-		// You can also add the GetAll endpoint here if needed for clearer API structure
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<ExpertModel>>> GetAllExperts()
 		{
@@ -47,13 +46,13 @@ namespace PerHue.Api.Controllers
 			}
 			return Ok(expert);
 		}
+
 		[HttpGet("my-salary")]
 		[Authorize(Roles = "Expert")]
 		public async Task<ActionResult<ExpertSalaryModel>> GetMySalary(
 			[FromQuery] DateTime? startDate,
 			[FromQuery] DateTime? endDate)
 		{
-			// Get User ID from token
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (!int.TryParse(userIdString, out var expertId))
 			{
@@ -63,6 +62,22 @@ namespace PerHue.Api.Controllers
 			{
 				var salaryReport = await _servicesProvider.ExpertService.CalculateSalaryAsync(expertId, startDate, endDate);
 				return Ok(salaryReport);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
+
+		[HttpGet("salary-report")]
+		public async Task<ActionResult<IEnumerable<ExpertSalaryModel>>> GetAllExpertsSalary(
+			[FromQuery] DateTime? startDate,
+			[FromQuery] DateTime? endDate)
+		{
+			try
+			{
+				var report = await _servicesProvider.ExpertService.CalculateAllExpertsSalaryAsync(startDate, endDate);
+				return Ok(report);
 			}
 			catch (Exception ex)
 			{
@@ -89,14 +104,6 @@ namespace PerHue.Api.Controllers
 			return user.Id; // In this system, ExpertId is the same as UserAccount.Id
 		}
 
-		[HttpGet("requests")]
-		[Authorize(Roles = "Expert")]
-		public async Task<ActionResult<IEnumerable<TestRequestModel>>> GetPendingRequests()
-		{
-			var expertId = await GetCurrentExpertId();
-			var requests = await _servicesProvider.ExpertTestService.GetPendingRequestsAsync(expertId);
-			return Ok(requests);
-		}
 		[HttpGet("requests/{id}")]
 		[Authorize(Roles = "Expert")]
 		public async Task<ActionResult<ExpertTestResultModel>> GetExpertTestResult(int id)
@@ -109,7 +116,6 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
-				// Now returns the filtered ExpertTestResultModel
 				var result = await _servicesProvider.ExpertTestService.GetExpertResponsesForExpertAsync(id, userId);
 				return Ok(result);
 			}
@@ -123,9 +129,22 @@ namespace PerHue.Api.Controllers
 			}
 		}
 
-		[HttpPut("requests/{id}")]
+		[HttpPost("requests/respond")]
+		public async Task<IActionResult> SubmitResponse([FromBody] CreateTestResponseModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			var expertId = await GetCurrentExpertId();
+			var response = await _servicesProvider.ExpertTestService.SubmitResponseAsync(model, expertId);
+			return Ok(response);
+		}
+
+		[HttpPut("requests/respond/{tesRequestId}")]
 		[Authorize(Roles = "Expert")]
-		public async Task<ActionResult<TestResponseModel>> UpdateResponse(int id, [FromBody] UpdateTestResponseModel model)
+		public async Task<ActionResult<TestResponseModel>> UpdateResponse(int tesRequestId, [FromBody] UpdateTestResponseModel model)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -140,8 +159,7 @@ namespace PerHue.Api.Controllers
 
 			try
 			{
-				// Pass 'id' as 'testRequestId'
-				var updatedResponse = await _servicesProvider.ExpertTestService.UpdateResponseAsync(id, model, expertId);
+				var updatedResponse = await _servicesProvider.ExpertTestService.UpdateResponseAsync(tesRequestId, model, expertId);
 				return Ok(updatedResponse);
 			}
 			catch (UnauthorizedAccessException ex)
@@ -157,7 +175,8 @@ namespace PerHue.Api.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
-		[HttpGet("all-requests")]
+
+		[HttpGet("requests/history")]
 		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetAllRequests()
 		{
 			var expertId = await GetCurrentExpertId();
@@ -165,36 +184,46 @@ namespace PerHue.Api.Controllers
 			return Ok(requests);
 		}
 
-		[HttpPost("respond")]
-		public async Task<IActionResult> SubmitResponse([FromBody] CreateTestResponseModel model)
+		[HttpGet("requests/pending")]
+		[Authorize(Roles = "Expert")]
+		public async Task<ActionResult<IEnumerable<TestRequestModel>>> GetPendingRequests()
 		{
-			if (!ModelState.IsValid)
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetPendingRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("requests/completed")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetCompletedRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetCompletedRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("requests/expired")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetExpiredRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetExpiredRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("reviews/{testRequestId}")]
+		public async Task<ActionResult<ReviewTestRequestModel>> GetReviewRequestById(int testRequestId)
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetReviewRequestByIdAsync(expertId, testRequestId);
+
+			if (requests == null)
 			{
-				return BadRequest(ModelState);
+				return NotFound(new { message = "Review request not found or not accessible." });
 			}
 
-			var expertId = await GetCurrentExpertId();
-			var response = await _servicesProvider.ExpertTestService.SubmitResponseAsync(model, expertId);
-			return Ok(response);
-		}
-
-		[HttpGet("review-requests")]
-		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetPendingReviewRequests()
-		{
-			var expertId = await GetCurrentExpertId();
-			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
 			return Ok(requests);
 		}
 
-		[HttpGet("review-requests/{testRequestId}")]
-		public async Task<ActionResult<ReviewTestRequestModel>> GetPendingReviewRequestsById(int testRequestId)
-		{
-			var expertId = await GetCurrentExpertId();
-			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsByIdAsync(expertId, testRequestId);
-			return Ok(requests);
-		}
-
-		[HttpPost("vote")]
+		[HttpPost("reviews/vote")]
 		public async Task<IActionResult> VoteForResponse([FromBody] VoteResponseModel model)
 		{
 			if (!ModelState.IsValid)
@@ -212,6 +241,38 @@ namespace PerHue.Api.Controllers
 			{
 				return BadRequest(new { message = ex.Message });
 			}
+		}
+
+		[HttpGet("reviews/history")]
+		public async Task<ActionResult<IEnumerable<ExpertAssignmentModel>>> GetReviewHistory()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetReviewHistoryAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("reviews/pending")]
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetPendingReviewRequests()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetPendingReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("reviews/completed")]
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetCompletedReviewRequestsList()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetCompletedReviewRequestsAsync(expertId);
+			return Ok(requests);
+		}
+
+		[HttpGet("reviews/expired")]
+		public async Task<ActionResult<IEnumerable<ReviewTestRequestModel>>> GetExpiredReviewRequestsList()
+		{
+			var expertId = await GetCurrentExpertId();
+			var requests = await _servicesProvider.ExpertTestService.GetExpiredReviewRequestsAsync(expertId);
+			return Ok(requests);
 		}
 	}
 }

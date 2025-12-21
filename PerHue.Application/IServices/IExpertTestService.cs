@@ -28,8 +28,15 @@ namespace PerHue.Application.IServices
 		Task RateExpertResponseAsync(RateExpertResponseModel model, int userId);
 		Task<TestResponseModel> VoteForResponseAsync(VoteResponseModel model, int expertId);
 		Task<IEnumerable<ReviewTestRequestModel>> GetPendingReviewRequestsAsync(int expertId);
+		Task<IEnumerable<ReviewTestRequestModel>> GetCompletedReviewRequestsAsync(int expertId);
+
 		Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId);
 		Task<TestResponseModel> UpdateResponseAsync(int testRequestId, UpdateTestResponseModel model, int expertId);
-		Task<ReviewTestRequestModel> GetPendingReviewRequestsByIdAsync(int expertId, int testRequestId);
+		Task<ReviewTestRequestModel> GetReviewRequestByIdAsync(int expertId, int testRequestId);
+		Task<IEnumerable<ExpertAssignmentModel>> GetReviewHistoryAsync(int expertId);
+		Task<IEnumerable<ExpertAssignmentModel>> GetCompletedRequestsAsync(int expertId);
+		Task<IEnumerable<ExpertAssignmentModel>> GetExpiredRequestsAsync(int expertId);
+		Task<IEnumerable<ReviewTestRequestModel>> GetExpiredReviewRequestsAsync(int expertId);
+
 	}
 }
