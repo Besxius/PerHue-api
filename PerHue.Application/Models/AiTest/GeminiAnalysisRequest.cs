@@ -126,6 +126,7 @@ namespace PerHue.Application.Models.AiTest
 
 		public DateTime? Date { get; set; }
 		public int ColorTypeId { get; set; }
+		public string ColorTypeName { get; set; } = null!;
 
 		public string SuggestedColor { get; set; } = null!;
 

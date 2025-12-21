@@ -22,7 +22,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("manual-test/my-history")]
-		[Authorize(Roles = "User,Admin")]
+		[Authorize(Roles = "User,Admin,Expert")]
 		public async Task<ActionResult<IEnumerable<TestResultModel>>> GetMyManualTests()
 		{
 			try
@@ -42,7 +42,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpGet("manual-test/{id}")]
-		[Authorize(Roles = "User,Admin")]
+		[Authorize(Roles = "User,Admin,Expert")]
 		public async Task<ActionResult<TestResultModel>> GetManualTestById(int id)
 		{
 			try
