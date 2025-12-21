@@ -104,7 +104,9 @@
 		Pending,
 		PendingReview,
 		Completed,
-		Expired
+		Expired,
+		ReviewResult,
+		ReviewExpired
 	}
 	public enum TestRequestStatus
 	{

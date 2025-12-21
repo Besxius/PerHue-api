@@ -61,11 +61,18 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 					try
 					{
+						// 1. Handle Normal Pending Requests
 						var pendingTestRequests = await unitOfWork.TestRequestRepository.GetPendingRequestsAsync();
-
 						foreach (var testRequest in pendingTestRequests)
 						{
 							await HandleRequestRetriesAndFinalization(unitOfWork, aiAnalysisService, emailService, testRequest);
+						}
+
+						// 2. [ADDED] Handle Reviewing Requests
+						var reviewingTestRequests = await unitOfWork.TestRequestRepository.FindAsync(t => t.Status == TestRequestStatus.Reviewing.ToString());
+						foreach (var testRequest in reviewingTestRequests)
+						{
+							await HandleReviewRetries(unitOfWork, emailService, testRequest);
 						}
 					}
 					catch (Exception ex)
@@ -74,11 +81,99 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					}
 				}
 
-				// [CHANGED] Check every 24 hours
+				// Check every 24 hours
 				await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 			}
 
 			_logger.LogInformation("Expert Test Monitor is stopping.");
+		}
+
+		// [ADDED] Logic for handling Review Expiration
+		private async Task HandleReviewRetries(
+			IUnitOfWork unitOfWork,
+			EmailService emailService,
+			TestRequest testRequest)
+		{
+			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
+
+			// Filter for Pending Reviews
+			var pendingReviews = expertRequests.Where(etr => etr.Status == ExpertTestRequestStatus.PendingReview.ToString()).ToList();
+			var expiredReviewsCount = expertRequests.Count(etr => etr.Status == ExpertTestRequestStatus.ReviewExpired.ToString());
+
+			bool needsNewReviewer = false;
+			bool changesMade = false;
+
+			foreach (var req in pendingReviews)
+			{
+				var deadline = req.CreatedDate.AddDays(_daysToWait);
+				var timeRemaining = deadline - DateTime.UtcNow;
+
+				if (timeRemaining.TotalSeconds <= 0)
+				{
+					_logger.LogInformation($"Review Request for Test {testRequest.Id}, Expert {req.ExpertId} has expired.");
+
+					// A. Mark as ReviewExpired
+					req.Status = ExpertTestRequestStatus.ReviewExpired.ToString();
+					await unitOfWork.ExpertTestRequestRepository.UpdateAsync(req);
+					changesMade = true;
+
+					// B. Apply Penalty (Reused logic)
+					await ApplyExpertPenalty(unitOfWork, emailService, req.ExpertId, testRequest.Id, _ratingDeduction);
+
+					expiredReviewsCount++;
+					needsNewReviewer = true;
+				}
+				else if (timeRemaining.TotalHours <= 24)
+				{
+					// Send Warning Notification
+					await SendDeadlineWarning(unitOfWork, req.ExpertId, testRequest.Id);
+				}
+			}
+
+			// C. Reassignment Logic for Review
+			if (needsNewReviewer && expiredReviewsCount <= _maxRetries)
+			{
+				var assignedExpertIds = expertRequests.Select(etr => etr.ExpertId).ToList();
+				var allExperts = await unitOfWork.ExpertRepository.GetAllAsync();
+
+				// Find expert who is NOT already assigned to this test (neither analysis nor review)
+				var newExpert = allExperts.FirstOrDefault(e => !assignedExpertIds.Contains(e.Id) && e.Id != testRequest.UserAccountId);
+
+				if (newExpert != null)
+				{
+					_logger.LogInformation($"Reassigning Review for Test {testRequest.Id} to Expert {newExpert.Id}.");
+					var newReviewRequest = new ExpertTestRequest
+					{
+						ExpertId = newExpert.Id,
+						TestRequestId = testRequest.Id,
+						Status = ExpertTestRequestStatus.PendingReview.ToString(),
+						CreatedDate = DateTime.Now
+					};
+					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newReviewRequest);
+
+					var notification = new Notification
+					{
+						Title = $"New Review Request #{testRequest.Id}",
+						Content = "You have been selected to review a color analysis. Please respond within 2 days.",
+						Receiver = newExpert.Id,
+						TestRequestId = testRequest.Id,
+						ReceivedTime = DateTime.Now,
+						IsRead = false,
+						Type = "ReviewRequest"
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(notification);
+					changesMade = true;
+				}
+				else
+				{
+					_logger.LogWarning($"Review TestRequest {testRequest.Id}: No new experts available for retry.");
+				}
+			}
+
+			if (changesMade)
+			{
+				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
 		}
 
 		private async Task HandleRequestRetriesAndFinalization(
@@ -89,8 +184,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		{
 			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
 			var completedResponses = await unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequest.Id);
-			var pending = expertRequests.Where(etr => etr.Status == "Pending").ToList();
-			var expiredCount = expertRequests.Count(etr => etr.Status == "Expired");
+			var pending = expertRequests.Where(etr => etr.Status == ExpertTestRequestStatus.Pending.ToString()).ToList();
+			var expiredCount = expertRequests.Count(etr => etr.Status == ExpertTestRequestStatus.Expired.ToString());
 
 			bool needsNewExpert = false;
 			bool changesMade = false;
@@ -101,7 +196,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				var deadline = req.CreatedDate.AddDays(_daysToWait);
 				var timeRemaining = deadline - DateTime.UtcNow;
 
-				// A. Check if Expired
 				if (timeRemaining.TotalSeconds <= 0)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
@@ -112,86 +206,14 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					changesMade = true;
 
 					// Penalize Expert
-					try
-					{
-						var expert = await unitOfWork.ExpertRepository.GetByIdAsync(req.ExpertId);
-						var expertUser = await unitOfWork.UserRepository.GetByIdAsync(req.ExpertId);
-
-						if (expert != null && expertUser != null)
-						{
-							// Deduct Rating
-							expert.Rating -= _ratingDeduction;
-							if (expert.Rating < 0) expert.Rating = 0;
-							await unitOfWork.ExpertRepository.UpdateAsync(expert);
-
-							// Send In-App Notification
-							var penaltyNotification = new Notification
-							{
-								Title = "Deadline Missed",
-								Content = $"You have exceeded the 2-day limit to respond to the Test Request #{testRequest.Id}. {_ratingDeduction} rating points have been deducted.",
-								Receiver = expert.Id,
-								TestRequestId = testRequest.Id,
-								ReceivedTime = DateTime.UtcNow,
-								Type = "Penalty",
-								IsRead = false
-							};
-							await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
-
-							// Email Warning
-							if (expert.Rating < _ratingWarningThreshold)
-							{
-								_logger.LogInformation($"Expert {expert.Id} rating dropped to {expert.Rating}. Sending warning email to {expertUser.Email}.");
-
-								var emailSubject = "Action Required: Low Expert Rating Warning";
-								var emailBody = $@"
-                                    <h3>Warning: Low Rating Alert</h3>
-                                    <p>Dear {expertUser.Fullname ?? expertUser.Username},</p>
-                                    <p>Your expert rating has dropped to <strong>{expert.Rating:F1}</strong> due to missed deadlines.</p>
-                                    <p>This rating is below the acceptable threshold of {_ratingWarningThreshold}.</p>
-                                    <p>Please ensure you respond to pending requests promptly to restore your standing.</p>
-                                    <p>Best Regards,<br/>PerHue System</p>";
-
-								await emailService.SendEmailAsync(expertUser.Email, emailSubject, emailBody);
-							}
-						}
-					}
-					catch (Exception ex)
-					{
-						_logger.LogError(ex, $"Error processing penalty for Expert {req.ExpertId}");
-					}
+					await ApplyExpertPenalty(unitOfWork, emailService, req.ExpertId, testRequest.Id, _ratingDeduction);
 
 					expiredCount++;
 					needsNewExpert = true;
 				}
-				// B. Check for Upcoming Deadline (24 Hours Warning)
 				else if (timeRemaining.TotalHours <= 24)
 				{
-					// Fetch notifications for this expert
-					var expertNotifications = await unitOfWork.NotificationRepository.GetByReceiverAsync(req.ExpertId);
-
-					// Filter in memory to check if warning already exists
-					var alreadyWarned = expertNotifications.Any(n =>
-						n.TestRequestId == testRequest.Id &&
-						n.Type == "DeadlineWarning");
-
-					if (!alreadyWarned)
-					{
-						var warningNotification = new Notification
-						{
-							Title = $"Deadline Warning: Test #{testRequest.Id}",
-							Content = $"You have less than 24 hours remaining to respond to Test Request #{testRequest.Id}. Please submit your analysis soon.", // Updated content
-							Receiver = req.ExpertId,
-							TestRequestId = testRequest.Id,
-							ReceivedTime = DateTime.UtcNow,
-							Type = "DeadlineWarning",
-							IsRead = false
-						};
-
-						await unitOfWork.NotificationRepository.CreateAsync(warningNotification);
-						changesMade = true;
-
-						_logger.LogInformation($"Sent deadline warning for TestRequest {testRequest.Id} to Expert {req.ExpertId}.");
-					}
+					await SendDeadlineWarning(unitOfWork, req.ExpertId, testRequest.Id);
 				}
 			}
 
@@ -230,16 +252,11 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					await unitOfWork.SaveChangesWithTransactionAsync();
 					return;
 				}
-				else
-				{
-					_logger.LogWarning($"TestRequest {testRequest.Id}: No new experts available for retry.");
-				}
 			}
 
-			// 3. Fallback Trigger using _maxRetries
-			// Logic to check if experts FAILED to respond (Expired > MaxRetries) AND no one is left pending.
+			// 3. Fallback Trigger
 			var currentExpertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
-			var pendingCount = currentExpertRequests.Count(etr => etr.Status == "Pending");
+			var pendingCount = currentExpertRequests.Count(etr => etr.Status == ExpertTestRequestStatus.Pending.ToString());
 
 			int requiredResponses = _configuration.GetValue<int>("ExpertTestSettings:RequiredResponses");
 			if (requiredResponses == 0) requiredResponses = 3;
@@ -256,29 +273,94 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			}
 		}
 
+		// Helper to extract Penalty Logic
+		private async Task ApplyExpertPenalty(IUnitOfWork unitOfWork, EmailService emailService, int expertId, int testRequestId, decimal deduction)
+		{
+			try
+			{
+				var expert = await unitOfWork.ExpertRepository.GetByIdAsync(expertId);
+				var expertUser = await unitOfWork.UserRepository.GetByIdAsync(expertId);
+
+				if (expert != null && expertUser != null)
+				{
+					expert.Rating -= deduction;
+					if (expert.Rating < 0) expert.Rating = 0;
+					await unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+					var penaltyNotification = new Notification
+					{
+						Title = "Deadline Missed",
+						Content = $"You have exceeded the time limit to respond to Test Request #{testRequestId}. {deduction} rating points have been deducted.",
+						Receiver = expert.Id,
+						TestRequestId = testRequestId,
+						ReceivedTime = DateTime.UtcNow,
+						Type = "Penalty",
+						IsRead = false
+					};
+					await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
+
+					if (expert.Rating < _ratingWarningThreshold)
+					{
+						var emailSubject = "Action Required: Low Expert Rating Warning";
+						var emailBody = $@"
+                                    <h3>Warning: Low Rating Alert</h3>
+                                    <p>Dear {expertUser.Fullname ?? expertUser.Username},</p>
+                                    <p>Your expert rating has dropped to <strong>{expert.Rating:F1}</strong>.</p>
+                                    <p>Please ensure you respond to pending requests promptly.</p>";
+
+						await emailService.SendEmailAsync(expertUser.Email, emailSubject, emailBody);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Error processing penalty for Expert {expertId}");
+			}
+		}
+
+		// Helper to extract Warning Logic
+		private async Task SendDeadlineWarning(IUnitOfWork unitOfWork, int expertId, int testRequestId)
+		{
+			var expertNotifications = await unitOfWork.NotificationRepository.GetByReceiverAsync(expertId);
+			var alreadyWarned = expertNotifications.Any(n => n.TestRequestId == testRequestId && n.Type == "DeadlineWarning");
+
+			if (!alreadyWarned)
+			{
+				var warningNotification = new Notification
+				{
+					Title = $"Deadline Warning: Test #{testRequestId}",
+					Content = $"You have less than 24 hours remaining to respond to Request #{testRequestId}.",
+					Receiver = expertId,
+					TestRequestId = testRequestId,
+					ReceivedTime = DateTime.UtcNow,
+					Type = "DeadlineWarning",
+					IsRead = false
+				};
+				await unitOfWork.NotificationRepository.CreateAsync(warningNotification);
+				await unitOfWork.SaveChangesWithTransactionAsync(); // Save immediately for warnings
+			}
+		}
+
 		private async Task PerformAiFallbackAsync(
 			IUnitOfWork unitOfWork,
 			IAIImageAnalysisService aiService,
 			TestRequest testRequest,
 			int currentResponseCount)
 		{
-			_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI. Experts responded: {currentResponseCount}/{_requiredResponses}");
+			_logger.LogInformation($"TestRequest {testRequest.Id}: Fallback to AI.");
 
 			// Refund Logic
 			var subscription = await unitOfWork.UserSubscriptionRepository.GetSubscriptionForRefundAsync(testRequest.UserAccountId);
 			if (subscription != null)
 			{
 				subscription.RemainingUses++;
-				if (subscription.RemainingUses > 0 && !subscription.Status)
-				{
-					subscription.Status = true;
-				}
+				if (subscription.RemainingUses > 0 && !subscription.Status) subscription.Status = true;
 				await unitOfWork.UserSubscriptionRepository.UpdateAsync(subscription);
 
 				var refundNotification = new Notification
 				{
 					Title = "Service Credit Refunded",
-					Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
+					Content = "We were unable to match you with experts in time. 1 credit has been refunded.",
 					Receiver = testRequest.UserAccountId,
 					TestRequestId = testRequest.Id,
 					ReceivedTime = DateTime.Now,
@@ -286,7 +368,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Type = "Refund"
 				};
 				await unitOfWork.NotificationRepository.CreateAsync(refundNotification);
-				_logger.LogInformation($"Refunded 1 use to User {testRequest.UserAccountId}.");
 			}
 
 			try
@@ -319,21 +400,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, $"AI Fallback failed for TestRequest {testRequest.Id}.");
-
 				testRequest.Status = TestRequestStatus.Failed.ToString();
 				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
-
-				var notification = new Notification
-				{
-					Title = "Test Analysis Failed",
-					Content = "We could not complete your analysis at this time.",
-					IsRead = false,
-					ReceivedTime = DateTime.Now,
-					Type = "TestFailed",
-					Receiver = testRequest.UserAccountId,
-					TestRequestId = testRequest.Id
-				};
-				await unitOfWork.NotificationRepository.CreateAsync(notification);
 				await unitOfWork.SaveChangesWithTransactionAsync();
 			}
 		}
