@@ -9,13 +9,17 @@
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="CloudinaryDotNet" Version="1.27.8" />
+		<PackageReference Include="DlibDotNet" Version="19.16.0.20190313" />
 		<PackageReference Include="dotenv.net" Version="4.0.0" />
+		<PackageReference Include="FaceRecognitionDotNet" Version="1.2.3.8" />
 		<PackageReference Include="Google_GenerativeAI" Version="3.4.1" />
 		<PackageReference Include="MailKit" Version="4.13.0" />
 		
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
 		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0" />
 		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.14.0" />
+		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.14" />
