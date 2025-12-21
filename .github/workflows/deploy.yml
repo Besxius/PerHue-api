@@ -1,0 +1,33 @@
+name: Build and Deploy (self-hosted Windows runner)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Generate build info 🧾
+        shell: powershell
+        run: |
+          $buildInfo = @{
+            buildTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            commit    = "${{ github.sha }}"
+            branch    = "${{ github.ref_name }}"
+            runId     = [int]${{ github.run_number }}
+          } | ConvertTo-Json -Depth 3
+
+          $buildInfo | Out-File -Encoding utf8 buildinfo.json
+
+      - name: Build & Restart Docker App 🐳
+        shell: powershell
+        run: |
+          docker compose pull
+          docker compose build --no-cache
+          docker compose down
+          docker compose up -d
