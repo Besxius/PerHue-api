@@ -66,8 +66,8 @@ namespace PerHue.Infrastructure.Utils
 			{
 				new() {
 					Name = "AI Test Trial",
-					Price = 50000,
-					Description = "One-time AI-powered basic color analysis test. Perfect for trying out the core	features	before committing to a paid plan.",
+					Price = 20000,
+					Description = "One-time AI-powered basic color analysis test. Perfect for trying out the core	features before committing to a paid plan.",
 					Duration = 1, // 1 Month Trial
 					Uses = 1,
 					Type = ServicePackageTypeEnum.AI.ToString(),
@@ -76,8 +76,8 @@ namespace PerHue.Infrastructure.Utils
 
 				new() {
 					Name = "AI Test Basic",
-					Price = 115000,
-					Description = "Three (3) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple 		test color feature.",
+					Price = 40000,
+					Description = "Three (3) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple test color feature.",
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 3,
 					Type = ServicePackageTypeEnum.AI.ToString(),
@@ -86,8 +86,8 @@ namespace PerHue.Infrastructure.Utils
 
 				new() {
 					Name = "AI Test Standard",
-					Price = 415000,
-					Description = "Ten (10) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple  	test color feature.\r\nRelevant color suggestions based on analysis results.",
+					Price = 125000,
+					Description = "Ten (10) detailed AI-powered color analysis tests.\r\nUnlimited usage of the simple test color feature.\r\nRelevant color suggestions based on analysis results.",
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.AI.ToString(),
@@ -96,8 +96,8 @@ namespace PerHue.Infrastructure.Utils
 
 				new() {
 					Name = "AI Test Premium & Promotion",
-					Price = 945000,
-					Description = "Twenty-five (25) detailed AI-powered color analysis tests.\r\nPriority AI processing 		speed.\r\nIncludes a brand's product advertising opportunity for 1 month.\r\nNote: This		package is	frequently chosen by brands for internal or promotional use.",
+					Price = 215000,
+					Description = "Twenty-five (25) detailed AI-powered color analysis tests.\r\nPriority AI processing speed.\r\nIncludes a brand's product advertising opportunity for 1 month.\r\nNote: This package is frequently chosen by brands for internal or promotional use.",
 					Duration = 12, // 6 Months (Default requested)
 					Uses = 25,
 					Type = ServicePackageTypeEnum.AI.ToString(),
@@ -106,18 +106,18 @@ namespace PerHue.Infrastructure.Utils
 
 				new() {
 					Name = "Expert Single Analysis",
-					Price = 100000,
-					Description = "One (1) Expert-led Personal Color Analysis test.\r\nIncludes a detailed report and   	primary color palette from a certified expert.",
-					Duration = 6, // 6 Months (Default requested)
+					Price = 40000,
+					Description = "One (1) Expert-led Personal Color Analysis test.\r\nIncludes a detailed report and primary color palette from a certified expert.",
+					Duration = 1, // 1 Months (Default requested)
 					Uses = 1,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
 					CreatedDate = now - TimeSpan.FromDays(170)
 				},
 
 				new() {
-					Name = "Expert 5-Test Bundle",
-					Price = 350000,
-					Description = "Five (5) Expert-led Personal Color Analysis tests (can be used for different		profiles).  \r\nIncludes access to the top-rated expert pool.",
+					Name = "Expert 5-Times Bundle",
+					Price = 125000,
+					Description = "Five (5) Expert-led Personal Color Analysis tests (can be used for different profiles).  \r\nIncludes access to the top-rated expert pool.",
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 5,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
@@ -125,9 +125,9 @@ namespace PerHue.Infrastructure.Utils
 				},
 
 				new() {
-					Name = "Expert 10-Test Professional",
-					Price = 650000,
-					Description = "Ten (10) Expert-led Personal Color Analysis tests.\r\nPriority expert assignment and 		review.\r\nIncludes a 1-month dedicated consultation channel with a certified expert.",
+					Name = "Expert 10-Times Professional",
+					Price = 195000,
+					Description = "Ten (10) Expert-led Personal Color Analysis tests.\r\nPriority expert assignment and review.\r\nIncludes a 1-month dedicated consultation channel with a certified expert.",
 					Duration = 6, // 6 Months (Default requested)
 					Uses = 10,
 					Type = ServicePackageTypeEnum.Expert.ToString(),
