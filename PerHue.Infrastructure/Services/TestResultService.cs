@@ -28,9 +28,10 @@ namespace PerHue.Infrastructure.Services
 		private readonly IImageUploadService _imageUploadService;
 		private readonly IVirtualTryOnService _virtualTryOnService; // Renamed from _imageGenerationService for clarity
 		private readonly IHttpClientFactory _httpClientFactory;
+		private readonly IUserService _userService;
 
 		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService, IVirtualTryOnService virtualTryOnService,
-			IHttpClientFactory httpClientFactory)
+			IHttpClientFactory httpClientFactory, IUserService userService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
@@ -39,6 +40,7 @@ namespace PerHue.Infrastructure.Services
 			_imageUploadService = imageUploadService;
 			_virtualTryOnService = virtualTryOnService;
 			_httpClientFactory = httpClientFactory;
+			_userService = userService;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -55,15 +57,29 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<IEnumerable<TestResultModel>> GetAllAsyncByUserId(int userId)
 		{
-			var testResults = await _unitOfWork.TestResultRepository.GetAllByUserIdAsync(userId);
-			var resultList = new List<TestResultModel>();
-
-			foreach (var testResult in testResults)
+			var userAccount = await _userService.GetByIdAsync(userId);
+			if (userAccount == null)
 			{
-				var result = _mapper.Map<TestResultModel>(testResult);
-
-				resultList.Add(result);
+				throw new Exception("User not found");
 			}
+
+			var testResults = await _unitOfWork.TestResultRepository.GetAllByUserIdAsync(userId);
+			if (testResults == null || !testResults.Any())
+			{
+				return new List<TestResultModel>();
+			}
+
+			var resultList = testResults
+				.OrderByDescending(tr => tr.CreatedDate)
+				.Select(testResult => new TestResultModel
+				{
+					Id = testResult.Id,
+					Picture = testResult.Picture,
+					ColorTypeId = testResult.ColorTypeId,
+					ColorTypeName = testResult.ColorType?.Name ?? string.Empty,
+					CreatedDate = testResult.CreatedDate
+				})
+				.ToList();
 
 			return resultList;
 		}
