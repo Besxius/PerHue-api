@@ -252,7 +252,6 @@ namespace PerHue.Infrastructure.Services
 			var responseModels = _mapper.Map<List<TestResponseModel>>(responses);
 
 			// --- CHECK FOR AI RESULT ---
-			// Since GetByIdWithDetailsAsync now Includes AiTestResult, we can use it directly
 			if (testRequest.AiTestResult != null)
 			{
 				var aiResponseModel = new TestResponseModel
@@ -271,21 +270,26 @@ namespace PerHue.Infrastructure.Services
 				};
 				responseModels.Add(aiResponseModel);
 			}
+
 			double? similarityScore = null;
 			if (responseModels.Count >= 3)
 			{
-				// Lấy 3 response đầu tiên để tính toán (vì bạn chỉ cần 3 kết quả)
 				var top3Responses = responseModels.Take(3).ToList();
-
 				similarityScore = CalculateThreeResultSimilarity(top3Responses);
 			}
 
+			// Determine if a review has been sent
+			// 1. If Status is "Reviewing", it is currently sent and pending.
+			// 2. If any response is of Type "Review", it was sent and completed.
+			bool isSentReview = testRequest.Status == TestRequestStatus.Reviewing.ToString()
+								|| responseModels.Any(r => r.Type == ResponseTypeEnum.Review.ToString());
 
 			return new ExpertTestResultModel
 			{
 				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
 				Responses = responseModels,
-				ResponsesSimilarityScore = similarityScore
+				ResponsesSimilarityScore = similarityScore,
+				IsSentReview = isSentReview
 			};
 		}
 		public async Task<ExpertTestResultModel> GetExpertResponsesForExpertAsync(int testRequestId, int userId)
@@ -306,11 +310,14 @@ namespace PerHue.Infrastructure.Services
 			var myResponse = allResponses.Where(r => r.ExpertId == userId).ToList();
 			var responseModels = _mapper.Map<List<TestResponseModel>>(myResponse);
 
-			// 4. Return the composite model
+			// 4. Return the composite model with CanEdit flag
 			return new ExpertTestResultModel
 			{
 				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
-				Responses = responseModels // Will be [ {response} ] or []
+				Responses = responseModels, 
+
+				// Logic: Expert can edit if the main Test Request is NOT yet Completed
+				CanEdit = testRequest.Status != TestRequestStatus.Completed.ToString()
 			};
 		}
 		public async Task<TestResponseModel> UpdateResponseAsync(int testRequestId, UpdateTestResponseModel model, int expertId)
@@ -628,34 +635,44 @@ namespace PerHue.Infrastructure.Services
 
 			return result;
 		}
-		public async Task<ReviewTestRequestModel> GetPendingReviewRequestsByIdAsync(int expertId, int testRequestId)
+		public async Task<ReviewTestRequestModel> GetReviewRequestByIdAsync(int expertId, int testRequestId)
 		{
-			// 1. Fetch strictly "PendingReview" requests for this expert
-			// Assuming GetPendingReviewRequestsForExpertAsync filters by Status == PendingReview
-			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetPendingReviewRequestsForExpertAsync(expertId);
+			// 1. Fetch all requests for this expert to find the assignment
+			var expertRequests = await _unitOfWork.ExpertTestRequestRepository.GetAllRequestsForExpertAsync(expertId);
 
-			// Find the specific request
+			// Find the specific request assignment
 			var reviewRequestAssignment = expertRequests.FirstOrDefault(p => p.TestRequest.Id == testRequestId);
 
-			// If no PENDING review assignment is found, return null immediately.
+			// If no assignment found, return null.
 			if (reviewRequestAssignment == null)
 			{
 				return null;
 			}
 
-			var testRequestEntity = reviewRequestAssignment.TestRequest;
-			int expertTestRequestId = reviewRequestAssignment.ExpertId; // Or the PK of the assignment table if needed
+			// 2. Check Status: Allow PendingReview OR ReviewResult (Completed)
+			bool isPending = reviewRequestAssignment.Status == ExpertTestRequestStatus.PendingReview.ToString();
+			bool isCompleted = reviewRequestAssignment.Status == ExpertTestRequestStatus.ReviewResult.ToString();
 
-			// 2. Map the TestRequest
+			if (!isPending && !isCompleted)
+			{
+				// If it's not in a review state (e.g. Expired, or just a normal Pending/Completed request), return null 
+				// or handle accordingly. The requirement implies retrieving info for review tasks.
+				return null;
+			}
+
+			var testRequestEntity = reviewRequestAssignment.TestRequest;
+			int expertTestRequestId = reviewRequestAssignment.ExpertId;
+
+			// 3. Map the TestRequest
 			var requestModel = _mapper.Map<TestRequestModel>(testRequestEntity);
 
-			// 3. Fetch ALL responses
+			// 4. Fetch ALL responses
 			var allResponses = await _unitOfWork.TestResponseRepository.GetResponsesForRequestAsync(testRequestId);
 
 			var responseModels = _mapper.Map<List<TestResponseModel>>(allResponses);
 
-			// 4. Apply Vote/Rating Visibility Logic
-			// STRICT: Hide the rating from ALL other expert responses (Normal or Review) to prevent bias.
+			// 5. Apply Vote/Rating Visibility Logic
+			// STRICT: Hide the rating from ALL other expert responses to prevent bias.
 			foreach (var response in responseModels)
 			{
 				if (response.ExpertId != expertId)
@@ -664,13 +681,37 @@ namespace PerHue.Infrastructure.Services
 				}
 			}
 
+			// 6. Determine VotedResponseId
+			int? votedResponseId = null;
+
+			// Find the "Review" response created by THIS expert
+			var myReviewResponse = allResponses.FirstOrDefault(r => r.ExpertId == expertId && r.Type == ResponseTypeEnum.Review.ToString());
+
+			if (myReviewResponse != null)
+			{
+				// Heuristic: Find the original response that matches the content of my review
+				// (Since we don't store the VotedResponseId explicitly in a FK)
+				var votedMatch = allResponses.FirstOrDefault(r =>
+					r.Id != myReviewResponse.Id && // Don't match self
+					r.Type != ResponseTypeEnum.Review.ToString() && // Usually voting for a Normal response
+					r.BestColor == myReviewResponse.BestColor &&
+					r.WorstColor == myReviewResponse.WorstColor &&
+					r.ColorTypeId == myReviewResponse.ColorTypeId
+				);
+
+				if (votedMatch != null)
+				{
+					votedResponseId = votedMatch.Id;
+				}
+			}
+
 			var result = new ReviewTestRequestModel
 			{
 				ExpertTestRequestId = expertTestRequestId,
 				TestRequest = requestModel,
 				PreviousResponses = responseModels,
-				// Since we only fetch if Status == PendingReview (via the Repo call), CanEdit is implicitly true here,
-				CanEdit = true
+				CanEdit = isPending, // Can only edit if still pending
+				VotedResponseId = votedResponseId
 			};
 
 			return result;
