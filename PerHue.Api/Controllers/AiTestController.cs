@@ -53,7 +53,7 @@ namespace PerHue.Api.Controllers
 					return BadRequest(new { message = "At least one image is required" });
 				}
 
-				var result = await _aiTestService.AnalyzeColorsOnlyAsync(testRequestId, request);
+				var result = await _aiTestService.AnalyzeColorsOnlyAsync(request);
 
 				return Ok(new
 				{

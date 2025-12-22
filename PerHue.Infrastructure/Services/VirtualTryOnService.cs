@@ -60,14 +60,8 @@ namespace PerHue.Infrastructure.Services
 					.Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
 					.ToList();
 
-				// Chọn ngẫu nhiên 1 environment
-				var environment = request.Environments.OrderBy(x => Guid.NewGuid()).FirstOrDefault() ?? "outdoor_sunny";
-
-				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors in {Environment} environment",
-					selectedColors.Count, environment);
-
 				// ✅ TẠO PROMPT CHO 1 ẢNH VỚI NHIỀU MÀU
-				var prompt = BuildVirtualTryOnPromptWithMultipleColors(environment, selectedColors);
+				var prompt = BuildVirtualTryOnPromptWithMultipleColors(selectedColors);
 
 				try
 				{
@@ -180,14 +174,12 @@ namespace PerHue.Infrastructure.Services
 							response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
 							{
 								ImageUrl = generatedImageUrl,
-								Environment = environment,
-								ClothingType = "complete_outfit", // Outfit hoàn chỉnh với nhiều items
 								ColorHex = string.Join(", ", selectedColors), // Danh sách màu
 								Prompt = prompt
 							});
 
-							_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors} in {Environment}",
-								string.Join(", ", selectedColors), environment);
+							_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors}",
+								string.Join(", ", selectedColors));
 						}
 						else
 						{
@@ -295,8 +287,6 @@ namespace PerHue.Infrastructure.Services
 									response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
 									{
 										ImageUrl = generatedImageUrl,
-										Environment = environment,
-										ClothingType = "complete_outfit",
 										ColorHex = string.Join(", ", selectedColors),
 										Prompt = prompt
 									});
@@ -363,7 +353,7 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
-		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
+		private string BuildVirtualTryOnPromptWithMultipleColors(List<string> colorHexCodes)
 		{
 			var environmentDescriptions = new Dictionary<string, string>
 		{
@@ -372,8 +362,6 @@ namespace PerHue.Infrastructure.Services
 			{ "outdoor_cloudy", "outdoors on a pleasant cloudy day with soft, diffused natural lighting" },
 			{ "evening", "in a stylish evening setting with warm, atmospheric lighting" }
 		};
-
-			var environmentDesc = environmentDescriptions.GetValueOrDefault(environment, "in a natural outdoor setting");
 
 			// Tạo mô tả cho từng màu với clothing item cụ thể
 			var colorAssignments = new List<string>();
@@ -390,7 +378,7 @@ namespace PerHue.Infrastructure.Services
 			return $@"
 OUTPUT FORMAT REQUIREMENT: Generate exactly ONE image. Do not provide any text, descriptions, or explanations. Just the raw image.
 
-Using the provided reference image of the person, create a photorealistic virtual try-on fashion image showing them wearing a complete coordinated outfit {environmentDesc}.
+Using the provided reference image of the person, create a photorealistic virtual try-on fashion image showing them wearing a complete coordinated outfit.
 
 CRITICAL REQUIREMENTS - MUST MAINTAIN FROM REFERENCE IMAGE:
 - Keep the person's EXACT facial features, face shape, and facial structure
@@ -409,7 +397,7 @@ STYLE REQUIREMENTS:
 1. Create a fashionable, modern outfit that naturally combines all {colorHexCodes.Count} colors
 2. The colors should be distributed across: top/shirt, bottom/pants or skirt, footwear, and accessories (hat, bag, or jewelry)
 3. Show the person from head to toe (full body shot) or at least from waist up
-4. The environment should be {environmentDesc}
+4. The environment should be
 5. Professional fashion photography lighting that enhances the outfit colors
 6. Natural, confident pose showing off the coordinated outfit
 7. Make sure each color {allColors} is clearly visible and prominent in the outfit
@@ -417,11 +405,11 @@ STYLE REQUIREMENTS:
 
 PHOTOGRAPHY STYLE:
 - High-quality fashion photography
-- Professional lighting matching {environment} environment
+- Professional lighting matching environment
 - Sharp focus on both the person and outfit details
 - Natural, realistic rendering
 - Colors should be vibrant and accurately match the hex codes: {allColors}
-- Background appropriate for {environment} but should not distract from the outfit
+- Background appropriate for but should not distract from the outfit
 
 IMPORTANT: This is a virtual try-on - maintain the EXACT same person from the reference image, only change their outfit to incorporate the specified colors.";
 		}

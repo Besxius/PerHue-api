@@ -7,13 +7,15 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.AiTest;
 using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
+using PerHue.Application.Models.ColorType;
 using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.Policies;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Utils;
-using PerHue.Infrastructure.Utils;
+using Polly.Retry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,6 +40,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly IMapper _mapper;
 		private readonly IUserService _userService;
 		private readonly ICapsulePaletteService _capsulePaletteService;
+		private readonly AsyncRetryPolicy _retryPolicy;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -62,6 +65,8 @@ namespace PerHue.Infrastructure.Services
 			_userService = userService;
 			_mapper = mapper;
 			_capsulePaletteService = capsulePaletteService;
+			// Khởi tạo retry policy với 3 lần thử
+			_retryPolicy = RetryPolicies.CreateAiServiceRetryPolicy(logger, maxRetryAttempts: 3);
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
@@ -144,98 +149,22 @@ namespace PerHue.Infrastructure.Services
 			}
 
 			var testRequestList = await _aiTestRepository.GetTestRequestsByUserIdAsync(userId);
-			if (testRequestList == null)
+			if (testRequestList == null || testRequestList.Count == 0)
 			{
-				throw new Exception("List test request not found");
+				return new List<NewTestRequestReponseModel>();
 			}
-			var result = new List<NewTestRequestReponseModel>();
-
-			foreach (var testRequest in testRequestList)
-			{
-				var pictureUrl = testRequest.Pictures?.FirstOrDefault()?.Source;
-
-				var response = new NewTestRequestReponseModel
+			var result = testRequestList
+				.OrderByDescending(tr => tr.CreatedDate)
+				.Select(testRequest => new NewTestRequestReponseModel
 				{
 					Id = testRequest.Id,
-					HairColor = testRequest.HairColor,
-					EyesColor = testRequest.EyesColor,
-					LipsColor = testRequest.LipsColor,
-					SkinColor = testRequest.SkinColor,
-					Status = testRequest.Status ?? "Unknown",
 					CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
-					TypeOfTest = testRequest.TypeOfTest,
-					Fullname = userAccount.Fullname,
-					ImageUrl = pictureUrl // FROM Picture.Source
-				};
-				if (testRequest.AiTestResult != null)
-				{
-					var aiTestResult = testRequest.AiTestResult;
-
-					var suggestedHexCodes = aiTestResult.SuggestedColor
-						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
-						.ToList();
-
-					var avoidedHexCodes = aiTestResult.AvoidedColor
-						.Split(", ", StringSplitOptions.RemoveEmptyEntries)
-						.ToList();
-
-					var matchedSuggestedColors = await _colorMatchingService
-						.MatchColorsFromHexCodesAsync(suggestedHexCodes);
-
-					var matchedAvoidedColors = await _colorMatchingService
-						.MatchColorsFromHexCodesAsync(avoidedHexCodes);
-
-					// GET SYSTEM HEX CODES FOR PALETTE MATCHING
-					var systemSuggestedHexCodes = matchedSuggestedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => c.MatchedColor!.HexCode)
-						.ToList();
-
-					// GET ONE RELATED CAPSULE PALETTE
-
-					List<CapsulePaletteModel> relatedPalettes = null!;
-					if (systemSuggestedHexCodes.Any())
-					{
-						var palettes = await _capsulePaletteService
-							.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
-
-						relatedPalettes = palettes.ToList();
-
-					}
-
-					// BUILD COMPLETE AI TEST RESULT MODEL
-					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel
-					{
-						Id = aiTestResult.Id,
-						Note = aiTestResult.Note,
-						ColorTypeId = aiTestResult.ColorTypeId,
-						SuggestedColor = aiTestResult.SuggestedColor,
-						AvoidedColor = aiTestResult.AvoidedColor,
-
-						// MATCHED colors from system database
-						SuggestedColorsBySystem = matchedSuggestedColors
-							.Where(c => c.MatchedColor != null)
-							.Select(c => new ColorModel
-							{
-								Id = c.MatchedColor!.Id,
-								Name = c.MatchedColor.Name,
-								HexCode = c.MatchedColor.HexCode
-							})
-							.ToList(),
-
-						SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
-					};
-				}
-				else
-				{
-
-					response.newAiTestResultResponseModel = new NewAiTestResultResponseModel();
-				}
-
-				result.Add(response);
-			}		
-
-				return result;
+					ImageUrl = testRequest.Pictures?.FirstOrDefault()?.Source,
+					ColorTypeId = testRequest.AiTestResult?.ColorTypeId ?? 0,
+					ColorTypeName = testRequest.AiTestResult?.ColorType?.Name ?? string.Empty
+				})
+				.ToList();
+			return result;
 		}
 
 		public async Task<NewTestRequestReponseModel> GetDetailTestRequestByTypeAiAsync(int testRequestId, int userId)
@@ -267,7 +196,7 @@ namespace PerHue.Infrastructure.Services
 				LipsColor = testRequest.LipsColor,
 				SkinColor = testRequest.SkinColor,
 				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+				CreatedDate = testRequest.CreatedDate,
 				TypeOfTest = testRequest.TypeOfTest,
 				Fullname = userAccount.Fullname,
 				ImageUrl = pictureUrl
@@ -283,39 +212,42 @@ namespace PerHue.Infrastructure.Services
 					.Split(", ", StringSplitOptions.RemoveEmptyEntries)
 					.ToList();
 
-				var avoidedHexCodes = aiTestResult.AvoidedColor
-					.Split(", ", StringSplitOptions.RemoveEmptyEntries)
-					.ToList();
-
 				var matchedSuggestedColors = await _colorMatchingService
 					.MatchColorsFromHexCodesAsync(suggestedHexCodes);
 
-				var matchedAvoidedColors = await _colorMatchingService
-					.MatchColorsFromHexCodesAsync(avoidedHexCodes);
-
-				_logger.LogInformation(
-					"Color matching completed for TestRequestId {TestRequestId}: {SuggestedCount} suggested, {AvoidedCount} avoided",
-					testRequestId, matchedSuggestedColors.Count, matchedAvoidedColors.Count);
-
 				// GET SYSTEM HEX CODES FOR PALETTE MATCHING
-				var systemSuggestedHexCodes = matchedSuggestedColors
+				var uniqueSystemColors = matchedSuggestedColors
 					.Where(c => c.MatchedColor != null)
-					.Select(c => c.MatchedColor!.HexCode)
+					.GroupBy(c => c.MatchedColor!.Id)
+					.Select(g => g.First().MatchedColor!)
+					.Select(c => new ColorModel
+					{
+						Id = c.Id,
+						Name = c.Name,
+						HexCode = c.HexCode
+					})
 					.ToList();
 
 				// GET ONE RELATED CAPSULE PALETTE
 
-				List<CapsulePaletteModel> relatedPalettes = null!;
-				if (systemSuggestedHexCodes.Any())
+				var capsulePalettes = new List<CapsulePaletteModel>();
+				if (uniqueSystemColors.Any())
 				{
+					var systemHexCodes = uniqueSystemColors.Select(c => c.HexCode).ToList();
 					var palettes = await _capsulePaletteService
-						.GetRelativeCapsulePalettes(systemSuggestedHexCodes);
+						.GetRelativeCapsulePalettes(systemHexCodes);
 
-					relatedPalettes = palettes.ToList();
+					capsulePalettes = palettes.ToList();
 
 					_logger.LogInformation(
 						"Found {Count} related capsule palettes for TestRequestId {TestRequestId}",
-						palettes.Count(), testRequestId);
+						capsulePalettes.Count, testRequestId);
+				}
+
+				if (aiTestResult.ColorType != null)
+				{
+					response.ColorTypeId = aiTestResult.ColorType.Id;
+					response.ColorTypeName = aiTestResult.ColorType.Name;
 				}
 
 				// BUILD COMPLETE AI TEST RESULT MODEL
@@ -326,20 +258,8 @@ namespace PerHue.Infrastructure.Services
 					ColorTypeId = aiTestResult.ColorTypeId,
 					SuggestedColor = aiTestResult.SuggestedColor,
 					AvoidedColor = aiTestResult.AvoidedColor,
-
-					// MATCHED colors from system database
-					SuggestedColorsBySystem = matchedSuggestedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => new ColorModel
-						{
-							Id = c.MatchedColor!.Id,
-							Name = c.MatchedColor.Name,
-							HexCode = c.MatchedColor.HexCode
-						})
-						.ToList(),
-
-					// ONE suggested capsule palette (first match)
-					SuggestedCapsulePalletesBySystem = relatedPalettes ?? new List<CapsulePaletteModel>()
+					SuggestedColorsBySystem = uniqueSystemColors,
+					SuggestedCapsulePalletesBySystem = capsulePalettes
 				};
 			}
 			else
@@ -415,6 +335,15 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
 		{
+			var checkQuotaAndRateLimit = await _aiTestRepository.CountAsync(
+				tr => tr.Date.HasValue &&
+					  tr.Date.Value.Date == DateTime.UtcNow.Date);
+			if (checkQuotaAndRateLimit == 20) // Giới hạn 20 requests/ngày
+			{
+				_logger.LogWarning("Daily AI test quota exceeded !!!");
+				throw new InvalidOperationException("Sorry for this inconvenience! Please try again tomorrow");
+			}
+
 			_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
 			// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
@@ -511,10 +440,12 @@ namespace PerHue.Infrastructure.Services
 						.GetRelativeCapsulePalettes(colorAnalysis.SuggestedColorHexCodes);
 
 
-					/*// Generate virtual try-on với IFormFile TRỰC TIẾP
+					// Generate virtual try-on với IFormFile TRỰC TIẾP
 					VirtualTryOnResponse? virtualTryOnResults = null;
 					if (request.FaceImages != null)
 					{
+						_logger.LogInformation("Starting virtual try-on with retry policy for TestRequestId: {TestRequestId}", testRequest.Id);
+
 						// SỬ DỤNG IFormFile TRỰC TIẾP
 						var tryOnRequest = new VirtualTryOnRequest
 						{
@@ -522,9 +453,10 @@ namespace PerHue.Infrastructure.Services
 							SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
 						};
 
-						virtualTryOnResults = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
-						_logger.LogInformation("Virtual try-on generation completed: {Count} images",
-							virtualTryOnResults.GeneratedImages.Count);
+						virtualTryOnResults = await _retryPolicy.ExecuteAsync(async () =>
+							await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest)
+						);
+						_logger.LogInformation("Virtual try-on generation completed: {Count} images", virtualTryOnResults.GeneratedImages.Count);
 
 						// Lưu ảnh AI tạo ra vào bảng AiPicture
 						if (virtualTryOnResults.GeneratedImages.Count > 0)
@@ -532,14 +464,14 @@ namespace PerHue.Infrastructure.Services
 							var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
 							{
 								Source = img.ImageUrl,
-								Note = $"{PictureNotes.AiGeneratedImage} - {img.Environment} - {img.ClothingType} - Colors: {img.ColorHex}",
+								Note = $"{PictureNotes.AiGeneratedImage} - Colors: {img.ColorHex}",
 								TestRequestId = testRequest.Id
 							}).ToList();
 
 							await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
 							_logger.LogInformation("Saved {Count} AI-generated images to AiPicture table", aiPictures.Count);
 						}
-					}*/
+					}
 
 					// Lưu kết quả test vào AiTestResult
 					var aiTestResult = new AiTestResult
@@ -578,6 +510,8 @@ namespace PerHue.Infrastructure.Services
 
 					// 3. Map response
 					var response = _mapper.Map<AiTestResultResponseModel>(result);
+
+					response.ColorTypeName = result.ColorType.Name;
 
 					response.SuggestedColorsBySystem = matchedSuggestedColors
 						.Where(c => c.MatchedColor != null)
@@ -627,12 +561,10 @@ namespace PerHue.Infrastructure.Services
 			}
 		}
 
-		public async Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(int testRequestId, Application.Models.AiTest.GeminiAnalysisRequest request)
+		public async Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(Application.Models.AiTest.GeminiAnalysisRequest request)
 		{
 			try
 			{
-				_logger.LogInformation("Analyzing colors only for TestRequestId: {TestRequestId}", testRequestId);
-
 				var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(request);
 
 				_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
@@ -641,7 +573,7 @@ namespace PerHue.Infrastructure.Services
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error analyzing colors for TestRequestId: {TestRequestId}", testRequestId);
+				_logger.LogError(ex, "Error analyzing colors");
 				throw;
 			}
 		}
@@ -652,7 +584,9 @@ namespace PerHue.Infrastructure.Services
 			{
 				_logger.LogInformation("Generating virtual try-on");
 
-				var result = await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request);
+				var result = await _retryPolicy.ExecuteAsync(async () =>
+							await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request)
+						);
 
 				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages);
 
