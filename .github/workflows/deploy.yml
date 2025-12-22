@@ -7,24 +7,39 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    timeout-minutes: 30
 
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
 
-      - name: Generate build info 🧾
+      # 1️⃣ Wake up Docker Desktop (nếu Resource Saver đang bật)
+      - name: Wake up Docker 🐳
         shell: powershell
         run: |
-          $buildInfo = @{
-            buildTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-            commit    = "${{ github.sha }}"
-            branch    = "${{ github.ref_name }}"
-            runId     = [int]${{ github.run_number }}
-          } | ConvertTo-Json -Depth 3
+          Write-Host "Waking up Docker Desktop..."
+          docker info || exit 1
 
-          $buildInfo | Out-File -Encoding utf8 buildinfo.json
+      # 2️⃣ Chờ Docker engine thật sự sẵn sàng
+      - name: Wait for Docker Engine 🕒
+        shell: powershell
+        run: |
+          $max = 30
+          for ($i = 1; $i -le $max; $i++) {
+            try {
+              docker info > $null 2>&1
+              Write-Host "Docker is ready"
+              exit 0
+            } catch {
+              Write-Host "Docker not ready yet ($i/$max)..."
+              Start-Sleep -Seconds 5
+            }
+          }
+          Write-Error "Docker engine not available"
+          exit 1
 
-      - name: Build & Restart Docker App 🐳
+      # 3️⃣ Deploy
+      - name: Build & Deploy 🚀
         shell: powershell
         run: |
           docker compose pull
