@@ -45,16 +45,21 @@ namespace PerHue.Infrastructure.Services
 				var response = new VirtualTryOnResponse();
 
 				// ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
-				var selectedColors = request.SuggestedColorHexCodes
-					.OrderBy(x => Guid.NewGuid())
-					.Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
-					.ToList();
+				var colors = request.SuggestedColorHexCodes.ToList();
+				var rng = Random.Shared;
 
-				// Chọn ngẫu nhiên 1 environment
-				var environment = request.Environments.OrderBy(x => Guid.NewGuid()).FirstOrDefault() ?? "outdoor_sunny";
+					// Fisher–Yates shuffle
+				for (int i = colors.Count - 1; i > 0; i--)
+				{
+					int j = rng.Next(i + 1);
+					(colors[i], colors[j]) = (colors[j], colors[i]);
+				}
 
-				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors in {Environment} environment",
-					selectedColors.Count, environment);
+				var selectedColors = colors.Take(Math.Min(4, colors.Count)).ToList();
+
+
+				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors",
+					selectedColors.Count);
 
 				// ✅ TẠO PROMPT CHO 1 ẢNH VỚI NHIỀU MÀU
 				var prompt = BuildVirtualTryOnPromptWithMultipleColors(selectedColors);
@@ -103,18 +108,16 @@ namespace PerHue.Infrastructure.Services
 						response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
 						{
 							ImageUrl = generatedImageUrl,
-							Environment = environment,
-							ClothingType = "complete_outfit", // Outfit hoàn chỉnh với nhiều items
 							ColorHex = string.Join(", ", selectedColors), // Danh sách màu
 							Prompt = prompt
 						});
 
-						_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors} in {Environment}",
-							string.Join(", ", selectedColors), environment);
+						_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors}",
+							string.Join(", ", selectedColors));
 					}
 					else
 					{
-						throw new Exception("No image data found in Gemini response");
+						throw new Exception("No image data found in AI response");
 					}
 				}
 				catch (Exception ex)
@@ -134,7 +137,7 @@ namespace PerHue.Infrastructure.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "Error generating virtual try-on images");
-				throw new Exception("Failed to generate virtual try-on images", ex);
+				throw;
 			}
 		}
 
