@@ -406,11 +406,15 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					{
 						_logger.LogInformation($"Starting virtual try-on generation for TestRequest {testRequest.Id}");
 
-						// Download ảnh từ URL và convert thành IFormFile
+						// ✅ FIXED: Download và BUFFER ảnh vào memory TRƯỚC retry policy
 						using var httpClient = new HttpClient();
 						var imageBytes = await httpClient.GetByteArrayAsync(userPicture.Source);
-						using var imageStream = new MemoryStream(imageBytes);
 
+						_logger.LogInformation($"Downloaded user image: {imageBytes.Length} bytes");
+
+						// ✅ TẠO VirtualTryOnRequest VỚI BYTE ARRAY (không phải stream)
+						// Retry policy trong GenerateVirtualTryOnAsync sẽ tạo stream mới mỗi lần
+						using var imageStream = new MemoryStream(imageBytes);
 						var formFile = new FormFile(
 							imageStream,
 							0,
@@ -428,6 +432,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 							SuggestedColorHexCodes = aiResultModel.SuggestedColorHexCodes
 						};
 
+						// ✅ Gọi service - nó sẽ buffer stream internally và retry
 						virtualTryOnResults = await aiService.GenerateVirtualTryOnAsync(tryOnRequest);
 
 						_logger.LogInformation($"Virtual try-on generation completed for TestRequest {testRequest.Id}: {virtualTryOnResults.GeneratedImages.Count} images");

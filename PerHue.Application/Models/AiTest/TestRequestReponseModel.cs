@@ -14,27 +14,27 @@ namespace PerHue.Application.Models.AiTest
 	{
 		public int Id { get; set; } //
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? HairColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? EyesColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? LipsColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? SkinColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? Status { get; set; }
 
 		public DateTime? CreatedDate { get; set; } //
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 		public string TypeOfTest { get; set; } = null!;
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string? Fullname { get; set; }
 
 		public string? ImageUrl { get; set; } //
