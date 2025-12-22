@@ -446,16 +446,34 @@ namespace PerHue.Infrastructure.Services
 					{
 						_logger.LogInformation("Starting virtual try-on with retry policy for TestRequestId: {TestRequestId}", testRequest.Id);
 
-						// SỬ DỤNG IFormFile TRỰC TIẾP
-						var tryOnRequest = new VirtualTryOnRequest
+						// ✅ LƯU STREAM VÀO MEMORY ĐỂ CÓ THỂ RESET
+						byte[] imageBytes;
+						using (var memoryStream = new MemoryStream())
 						{
-							UserImage = request.FaceImages,
-							SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
-						};
+							await request.FaceImages.CopyToAsync(memoryStream);
+							imageBytes = memoryStream.ToArray();
+						}
 
 						virtualTryOnResults = await _retryPolicy.ExecuteAsync(async () =>
-							await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest)
-						);
+						{
+							// ✅ TẠO MỚI IFormFile TỪ BYTES CHO MỖI LẦN RETRY
+							using var stream = new MemoryStream(imageBytes);
+							var formFile = new FormFile(stream, 0, imageBytes.Length,
+								request.FaceImages.Name, request.FaceImages.FileName)
+							{
+								Headers = request.FaceImages.Headers,
+								ContentType = request.FaceImages.ContentType
+							};
+
+							var tryOnRequest = new VirtualTryOnRequest
+							{
+								UserImage = formFile,
+								SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
+							};
+
+							return await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
+						});
+
 						_logger.LogInformation("Virtual try-on generation completed: {Count} images", virtualTryOnResults.GeneratedImages.Count);
 
 						// Lưu ảnh AI tạo ra vào bảng AiPicture
@@ -584,11 +602,48 @@ namespace PerHue.Infrastructure.Services
 			{
 				_logger.LogInformation("Generating virtual try-on");
 
-				var result = await _retryPolicy.ExecuteAsync(async () =>
-							await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request)
-						);
+				// ✅ BUFFER IMAGE VÀO MEMORY TRƯỚC KHI RETRY
+				byte[]? imageBytes = null;
+				string? fileName = null;
+				string? contentType = null;
+				IHeaderDictionary? headers = null;  // Add this
 
-				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages);
+				if (request.UserImage != null)
+				{
+					using (var memoryStream = new MemoryStream())
+					{
+						await request.UserImage.CopyToAsync(memoryStream);
+						imageBytes = memoryStream.ToArray();
+						fileName = request.UserImage.FileName;
+						contentType = request.UserImage.ContentType;
+						headers = request.UserImage.Headers;  // Capture headers
+					}
+				}
+
+				var result = await _retryPolicy.ExecuteAsync(async () =>
+				{
+					if (imageBytes != null)
+					{
+						using var stream = new MemoryStream(imageBytes);
+						var formFile = new FormFile(stream, 0, imageBytes.Length, "UserImage", fileName)
+						{
+							Headers = headers,      // Set headers first
+							ContentType = contentType
+						};
+
+						var retryRequest = new VirtualTryOnRequest
+						{
+							UserImage = formFile,
+							SuggestedColorHexCodes = request.SuggestedColorHexCodes
+						};
+
+						return await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(retryRequest);
+					}
+
+					return await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(request);
+				});
+
+				_logger.LogInformation("Virtual try-on generation completed: {Count} images", result.GeneratedImages.Count);
 
 				return result;
 			}
