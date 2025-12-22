@@ -394,7 +394,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
 
-				// ✅ 3. GENERATE VIRTUAL TRY-ON IMAGES (WITH RETRY BUILT-IN)
+				/*// ✅ 3. GENERATE VIRTUAL TRY-ON IMAGES (WITH RETRY BUILT-IN)
 				VirtualTryOnResponse? virtualTryOnResults = null;
 
 				// Lấy ảnh gốc từ Pictures (không phải AiPictures)
@@ -464,7 +464,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				else
 				{
 					_logger.LogWarning($"No user picture found for TestRequest {testRequest.Id}, skipping virtual try-on generation");
-				}
+				}*/
 
 				// ✅ 5. LƯU KẾT QUẢ COLOR ANALYSIS VÀO AITESTRESULT
 				var aiTestResult = new AiTestResult
