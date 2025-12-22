@@ -45,29 +45,34 @@ namespace PerHue.Infrastructure.Services
 				var response = new VirtualTryOnResponse();
 
 				// ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
-				var selectedColors = request.SuggestedColorHexCodes
-					.OrderBy(x => Guid.NewGuid())
-					.Take(Math.Min(4, request.SuggestedColorHexCodes.Count))
-					.ToList();
+				var colors = request.SuggestedColorHexCodes.ToList();
+				var rng = Random.Shared;
 
-				// Chọn ngẫu nhiên 1 environment
-				var environment = request.Environments.OrderBy(x => Guid.NewGuid()).FirstOrDefault() ?? "outdoor_sunny";
+					// Fisher–Yates shuffle
+				for (int i = colors.Count - 1; i > 0; i--)
+				{
+					int j = rng.Next(i + 1);
+					(colors[i], colors[j]) = (colors[j], colors[i]);
+				}
 
-				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors in {Environment} environment",
-					selectedColors.Count, environment);
+				var selectedColors = colors.Take(Math.Min(4, colors.Count)).ToList();
+
+
+				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors",
+					selectedColors.Count);
 
 				// ✅ TẠO PROMPT CHO 1 ẢNH VỚI NHIỀU MÀU
-				var prompt = BuildVirtualTryOnPromptWithMultipleColors(environment, selectedColors);
+				var prompt = BuildVirtualTryOnPromptWithMultipleColors(selectedColors);
 
 				try
 				{
 					string generatedImageUrl = string.Empty;
 
-					var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://perhue.duckdns.org:8443/v1/images/edits");
+					var httpRequest = new HttpRequestMessage(HttpMethod.Post, "https://litellm.perhue.dpdns.org/v1/images/edits");
 					var formData = new MultipartFormDataContent();
 					AppendScalar(formData, "prompt", prompt);
-					AppendScalar(formData, "model", "openai/gpt-image-1-mini");
-					AppendScalar(formData, "size", "1024x1024");
+					AppendScalar(formData, "model", "openai/gpt-image-1.5");
+					//AppendScalar(formData, "size", "1024x1024");
 					//AppendScalar(formData, "quality", "low");
 					AppendImageFiles(formData, [request.UserImage]);
 
@@ -103,18 +108,16 @@ namespace PerHue.Infrastructure.Services
 						response.GeneratedImages.Add(new Application.Models.AiTest.GeneratedImage
 						{
 							ImageUrl = generatedImageUrl,
-							Environment = environment,
-							ClothingType = "complete_outfit", // Outfit hoàn chỉnh với nhiều items
 							ColorHex = string.Join(", ", selectedColors), // Danh sách màu
 							Prompt = prompt
 						});
 
-						_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors} in {Environment}",
-							string.Join(", ", selectedColors), environment);
+						_logger.LogInformation("Successfully generated virtual try-on image with colors: {Colors}",
+							string.Join(", ", selectedColors));
 					}
 					else
 					{
-						throw new Exception("No image data found in Gemini response");
+						throw new Exception("No image data found in AI response");
 					}
 				}
 				catch (Exception ex)
@@ -134,136 +137,70 @@ namespace PerHue.Infrastructure.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "Error generating virtual try-on images");
-				throw new Exception("Failed to generate virtual try-on images", ex);
+				throw;
 			}
 		}
 
-		private string BuildVirtualTryOnPromptWithMultipleColors(string environment, List<string> colorHexCodes)
+		private string BuildVirtualTryOnPromptWithMultipleColors(List<string> colorHexCodes)
 		{
-			var environmentDescriptions = new Dictionary<string, string>
-	{
-		{ "indoor", "in a well-lit, modern indoor setting with natural window light" },
-		{ "outdoor_sunny", "outdoors on a beautiful sunny day with bright natural sunlight" },
-		{ "outdoor_cloudy", "outdoors on a pleasant cloudy day with soft, diffused natural lighting" },
-		{ "evening", "in a stylish evening setting with warm, atmospheric lighting" }
-	};
-
-			var environmentDesc = environmentDescriptions.GetValueOrDefault(
-				environment,
-				"in a natural outdoor setting"
-			);
-
-			// Clothing items for color distribution
-			var clothingItems = new List<string>
-	{
-		"shirt/top",
-		"pants/skirt",
-		"shoes",
-		"accessories (hat/bag)"
-	};
-
-			var colorAssignments = new List<string>();
-			for (int i = 0; i < colorHexCodes.Count && i < clothingItems.Count; i++)
+			// 1. Kiểm tra đầu vào
+			if (colorHexCodes == null || colorHexCodes.Count == 0)
 			{
-				colorAssignments.Add($"- {clothingItems[i]} in color {colorHexCodes[i]}");
+				throw new ArgumentException("Danh sách màu không được để trống.", nameof(colorHexCodes));
 			}
 
-			var colorDescriptions = string.Join("\n", colorAssignments);
-			var allColors = string.Join(", ", colorHexCodes);
+			// 2. Chuẩn bị dữ liệu để chèn vào prompt
+			// Tạo chuỗi danh sách màu ngăn cách bởi dấu phẩy (VD: #1C1C1C, #F5F5F0)
+			string allColors = string.Join(", ", colorHexCodes);
 
-			return $@"
-OUTPUT FORMAT: Generate exactly ONE image. Output only the image with no text.
+			// Tạo danh sách gạch đầu dòng cho phần OUTFIT COLOR SCHEME
+			// VD: 
+			// - #1C1C1C
+			// - #F5F5F0
+			string colorDescriptionList = string.Join(System.Environment.NewLine, colorHexCodes.Select(c => $"- {c}"));
 
-Using the provided reference image of the person, generate a photorealistic virtual try-on image showing them wearing a coordinated outfit {environmentDesc}.
+			int colorCount = colorHexCodes.Count;
 
-===========================
-CRITICAL FRAMING REQUIREMENTS (HIGHEST PRIORITY - MUST FOLLOW)
-===========================
-CAMERA DISTANCE & FRAMING:
-- Shot type: FULL BODY PORTRAIT - Extreme Long Shot
-- Camera must be positioned FAR ENOUGH to capture the ENTIRE person from head to toe
-- Person's height in frame: 165-170cm (5'5""-5'7"")
-- The person should occupy approximately 70-80% of the image height (NOT 100%)
-- Leave 10-15% empty space ABOVE the head
-- Leave 10-15% empty space BELOW the feet
-- Leave adequate space on left and right sides
+			// 3. Tạo prompt sử dụng Verbatim String Interpolation ($@"...")
+			// Lưu ý: Trong C#, nếu muốn in dấu " bên trong chuỗi $@"...", bạn phải dùng 2 dấu "" liên tiếp.
+			string prompt = $@"OUTPUT FORMAT REQUIREMENT: Generate exactly ONE image. Do not provide any text, descriptions, or explanations. Just the raw image.
 
-MANDATORY VISIBILITY:
-✓ COMPLETE head (including all hair/hat if present)
-✓ FULL torso and arms
-✓ ENTIRE legs from hip to ankle
-✓ COMPLETE feet and shoes (both feet must be fully visible)
-✓ All clothing items must be 100% visible
+Using the provided reference image of the person, create a photorealistic virtual try-on fashion image showing them wearing a complete coordinated outfit in an urban street environment during golden hour.
 
-FORBIDDEN - NEVER DO THIS:
-✗ DO NOT crop the head, hair, or top of hat
-✗ DO NOT crop the feet or shoes at bottom
-✗ DO NOT zoom in too close
-✗ DO NOT cut off any body part at the frame edges
-✗ DO NOT let the person touch the top or bottom frame borders
+CRITICAL REQUIREMENTS - MUST MAINTAIN FROM REFERENCE IMAGE:
+- Keep the person's EXACT facial features, face shape, and facial structure
+- Maintain their EXACT skin tone and complexion
+- Preserve their hairstyle and hair color
+- Keep their body proportions and body type
+- Maintain their natural pose and posture
+- Keep the same person identity - this is very important!
 
-COMPOSITION:
-- Subject perfectly centered in frame
-- Vertical orientation (portrait mode)
-- Natural standing pose showing full body
-- Adequate breathing room on all four sides
+OUTFIT COLOR SCHEME (use ALL these colors in the outfit):
+{colorDescriptionList}
 
-===========================
-IDENTITY PRESERVATION (MAINTAIN EXACT LIKENESS)
-===========================
-MUST PRESERVE FROM REFERENCE IMAGE:
-- EXACT facial features: eyes, nose, mouth, eyebrows, face shape
-- EXACT skin tone and complexion (do not lighten or darken)
-- EXACT hairstyle, hair color, and hair texture
-- Body proportions and physique type
-- Natural facial expression
-- Ethnicity and distinctive features
+The outfit should incorporate ALL {colorCount} colors ({allColors}) in a stylish, coordinated way across different clothing pieces and accessories.
 
-CRITICAL: The face must look like the SAME PERSON as in the reference image. Only the outfit should change.
+STYLE REQUIREMENTS:
+1. Create a fashionable, modern outfit that naturally combines all {colorCount} colors
+2. The colors should be distributed across: top/shirt, bottom/pants or skirt, footwear, and accessories (bag, belt, or jewelry)
+3. Show the person from head to toe (full body shot)
+4. The environment should be an urban street setting with soft golden-hour sunlight
+5. Professional fashion photography lighting that enhances the outfit colors
+6. Natural, confident pose showing off the coordinated outfit
+7. Make sure each color ({allColors}) is clearly visible and prominent in the outfit
+8. The outfit should look cohesive, elegant, and high-fashion, not random or mismatched
 
-===========================
-COLOR ASSIGNMENT RULES
-===========================
-- Distribute the provided colors across different clothing items
-- Each color should be used for ONE clothing item only
-- DO NOT mix multiple provided colors on a single item
-- Keep each piece clean with ONE dominant color
+PHOTOGRAPHY STYLE:
+- High-quality fashion photography
+- Professional lighting suitable for an outdoor urban environment
+- Sharp focus on both the person and outfit details
+- Natural, realistic rendering
+- Colors should be vibrant and accurately match the hex codes: {allColors}
+- Background appropriate for an urban street but subtly blurred so it does not distract from the outfit
 
-Assigned colors:
-{colorDescriptions}
+IMPORTANT: This is a virtual try-on — maintain the EXACT same person from the reference image, only change their outfit to incorporate the specified colors.";
 
-Use these exact color hex codes: {allColors}
-
-===========================
-OUTFIT GENERATION RULES
-===========================
-- Modern, stylish, coordinated outfit
-- Top/shirt: ONE solid color from the list
-- Pants/skirt: ONE solid color from the list  
-- Shoes: ONE solid color from the list (MUST BE FULLY VISIBLE)
-- If accessories: use remaining colors
-- If more colors than items: ignore excess colors
-- If fewer colors than items: use neutral colors (white/black/gray) for remaining items
-- Ensure outfit is appropriate for the specified environment
-
-===========================
-PHOTOGRAPHY & TECHNICAL SPECS
-===========================
-- Professional fashion photography quality
-- Sharp focus on entire person and outfit
-- Proper lighting for {environment} setting
-- Colors must accurately match the hex values provided
-- High resolution and detail
-- Natural, flattering pose
-- Clean, uncluttered background appropriate for environment
-
-FINAL CHECK BEFORE GENERATING:
-□ Can you see the TOP of the head? (with margin above)
-□ Can you see BOTH shoes completely? (with margin below)
-□ Is the person centered with space around them?
-□ Does the face match the reference image exactly?
-□ Are all colors correctly applied to clothing?
-";
+			return prompt;
 		}
 
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using PerHue.Application.Attributes;
 using PerHue.Application.Models.CapsulePalette;
 using PerHue.Application.Models.Color;
 using PerHue.Domain.Entities;
@@ -79,10 +80,9 @@ namespace PerHue.Application.Models.AiTest
 
 	public class VirtualTryOnRequest
 	{
+		[AllowedImageExtensions(".png", ".jpg", ".jpeg", ".webp")]
 		public IFormFile UserImage { get; set; } = null!;
 		public List<string> SuggestedColorHexCodes { get; set; } = new();
-		public List<string> Environments { get; set; } = new() { "indoor", "outdoor_sunny", "outdoor_cloudy", "evening" };
-		public List<string> ClothingTypes { get; set; } = new() { "shirt", "dress", "sweater" };
 	}
 
 	public class VirtualTryOnResponse
@@ -92,15 +92,15 @@ namespace PerHue.Application.Models.AiTest
 
 	public class GeneratedImage
 	{
+		[AllowedImageExtensions(".png", ".jpg", ".jpeg", ".webp")]
 		public string ImageUrl { get; set; } = string.Empty;
-		public string Environment { get; set; } = string.Empty;
-		public string ClothingType { get; set; } = string.Empty;
 		public string ColorHex { get; set; } = string.Empty;
 		public string Prompt { get; set; } = string.Empty;
 	}
 
 	public class AiTestCompleteRequest
 	{
+		[AllowedImageExtensions(".png", ".jpg", ".jpeg", ".webp")]
 		public IFormFile? FaceImages { get; set; }
 		public string? HairColor { get; set; }
 		public string? EyesColor { get; set; }
@@ -126,6 +126,7 @@ namespace PerHue.Application.Models.AiTest
 
 		public DateTime? Date { get; set; }
 		public int ColorTypeId { get; set; }
+		public string ColorTypeName { get; set; } = null!;
 
 		public string SuggestedColor { get; set; } = null!;
 

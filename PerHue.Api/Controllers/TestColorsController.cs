@@ -25,7 +25,7 @@ namespace PerHue.Api.Controllers
 		}
 
 		[HttpPost("manual-test")]
-		[Authorize]
+		[Authorize(Roles = "User,Admin,Expert")]
 		public async Task<ActionResult<TestResultModel>> NormalTestSimpleColor(CreateManualTestResultModel model)
 		{
 			try
