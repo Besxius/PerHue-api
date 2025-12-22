@@ -14,7 +14,7 @@ namespace PerHue.Infrastructure.Policies
 		public static AsyncRetryPolicy CreateAiServiceRetryPolicy(ILogger logger, int maxRetryAttempts = 3)
 		{
 			return Policy
-				.Handle<HttpRequestException>()
+				.Handle<Exception>()
 				.Or<TaskCanceledException>()
 				.Or<TimeoutException>()
 				.Or<InvalidOperationException>(ex => ex.Message.Contains("API") || ex.Message.Contains("timeout"))
