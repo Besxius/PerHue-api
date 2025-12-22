@@ -12,7 +12,7 @@ namespace PerHue.Application.Models.ManualTest
 	{
 		public int Id { get; set; } //
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 		public int UserId { get; set; }
 
 		public string? Picture { get; set; } //
@@ -23,16 +23,16 @@ namespace PerHue.Application.Models.ManualTest
 
 		public DateTime CreatedDate { get; set; } //
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string ChosenColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public string SuggestedColor { get; set; }
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public virtual ColorTypeModel ColorType { get; set; } = null!;
 
-		[JsonIgnore]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public virtual UserModel User { get; set; } = null!;
 
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
