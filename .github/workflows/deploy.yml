@@ -17,8 +17,12 @@ jobs:
       - name: Wake up Docker 🐳
         shell: powershell
         run: |
-          Write-Host "Waking up Docker Desktop..."
-          docker info || exit 1
+          Write-Host "Waking up Docker..."
+          docker info
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Docker not available"
+            exit 1
+          }
 
       # 2️⃣ Chờ Docker engine thật sự sẵn sàng
       - name: Wait for Docker Engine 🕒
