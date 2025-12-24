@@ -72,7 +72,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						var reviewingTestRequests = await unitOfWork.TestRequestRepository.FindAsync(t => t.Status == TestRequestStatus.Reviewing.ToString());
 						foreach (var testRequest in reviewingTestRequests)
 						{
-							await HandleReviewRetries(unitOfWork, emailService, testRequest);
+							// Updated to pass aiAnalysisService
+							await HandleReviewRetries(unitOfWork, emailService, aiAnalysisService, testRequest);
 						}
 					}
 					catch (Exception ex)
@@ -92,6 +93,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private async Task HandleReviewRetries(
 			IUnitOfWork unitOfWork,
 			EmailService emailService,
+			IAIImageAnalysisService aiService, // Added Service
 			TestRequest testRequest)
 		{
 			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
@@ -168,6 +170,12 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				{
 					_logger.LogWarning($"Review TestRequest {testRequest.Id}: No new experts available for retry.");
 				}
+			}
+			// D. Fallback Logic: If max retries exceeded for reviews, let AI handle it
+			else if (needsNewReviewer && expiredReviewsCount > _maxRetries)
+			{
+				await PerformReviewFallbackAsync(unitOfWork, aiService, testRequest);
+				return; // Exit as the request is finalized
 			}
 
 			if (changesMade)
@@ -403,6 +411,80 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				testRequest.Status = TestRequestStatus.Failed.ToString();
 				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
 				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+		}
+
+		private async Task PerformReviewFallbackAsync(
+			IUnitOfWork unitOfWork,
+			IAIImageAnalysisService aiService,
+			TestRequest testRequest)
+		{
+			_logger.LogInformation($"Review TestRequest {testRequest.Id}: Fallback to AI.");
+
+			try
+			{
+				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest
+				{
+					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
+					HairColor = testRequest.HairColor,
+					EyesColor = testRequest.EyesColor,
+					LipsColor = testRequest.LipsColor,
+					SkinColor = testRequest.SkinColor
+				};
+
+				var aiResultModel = await aiService.AnalyzeColorTypeAsync2(aiRequest);
+				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
+
+				// Check if AI result already exists
+				var existingAiResult = await unitOfWork.AiTestResultRepository.GetByIdAsync(testRequest.Id);
+
+				if (existingAiResult == null)
+				{
+					var aiTestResult = new AiTestResult
+					{
+						Id = testRequest.Id,
+						Date = DateTime.Now,
+						Note = "AI Review (Fallback)",
+						SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
+						AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
+						ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
+					};
+					await unitOfWork.AiTestResultRepository.CreateAsync(aiTestResult);
+				}
+				else
+				{
+					// Update existing AI result
+					existingAiResult.Date = DateTime.Now;
+					existingAiResult.Note += " | AI Review (Fallback)";
+					existingAiResult.SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes);
+					existingAiResult.AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes);
+					existingAiResult.ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId;
+
+					await unitOfWork.AiTestResultRepository.UpdateAsync(existingAiResult);
+				}
+
+				// Finalize Review
+				testRequest.Status = TestRequestStatus.Completed.ToString();
+				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+				var notification = new Notification
+				{
+					Title = "Review Completed",
+					Content = "Expert review unavailable. AI has reviewed your test.",
+					Receiver = testRequest.UserAccountId,
+					TestRequestId = testRequest.Id,
+					ReceivedTime = DateTime.Now,
+					IsRead = false,
+					Type = "ReviewResult"
+				};
+				await unitOfWork.NotificationRepository.CreateAsync(notification);
+
+				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"AI Review Fallback failed for TestRequest {testRequest.Id}.");
+				// Optionally update status to Failed or handle gracefully
 			}
 		}
 
