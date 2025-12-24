@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.Caching.Memory;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
 using PerHue.Application.Models.Dashboard;
@@ -11,19 +12,29 @@ namespace PerHue.Infrastructure.Services
 	public class AdminDashboardService : IAdminDashboardService
 	{
 		private readonly PerHueDbContext _context;
+		private readonly IMemoryCache _cache;
 
-		public AdminDashboardService(PerHueDbContext context)
+		public AdminDashboardService(PerHueDbContext context, IMemoryCache cache)
 		{
 			_context = context;
+			_cache = cache;
 		}
 
 		public async Task<DashboardMetricsModel> GetDashboardMetricsAsync(DateTime? startDate = null, DateTime? endDate = null)
 		{
-			var today = DateTime.Today;
-			var start = startDate ?? today.AddDays(-30);
-			var end = endDate ?? today.AddDays(1);
+			if (_cache.TryGetValue<DashboardMetricsModel>("dashboardMetrics", out var cachedMetrics))
+			{
+				return cachedMetrics;
+			}
 
-			var totalUsers = await _context.UserAccounts.CountAsync();
+			var today = DateTime.Today;
+
+			var totalUsers = await _cache.GetOrCreateAsync("totalUsers", async entry =>
+			{
+				entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+				return await _context.UserAccounts.CountAsync();
+			});
+
 			var totalExperts = await _context.UserAccounts
 				.Where(u => u.RoleId == 3)
 				.CountAsync();
@@ -50,11 +61,7 @@ namespace PerHue.Infrastructure.Services
 				.Where(t => t.CreatedDate.HasValue && t.CreatedDate.Value.Date == today)
 				.CountAsync();
 
-			// Assuming penalty table exists
-			var totalPenalties = 0;
-			var penaltyAmountTotal = 0m;
-
-			return new DashboardMetricsModel
+			var metrics = new DashboardMetricsModel
 			{
 				TotalUsers = totalUsers,
 				TotalExperts = totalExperts,
@@ -64,15 +71,21 @@ namespace PerHue.Infrastructure.Services
 				RevenueToday = revenueToday,
 				TotalTests = totalTests,
 				TestsToday = testsToday,
-				TotalPenalties = totalPenalties,
-				PenaltyAmountTotal = penaltyAmountTotal,
-				ExpertActivityCount = totalExperts,
-				LastUpdated = DateTime.Now
+				ExpertActivityCount = totalExperts
 			};
+
+			_cache.Set("dashboardMetrics", metrics, TimeSpan.FromMinutes(5));
+
+			return metrics;
 		}
 
 		public async Task<AccountCountModel> GetAccountCountsAsync(DateTime? startDate = null, DateTime? endDate = null)
 		{
+			if (_cache.TryGetValue<AccountCountModel>("accountCounts", out var cachedCounts))
+			{
+				return cachedCounts;
+			}
+
 			var today = DateTime.Today;
 			var thisMonth = new DateTime(today.Year, today.Month, 1);
 			var thisWeek = today.AddDays(-(int)today.DayOfWeek);
@@ -120,7 +133,8 @@ namespace PerHue.Infrastructure.Services
 				.Where(u => u.CreatedDate >= effectiveStartDate &&
 						   (endDate == null || u.CreatedDate <= endDate.Value))
 				.GroupBy(u => new { u.CreatedDate.Year, u.CreatedDate.Month })
-				.Select(g => new {
+				.Select(g => new
+				{
 					Year = g.Key.Year,
 					Month = g.Key.Month,
 					Count = g.Count()
@@ -134,7 +148,7 @@ namespace PerHue.Infrastructure.Services
 				x => x.Count
 			);
 
-			return new AccountCountModel
+			var accouts = new AccountCountModel
 			{
 				TotalAccounts = totalAccounts,
 				ActiveAccounts = activeAccounts,
@@ -149,10 +163,19 @@ namespace PerHue.Infrastructure.Services
 				AccountsByDay = accountsByDay,
 				AccountsByMonth = accountsByMonthDict  // Dùng dictionary đã format
 			};
+
+			_cache.Set("accountCounts", accouts, TimeSpan.FromMinutes(1));
+
+			return accouts;
 		}
 
 		public async Task<PaginatedResultV2<AccountListItemModel>> GetAccountListAsync(AccountSearchModel searchModel)
 		{
+			if (_cache.TryGetValue<PaginatedResultV2<AccountListItemModel>>("accountList", out var cachedAccounts))
+			{
+				return cachedAccounts;
+			}
+
 			var query = _context.UserAccounts.AsQueryable();
 
 			// Apply filters
@@ -232,12 +255,16 @@ namespace PerHue.Infrastructure.Services
 				})
 				.ToListAsync();
 
-			return new PaginatedResultV2<AccountListItemModel>
+			var accounts = new PaginatedResultV2<AccountListItemModel>
 			{
 				List = items,
 				Total = totalCount,
 				Current = searchModel.PageIndex
 			};
+
+			_cache.Set("accountList", accounts, TimeSpan.FromMinutes(5));
+
+			return accounts;
 		}
 
 		public async Task<AccountDetailModel?> GetAccountDetailAsync(int accountId)
@@ -296,6 +323,11 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<PaginatedResultV2<ExpertActivityModel>> GetExpertActivityAsync(ExpertActivitySearchModel searchModel)
 		{
+			if (_cache.TryGetValue<PaginatedResultV2<ExpertActivityModel>>("expertActivity", out var cachedExperts))
+			{
+				return cachedExperts;
+			}
+
 			var query = _context.UserAccounts
 				.Include(x => x.Expert)
 				.Where(u => u.RoleId == 3)
@@ -332,16 +364,25 @@ namespace PerHue.Infrastructure.Services
 				})
 				.ToListAsync();
 
-			return new PaginatedResultV2<ExpertActivityModel>
+			var experts = new PaginatedResultV2<ExpertActivityModel>
 			{
 				List = items,
 				Total = totalCount,
 				Current = searchModel.PageIndex
 			};
+
+			_cache.Set("expertActivity", experts, TimeSpan.FromMinutes(5));
+
+			return experts;
 		}
 
 		public async Task<RevenueStatisticsModel> GetRevenueStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day")
 		{
+			if (_cache.TryGetValue<RevenueStatisticsModel>("revenueStatistics", out var cachedStatistics))
+			{
+				return cachedStatistics;
+			}
+
 			var payments = await _context.Payments
 				.Where(p => p.Status.ToLower() == nameof(PaymentStatusEnum.Success).ToLower() && p.CreatedAt >= startDate && p.CreatedAt <= endDate)
 				.ToListAsync();
@@ -372,7 +413,7 @@ namespace PerHue.Infrastructure.Services
 				.OrderBy(d => d.Date)
 				.ToList();
 
-			return new RevenueStatisticsModel
+			var revenueStatistic = new RevenueStatisticsModel
 			{
 				TotalRevenue = totalRevenue,
 				PreviousPeriodRevenue = previousRevenue,
@@ -382,10 +423,19 @@ namespace PerHue.Infrastructure.Services
 				EndDate = endDate,
 				GroupBy = groupBy ?? "day"
 			};
+
+			_cache.Set("revenueStatistics", revenueStatistic, TimeSpan.FromMinutes(1));
+
+			return revenueStatistic;
 		}
 
 		public async Task<TestCountStatisticsModel> GetTestCountStatisticsAsync(DateTime startDate, DateTime endDate, string? groupBy = "day", string? testType = null)
 		{
+			if (_cache.TryGetValue<TestCountStatisticsModel>("testCountStatistics", out var cachedStatistics))
+			{
+				return cachedStatistics;
+			}
+			
 			var query = _context.TestRequests
 				.Where(t => t.CreatedDate.HasValue && t.CreatedDate.Value >= startDate && t.CreatedDate.Value <= endDate);
 
@@ -435,7 +485,7 @@ namespace PerHue.Infrastructure.Services
 				.OrderByDescending(t => t.Count)
 				.ToList();
 
-			return new TestCountStatisticsModel
+			var testCountStatistic = new TestCountStatisticsModel
 			{
 				TotalTests = totalTests,
 				PreviousPeriodTests = previousTests,
@@ -446,6 +496,10 @@ namespace PerHue.Infrastructure.Services
 				GroupBy = groupBy ?? "day",
 				TestsByType = testsByType
 			};
+
+			_cache.Set("testCountStatistics", testCountStatistic, TimeSpan.FromMinutes(1));
+
+			return testCountStatistic;
 		}
 	}
 }
