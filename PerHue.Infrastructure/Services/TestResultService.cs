@@ -13,6 +13,7 @@ using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Utils;
 using System;
 using System.Linq;
@@ -29,9 +30,10 @@ namespace PerHue.Infrastructure.Services
 		private readonly IVirtualTryOnService _virtualTryOnService; // Renamed from _imageGenerationService for clarity
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IUserService _userService;
+		private readonly PerHueDbContext _context;
 
 		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService, IVirtualTryOnService virtualTryOnService,
-			IHttpClientFactory httpClientFactory, IUserService userService)
+			IHttpClientFactory httpClientFactory, IUserService userService, PerHueDbContext context)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
@@ -41,6 +43,7 @@ namespace PerHue.Infrastructure.Services
 			_virtualTryOnService = virtualTryOnService;
 			_httpClientFactory = httpClientFactory;
 			_userService = userService;
+			_context = context;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -230,21 +233,8 @@ namespace PerHue.Infrastructure.Services
 				.Select(c => c.HexCode)
 				.ToList();
 
-			// Thêm màu từ palettes nếu chưa đủ 15 màu
-			//if (suggestedColors.Count < 15)
-			//{
-			//	var additionalColors = filteredPalettes
-			//		.SelectMany(cp => cp.Colors)
-			//		.DistinctBy(c => c.Id)
-			//		.Where(c => !suggestedColors.Contains(c.HexCode))
-			//		.Take(15 - suggestedColors.Count)
-			//		.Select(c => c.HexCode);
-
-			//	suggestedColors.AddRange(additionalColors);
-			//}
-
 			var suggestedColorString = string.Join(",", suggestedColors);
-			
+
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
@@ -485,7 +475,7 @@ namespace PerHue.Infrastructure.Services
 				_logger.LogInformation($"Assigned request {testRequest.Id} to expert {expert.Id}");
 				var notification = new Notification
 				{
-					Title = $"New Test Request #{testRequest.Id}", 
+					Title = $"New Test Request #{testRequest.Id}",
 					Content = "You need to respond within 2 days from the time you receive the request.",
 					Receiver = expert.Id, // Expert ID corresponds to UserAccountId
 					TestRequestId = testRequest.Id,

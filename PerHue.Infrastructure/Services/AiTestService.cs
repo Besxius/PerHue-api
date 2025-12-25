@@ -12,6 +12,7 @@ using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.IRepositories;
 using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Policies;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Utils;
@@ -41,6 +42,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUserService _userService;
 		private readonly ICapsulePaletteService _capsulePaletteService;
 		private readonly AsyncRetryPolicy _retryPolicy;
+		private readonly PerHueDbContext _context;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -52,7 +54,9 @@ namespace PerHue.Infrastructure.Services
 			ITestRequestRepository testRequestRepository,
 			IUserSubscriptionService subscriptionService,
 			IUserService userService, IMapper mapper,
-			ICapsulePaletteService capsulePaletteService)
+			ICapsulePaletteService capsulePaletteService,
+			PerHueDbContext context
+			)
 		{
 			_aiTestRepository = aiTestRepository;
 			_geminiService = geminiService;
@@ -67,6 +71,7 @@ namespace PerHue.Infrastructure.Services
 			_capsulePaletteService = capsulePaletteService;
 			// Khởi tạo retry policy với 3 lần thử
 			_retryPolicy = RetryPolicies.CreateAiServiceRetryPolicy(logger, maxRetryAttempts: 3);
+			_context = context;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
@@ -332,13 +337,13 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		//================================================================
-
+		#region AI Test flow
 		public async Task<AiTestResultResponseModel> ProcessAiTestAsync2(int userId, AiTestCompleteRequest request)
 		{
 			var checkQuotaAndRateLimit = await _aiTestRepository.CountAsync(
 				tr => tr.Date.HasValue &&
 					  tr.Date.Value.Date == DateTime.UtcNow.Date);
-			if (checkQuotaAndRateLimit == 20) // Giới hạn 20 requests/ngày
+			if (checkQuotaAndRateLimit >= 20)
 			{
 				_logger.LogWarning("Daily AI test quota exceeded !!!");
 				throw new InvalidOperationException("Sorry for this inconvenience! Please try again tomorrow");
@@ -346,7 +351,7 @@ namespace PerHue.Infrastructure.Services
 
 			_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
-			// KIỂM TRA VÀ TRỪ LƯỢT NGAY TẠI ĐÂY - TRƯỚC KHI BẮT ĐẦU QUY TRÌNH
+			// Kiểm tra và trừ lượt sử dụng
 			var userSubscription = await _subscriptionService.GetCurrentUserSubscriptionByUserIdAsync(userId);
 			var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId);
 			if (!hasRemaining)
@@ -366,186 +371,28 @@ namespace PerHue.Infrastructure.Services
 				throw new InvalidOperationException("Failed to deduct usage. Please try again.");
 			}
 
+			var remainingAfterDeduct = await _subscriptionService.GetRemainingUsageAsync(userId);
+			_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remainingAfterDeduct}");
+
+			// Bắt đầu transaction
+			using var transaction = await _context.Database.BeginTransactionAsync();
+			bool shouldRefund = true;
+
 			try
 			{
-				var remainingAfterDeduct = await _subscriptionService.GetRemainingUsageAsync(userId);
-				_logger.LogInformation($"Successfully deducted 1 usage for user {userId}. Remaining: {remainingAfterDeduct}", userId, remainingAfterDeduct);
+				// Tạo TestRequest và Upload Image song song
+				var (testRequest, imageUrl) = await CreateTestRequestAndUploadImageAsync(userId, request);
 
-				// Tạo TestRequest mới
-				var testRequest = new TestRequest
-				{
-					HairColor = request.HairColor,
-					EyesColor = request.EyesColor,
-					LipsColor = request.LipsColor,
-					SkinColor = request.SkinColor,
-					Status = TestStatus.Processing.ToString(),
-					CreatedDate = DateTime.Now,
-					TypeOfTest = "AI Test",
-					UserAccountId = userId
-				};
-
-				testRequest = await _aiTestRepository.CreateTestRequestAsync(testRequest);
-				_logger.LogInformation("Created TestRequest with Id: {TestRequestId}", testRequest.Id);
-
-				// Upload user images và lưu vào bảng Picture
-				var imageUrls = new List<string>();
-				var pictures = new List<Picture>();
-
-				if (request.FaceImages != null)
-				{
-					var imageUrl = await _imageUploadService.UploadImageAsync(request.FaceImages);
-					imageUrls.Add(imageUrl);
-					_logger.LogInformation("Uploaded user image: {ImageUrl}", imageUrl);
-
-					pictures.Add(new Picture
-					{
-						Source = imageUrl,
-						TestRequestId = testRequest.Id
-					});
-				}
-
-				// Lưu ảnh người dùng vào bảng Picture
-				await _aiTestRepository.CreatePicturesAsync(pictures);
-				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
-
-
-				// Xử lý AI analysis
 				try
 				{
-					// Analyze colors với Gemini
-					var analysisRequest = new Application.Models.AiTest.GeminiAnalysisRequest
-					{
-						ImageUrls = imageUrls,
-						HairColor = request.HairColor,
-						EyesColor = request.EyesColor,
-						LipsColor = request.LipsColor,
-						SkinColor = request.SkinColor
-					};
+					var response = await ProcessAiAnalysisAsync(testRequest, imageUrl, request);
 
-					var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(analysisRequest);
-					_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
+					// Commit transaction khi thành công
+					await transaction.CommitAsync();
+					shouldRefund = false;
 
-					// Match colors
-					var matchedSuggestedColors = await _colorMatchingService
-						.MatchColorsFromHexCodesAsync(colorAnalysis.SuggestedColorHexCodes);
-
-					var matchedAvoidedColors = await _colorMatchingService
-						.MatchColorsFromHexCodesAsync(colorAnalysis.AvoidedColorHexCodes);
-
-					_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
-						matchedSuggestedColors.Count, matchedAvoidedColors.Count);
-
-					// ✅ LẤY CAPSULE PALETTES LIÊN QUAN DỰA VÀO SUGGESTED COLORS
-					var relatedPalettes = await _capsulePaletteService
-						.GetRelativeCapsulePalettes(colorAnalysis.SuggestedColorHexCodes);
-
-
-					// Generate virtual try-on với IFormFile TRỰC TIẾP
-					VirtualTryOnResponse? virtualTryOnResults = null;
-					if (request.FaceImages != null)
-					{
-						_logger.LogInformation("Starting virtual try-on with retry policy for TestRequestId: {TestRequestId}", testRequest.Id);
-
-						// ✅ LƯU STREAM VÀO MEMORY ĐỂ CÓ THỂ RESET
-						byte[] imageBytes;
-						using (var memoryStream = new MemoryStream())
-						{
-							await request.FaceImages.CopyToAsync(memoryStream);
-							imageBytes = memoryStream.ToArray();
-						}
-
-						virtualTryOnResults = await _retryPolicy.ExecuteAsync(async () =>
-						{
-							// ✅ TẠO MỚI IFormFile TỪ BYTES CHO MỖI LẦN RETRY
-							using var stream = new MemoryStream(imageBytes);
-							var formFile = new FormFile(stream, 0, imageBytes.Length,
-								request.FaceImages.Name, request.FaceImages.FileName)
-							{
-								Headers = request.FaceImages.Headers,
-								ContentType = request.FaceImages.ContentType
-							};
-
-							var tryOnRequest = new VirtualTryOnRequest
-							{
-								UserImage = formFile,
-								SuggestedColorHexCodes = colorAnalysis.SuggestedColorHexCodes
-							};
-
-							return await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
-						});
-
-						_logger.LogInformation("Virtual try-on generation completed: {Count} images", virtualTryOnResults.GeneratedImages.Count);
-
-						// Lưu ảnh AI tạo ra vào bảng AiPicture
-						if (virtualTryOnResults.GeneratedImages.Count > 0)
-						{
-							var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
-							{
-								Source = img.ImageUrl,
-								Note = $"{PictureNotes.AiGeneratedImage} - Colors: {img.ColorHex}",
-								TestRequestId = testRequest.Id
-							}).ToList();
-
-							await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
-							_logger.LogInformation("Saved {Count} AI-generated images to AiPicture table", aiPictures.Count);
-						}
-					}
-
-					// Lưu kết quả test vào AiTestResult
-					var aiTestResult = new AiTestResult
-					{
-						Date = DateTime.Now,
-						ColorTypeId = colorAnalysis.ColorTypeId,
-						SuggestedColor = string.Join(", ", colorAnalysis.SuggestedColorHexCodes),
-						AvoidedColor = string.Join(", ", colorAnalysis.AvoidedColorHexCodes),
-						Note = $"Analysis completed by AI. Raw hex codes",
-						IdNavigation = testRequest
-					};
-
-					var result = await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
-
-					// Update status thành Completed
-					testRequest.Status = TestStatus.Completed.ToString();
-					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-
-					// 1. Lấy hex codes từ matched colors (để tìm palettes)
-					var suggestedHexCodes = matchedSuggestedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => c.MatchedColor!.HexCode)
-						.ToList();
-
-					_logger.LogInformation("Finding related palettes for {Count} suggested colors: {Colors}",
-						suggestedHexCodes.Count, string.Join(", ", suggestedHexCodes));
-
-					// 2. Tìm capsule palettes dựa trên matched colors
-					var relatedPalettesByColors = await _capsulePaletteService
-						.GetRelativeCapsulePalettes(suggestedHexCodes);
-
-					var relatedPalettesList = relatedPalettesByColors.ToList();
-
-					_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
-						relatedPalettesList.Count);
-
-					// 3. Map response
-					var response = _mapper.Map<AiTestResultResponseModel>(result);
-
-					response.ColorTypeName = result.ColorType.Name;
-
-					response.SuggestedColorsBySystem = matchedSuggestedColors
-						.Where(c => c.MatchedColor != null)
-						.Select(c => new ColorModel
-						{
-							Id = c.MatchedColor!.Id,
-							Name = c.MatchedColor.Name,
-							HexCode = c.MatchedColor.HexCode
-						})
-						.ToList();
-
-					// ✅ ASSIGN THE FIRST RELATED CAPSULE PALETTE TO THE RESPONSE
-					response.SuggestedCapsulePalleteBySystem = relatedPalettesList.FirstOrDefault() ?? new CapsulePaletteModel();
-
-					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}",
-						testRequest.Id);
+					_logger.LogInformation("Transaction committed successfully for TestRequestId: {TestRequestId}", testRequest.Id);
+					_logger.LogInformation("AI Test processing completed successfully for TestRequestId: {TestRequestId}", testRequest.Id);
 
 					return response;
 				}
@@ -553,15 +400,9 @@ namespace PerHue.Infrastructure.Services
 				{
 					_logger.LogError(ex, "Error processing AI test for request {TestRequestId}", testRequest.Id);
 
-					// Update status thành Failed nếu có lỗi
-					testRequest.Status = TestStatus.Failed.ToString();
-					await _aiTestRepository.UpdateTestRequestAsync(testRequest);
-
-					var refunded = await _subscriptionService.RefundUsageAsync(userId, packageId, packageType);
-					if (refunded)
-					{
-						_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
-					}
+					// Rollback transaction - TestRequest và AiTestResult sẽ không được lưu
+					await transaction.RollbackAsync();
+					_logger.LogInformation("Transaction rolled back for TestRequestId: {TestRequestId}", testRequest.Id);
 
 					throw;
 				}
@@ -570,14 +411,253 @@ namespace PerHue.Infrastructure.Services
 			{
 				_logger.LogError(ex, "Error creating AI Test for UserId: {UserId}", userId);
 
-				var refunded = await _subscriptionService.RefundUsageAsync(userId, packageId, packageType);
-				if (refunded)
+				// Refund usage
+				if (shouldRefund)
 				{
-					_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
+					var refunded = await _subscriptionService.RefundUsageAsync(userId, packageId, packageType);
+					if (refunded)
+					{
+						_logger.LogInformation($"Refunded 1 usage for user {userId} due to processing error");
+					}
+					else
+					{
+						_logger.LogError($"Failed to refund usage for user {userId}");
+					}
 				}
+
 				throw;
 			}
 		}
+
+		#region Helper Methods
+		private async Task<(TestRequest testRequest, string imageUrl)> CreateTestRequestAndUploadImageAsync(
+			int userId,
+			AiTestCompleteRequest request)
+		{
+			// Tạo TestRequest
+			var testRequest = new TestRequest
+			{
+				HairColor = request.HairColor,
+				EyesColor = request.EyesColor,
+				LipsColor = request.LipsColor,
+				SkinColor = request.SkinColor,
+				Status = TestStatus.Processing.ToString(),
+				CreatedDate = DateTime.Now,
+				TypeOfTest = "AI Test",
+				UserAccountId = userId
+			};
+
+			// Tạo TestRequest và Upload Image song song
+			var createTask = _aiTestRepository.CreateTestRequestAsync(testRequest);
+			var uploadTask = request.FaceImages != null
+				? _imageUploadService.UploadImageAsync(request.FaceImages)
+				: Task.FromResult(string.Empty);
+
+			await Task.WhenAll(createTask, uploadTask);
+
+			testRequest = await createTask;
+			var imageUrl = await uploadTask;
+
+			_logger.LogInformation("Created TestRequest with Id: {TestRequestId}", testRequest.Id);
+
+			if (!string.IsNullOrEmpty(imageUrl))
+			{
+				_logger.LogInformation("Uploaded user image: {ImageUrl}", imageUrl);
+
+				// Lưu ảnh người dùng vào bảng Picture
+				var pictures = new List<Picture>
+		{
+			new Picture
+			{
+				Source = imageUrl,
+				TestRequestId = testRequest.Id
+			}
+		};
+
+				await _aiTestRepository.CreatePicturesAsync(pictures);
+				_logger.LogInformation("Saved {Count} user images to Picture table", pictures.Count);
+			}
+
+			return (testRequest, imageUrl);
+		}
+
+		private async Task<AiTestResultResponseModel> ProcessAiAnalysisAsync(
+			TestRequest testRequest,
+			string imageUrl,
+			AiTestCompleteRequest request)
+		{
+			// Analyze colors với Gemini
+			var analysisRequest = new Application.Models.AiTest.GeminiAnalysisRequest
+			{
+				ImageUrls = new List<string> { imageUrl },
+				HairColor = request.HairColor,
+				EyesColor = request.EyesColor,
+				LipsColor = request.LipsColor,
+				SkinColor = request.SkinColor
+			};
+
+			var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(analysisRequest);
+			_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
+
+			// Match colors và Generate virtual try-on song song
+			var matchTask = MatchColorsAsync(colorAnalysis);
+			var virtualTryOnTask = GenerateVirtualTryOnAsync(testRequest, request.FaceImages, colorAnalysis.SuggestedColorHexCodes);
+
+			await Task.WhenAll(matchTask, virtualTryOnTask);
+
+			var (matchedSuggestedColors, matchedAvoidedColors) = await matchTask;
+			var virtualTryOnResults = await virtualTryOnTask;
+
+			_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
+				matchedSuggestedColors.Count, matchedAvoidedColors.Count);
+
+			// Lưu ảnh AI tạo ra vào bảng AiPicture
+			if (virtualTryOnResults != null && virtualTryOnResults.GeneratedImages.Count > 0)
+			{
+				await SaveAiGeneratedImagesAsync(testRequest.Id, virtualTryOnResults);
+			}
+
+			// Lưu kết quả và Update status
+			var result = await SaveAiTestResultAsync(testRequest, colorAnalysis);
+
+			// Tạo response với palettes
+			var response = await BuildResponseAsync(result, matchedSuggestedColors);
+
+			return response;
+		}
+
+		private async Task<(List<ColorMatchResult> suggested, List<ColorMatchResult> avoided)> MatchColorsAsync(
+			GeminiColorAnalysisResponse colorAnalysis)
+		{
+			var suggestedTask = _colorMatchingService.MatchColorsFromHexCodesAsync(colorAnalysis.SuggestedColorHexCodes);
+			var avoidedTask = _colorMatchingService.MatchColorsFromHexCodesAsync(colorAnalysis.AvoidedColorHexCodes);
+
+			await Task.WhenAll(suggestedTask, avoidedTask);
+
+			return (await suggestedTask, await avoidedTask);
+		}
+
+		private async Task<VirtualTryOnResponse?> GenerateVirtualTryOnAsync(
+			TestRequest testRequest,
+			IFormFile? faceImage,
+			List<string> suggestedColorHexCodes)
+		{
+			if (faceImage == null)
+			{
+				return null;
+			}
+
+			_logger.LogInformation("Starting virtual try-on with retry policy for TestRequestId: {TestRequestId}", testRequest.Id);
+
+			byte[] imageBytes;
+			using (var memoryStream = new MemoryStream())
+			{
+				await faceImage.CopyToAsync(memoryStream);
+				imageBytes = memoryStream.ToArray();
+			}
+
+			var virtualTryOnResults = await _retryPolicy.ExecuteAsync(async () =>
+			{
+				using var stream = new MemoryStream(imageBytes);
+				var formFile = new FormFile(stream, 0, imageBytes.Length,
+					faceImage.Name, faceImage.FileName)
+				{
+					Headers = faceImage.Headers,
+					ContentType = faceImage.ContentType
+				};
+
+				var tryOnRequest = new VirtualTryOnRequest
+				{
+					UserImage = formFile,
+					SuggestedColorHexCodes = suggestedColorHexCodes
+				};
+
+				return await _virtualTryOnService.GenerateVirtualTryOnImagesAsync(tryOnRequest);
+			});
+
+			_logger.LogInformation("Virtual try-on generation completed: {Count} images", virtualTryOnResults.GeneratedImages.Count);
+
+			return virtualTryOnResults;
+		}
+
+		private async Task SaveAiGeneratedImagesAsync(int testRequestId, VirtualTryOnResponse virtualTryOnResults)
+		{
+			var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
+			{
+				Source = img.ImageUrl,
+				Note = $"{PictureNotes.AiGeneratedImage} - Colors: {img.ColorHex}",
+				TestRequestId = testRequestId
+			}).ToList();
+
+			await _aiTestRepository.CreateAiPicturesAsync(aiPictures);
+			_logger.LogInformation("Saved {Count} AI-generated images to AiPicture table", aiPictures.Count);
+		}
+
+		private async Task<AiTestResult> SaveAiTestResultAsync(
+			TestRequest testRequest,
+			GeminiColorAnalysisResponse colorAnalysis)
+		{
+			// Lưu kết quả test vào AiTestResult
+			var aiTestResult = new AiTestResult
+			{
+				Date = DateTime.Now,
+				ColorTypeId = colorAnalysis.ColorTypeId,
+				SuggestedColor = string.Join(", ", colorAnalysis.SuggestedColorHexCodes),
+				AvoidedColor = string.Join(", ", colorAnalysis.AvoidedColorHexCodes),
+				Note = $"Analysis completed by AI. Raw hex codes",
+				IdNavigation = testRequest
+			};
+
+			var result = await _aiTestRepository.CreateAiTestResultAsync(aiTestResult);
+
+			// Update status thành Completed
+			testRequest.Status = TestStatus.Completed.ToString();
+			await _aiTestRepository.UpdateTestRequestAsync(testRequest);
+
+			return result;
+		}
+
+		private async Task<AiTestResultResponseModel> BuildResponseAsync(
+			AiTestResult result,
+			List<ColorMatchResult> matchedSuggestedColors)
+		{
+			var suggestedHexCodes = matchedSuggestedColors
+				.Where(c => c.MatchedColor != null)
+				.Select(c => c.MatchedColor!.HexCode)
+				.ToList();
+
+			_logger.LogInformation("Finding related palettes for {Count} suggested colors: {Colors}",
+				suggestedHexCodes.Count, string.Join(", ", suggestedHexCodes));
+
+			var relatedPalettesByColors = await _capsulePaletteService
+				.GetRelativeCapsulePalettes(suggestedHexCodes);
+
+			var relatedPalettesList = relatedPalettesByColors.ToList();
+
+			_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
+				relatedPalettesList.Count);
+
+			var response = _mapper.Map<AiTestResultResponseModel>(result);
+			response.ColorTypeName = result.ColorType.Name;
+
+			response.SuggestedColorsBySystem = matchedSuggestedColors
+				.Where(c => c.MatchedColor != null)
+				.Select(c => new ColorModel
+				{
+					Id = c.MatchedColor!.Id,
+					Name = c.MatchedColor.Name,
+					HexCode = c.MatchedColor.HexCode
+				})
+				.ToList();
+
+			response.SuggestedCapsulePalleteBySystem = relatedPalettesList.FirstOrDefault() ?? new CapsulePaletteModel();
+
+			return response;
+		}
+		#endregion
+		#endregion
+
+		//================================================================
 
 		public async Task<GeminiColorAnalysisResponse> AnalyzeColorsOnlyAsync(Application.Models.AiTest.GeminiAnalysisRequest request)
 		{
