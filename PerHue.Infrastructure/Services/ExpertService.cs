@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -80,59 +81,96 @@ namespace PerHue.Infrastructure.Services
 			return _mapper.Map<IEnumerable<ExpertModel>>(experts);
 		}
 
+		/// <summary>
+		/// Calculates the expert's average rating at a specific point in time based on historical responses.
+		/// </summary>
+		private async Task<decimal> CalculateRatingAtSpecificTime(int expertId, DateTime timePoint)
+		{
+			// Get all rated responses for this expert created strictly before the specified timePoint
+			// This represents the expert's "reputation" at the moment they performed the task.
+			var ratings = await _unitOfWork.TestResponseRepository.GetQueryable()
+				.Where(r => r.ExpertId == expertId && r.Rating != null && r.CreatedDate < timePoint)
+				.Select(r => r.Rating)
+				.ToListAsync();
+
+			if (!ratings.Any())
+			{
+				// Default rating is 5.0 if no history exists (new expert or perfect start)
+				return 5.0m;
+			}
+
+			// Calculate average
+			return (decimal)ratings.Average(r => r.Value);
+		}
+
+		/// <summary>
+		/// Calculates the salary for a single test response based on the expert's rating at the time.
+		/// </summary>
+		private async Task<decimal> CalculateSalaryOfTestResponse(int testResponseId)
+		{
+			// 1. Get the response to identify the timestamp and expert
+			var response = await _unitOfWork.TestResponseRepository.GetByIdAsync(testResponseId);
+			if (response == null) return 0;
+
+			// 2. Calculate Expert's rating at the time this response was created
+			var ratingAtTime = await CalculateRatingAtSpecificTime(response.ExpertId, response.CreatedDate ?? DateTime.Now);
+
+			// 3. Apply Salary Logic
+			// Default salary: 30,000 VND
+			// If rating <= 3.0: 20,000 VND
+			if (ratingAtTime <= 3.0m)
+			{
+				return 20000m;
+			}
+
+			return 30000m;
+		}
+
 		public async Task<ExpertSalaryModel> CalculateSalaryAsync(int expertId, DateTime? startDate, DateTime? endDate)
 		{
-			// 1. Get Configuration Values (and apply multiplier for thousands if needed)
-			// Default to 0 if config is missing to avoid crashes, but ideally config should exist.
-			decimal baseSc1 = _config.GetValue<decimal>("Salary:sc1");
-			decimal baseSc2 = _config.GetValue<decimal>("Salary:sc2");
-			decimal baseSc3 = _config.GetValue<decimal>("Salary:sc3");
+			// 1. Get all responses for the expert within the date range
+			// Note: We use GetQueryable to filter by date and expert ID. We include ALL responses, not just rated ones.
+			var query = _unitOfWork.TestResponseRepository.GetQueryable()
+				.Where(r => r.ExpertId == expertId);
 
-			// Assuming config values like 50, 100, 150 represent thousands (50k, 100k, 150k)
-			decimal salaryBelow4Stars = baseSc1 * 1000;
-			decimal salary4Stars = baseSc2 * 1000;
-			decimal salary5Stars = baseSc3 * 1000;
+			if (startDate.HasValue)
+				query = query.Where(r => r.CreatedDate >= startDate.Value);
 
-			// 2. Get all rated responses
-			var ratedResponses = await _unitOfWork.TestResponseRepository.GetRatedResponsesByExpertIdAsync(expertId, startDate, endDate);
+			if (endDate.HasValue)
+				query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+			var responses = await query.OrderByDescending(r => r.CreatedDate).ToListAsync();
+
+			// 2. Prepare Model
+			// Calculate current average rating for the summary header (based on all-time data)
+			var allRatedResponses = await _unitOfWork.TestResponseRepository.GetQueryable()
+				.Where(r => r.ExpertId == expertId && r.Rating != null)
+				.ToListAsync();
 
 			var salaryModel = new ExpertSalaryModel
 			{
 				ExpertId = expertId,
 				FromDate = startDate,
 				ToDate = endDate,
-				TotalRequests = ratedResponses.Count(),
-				AverageRating = ratedResponses.Any() ? ratedResponses.Average(r => r.Rating ?? 0) : 0
+				TotalRequests = responses.Count,
+				AverageRating = allRatedResponses.Any() ? allRatedResponses.Average(r => r.Rating ?? 0) : 0
 			};
 
-			// 3. Calculate
+			// 3. Calculate Salary for each response
 			decimal totalSalary = 0;
 
-			foreach (var response in ratedResponses)
+			foreach (var response in responses)
 			{
-				decimal amount = 0;
-				int rating = response.Rating ?? 0;
-
-				if (rating == 5)
-				{
-					amount = salary5Stars;
-				}
-				else if (rating == 4)
-				{
-					amount = salary4Stars;
-				}
-				else
-				{
-					amount = salaryBelow4Stars;
-				}
+				// Compute amount for this specific response using the helper function
+				decimal amount = await CalculateSalaryOfTestResponse(response.Id);
 
 				totalSalary += amount;
 
 				salaryModel.Details.Add(new ExpertSalaryDetail
 				{
-					TestResponseId = response.Id,
+					TestRequestId = response.TestRequestId, // Returning TestRequestId as requested
 					CompletedDate = response.CreatedDate ?? DateTime.MinValue,
-					Rating = rating,
+					Rating = response.Rating, // Can be null now
 					Amount = amount
 				});
 			}
