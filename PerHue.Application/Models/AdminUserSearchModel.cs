@@ -2,7 +2,7 @@ namespace PerHue.Application.Models
 {
 	public class AdminUserSearchModel
 	{
-		public int PageIndex { get; set; } = 1;
+		public int Current { get; set; } = 1;
 		public int PageSize { get; set; } = 10;
 		public string? Email { get; set; }
 		public string? Fullname { get; set; }

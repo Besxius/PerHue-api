@@ -15,11 +15,15 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
+		private readonly EmailService _emailService;
+		private readonly INotificationService _notificationService;
 
-		public AdminUserService(IUnitOfWork unitOfWork, IMapper mapper)
+		public AdminUserService(IUnitOfWork unitOfWork, IMapper mapper, EmailService emailService, INotificationService notificationService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_emailService = emailService;
+			_notificationService = notificationService;
 		}
 
 		public async Task<PaginatedResultV2<AdminUserModel>> GetUsersAsync(AdminUserSearchModel searchModel)
@@ -91,7 +95,7 @@ namespace PerHue.Infrastructure.Services
 			var totalPages = (int)Math.Ceiling((double)totalCount / searchModel.PageSize);
 
 			var users = await orderedQuery
-				.Skip((searchModel.PageIndex - 1) * searchModel.PageSize)
+				.Skip((searchModel.Current - 1) * searchModel.PageSize)
 				.Take(searchModel.PageSize)
 				.Select(u => new AdminUserModel
 				{
@@ -129,7 +133,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				List = users,
 				Total = totalCount,
-				Current = searchModel.PageIndex,
+				Current = searchModel.Current,
 			};
 		}
 
@@ -268,12 +272,107 @@ namespace PerHue.Infrastructure.Services
 
 		public async Task<bool> BanUserAsync(int id, string reason)
 		{
-			return await UpdateUserStatusAsync(id, new UserStatusUpdateModel { Isactive = false, Reason = reason });
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+			if (user == null)
+				return false;
+
+			var result = await UpdateUserStatusAsync(id, new UserStatusUpdateModel { Isactive = false, Reason = reason });
+
+			if (result)
+			{
+				var reasonHtml = string.IsNullOrWhiteSpace(reason)
+					? string.Empty
+					: $@"
+					<p><strong>Reason:</strong></p>
+					<div style='
+						background-color:#f8f9fa;
+						border-left:4px solid #dc3545;
+						padding:12px;
+						margin:12px 0;
+					'>
+						{System.Net.WebUtility.HtmlEncode(reason)}
+					</div>";
+
+				// Send email
+				var emailSubject = "[PerHue] Account Banned";
+				var emailBody = $@"
+				<html>
+				<body style='font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;'>
+					<p>Hi <strong>{user.Fullname ?? user.Username}</strong>,</p>
+
+					<p>
+						We regret to inform you that your account has been
+						<strong>banned</strong>.
+					</p>
+
+					{reasonHtml}
+
+					<p>
+						Your account is now <strong>suspended</strong> and you will not be able to access
+						<strong>PerHue</strong> services.
+					</p>
+
+					<p>
+						If you believe this is a mistake or would like to appeal this decision,
+						please reply to this email or contact our Support Center.
+					</p>
+
+					<p style='margin-top: 24px;'>
+						Best regards,<br/>
+						<strong>PerHue Team</strong>
+					</p>
+				</body>
+				</html>";
+
+				await _emailService.SendEmailAsync(user.Email, emailSubject, emailBody);
+			}
+
+			return result;
 		}
 
 		public async Task<bool> UnbanUserAsync(int id)
 		{
-			return await UpdateUserStatusAsync(id, new UserStatusUpdateModel { Isactive = true });
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+			if (user == null)
+				return false;
+
+			var result = await UpdateUserStatusAsync(id, new UserStatusUpdateModel { Isactive = true });
+
+			if (!result)
+				return false;
+
+			// Send email
+			var emailSubject = "[PerHue] Account Unbanned";
+
+			var emailBody = $@"
+			<html>
+			<body style='font-family: Arial, Helvetica, sans-serif; line-height:1.6; color:#333;'>
+				<p>Hi <strong>{user.Fullname ?? user.Username}</strong>,</p>
+
+				<p>
+					<strong>Good news!</strong> Your account has been successfully
+					<strong>unbanned</strong>.
+				</p>
+
+				<p>
+					You can now access all <strong>PerHue</strong> services again.
+				</p>
+
+				<p>
+					If you have any questions, feel free to reply to this email
+					or contact our Support Center.
+				</p>
+
+				<p style='margin-top:24px;'>
+					Best regards,<br/>
+					<strong>PerHue Team</strong>
+				</p>
+			</body>
+			</html>";
+
+			await _emailService.SendEmailAsync(user.Email, emailSubject, emailBody);
+
+			return true;
 		}
 
 		public async Task<IEnumerable<RoleModel>> GetAllRolesAsync()
