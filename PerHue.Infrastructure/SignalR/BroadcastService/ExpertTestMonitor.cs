@@ -108,7 +108,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			foreach (var req in pendingReviews)
 			{
 				var deadline = req.CreatedDate.AddDays(_daysToWait);
-				var timeRemaining = deadline - DateTime.UtcNow;
+				var timeRemaining = deadline - DateTime.Now;
 
 				if (timeRemaining.TotalSeconds <= 0)
 				{
@@ -196,7 +196,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			foreach (var req in pending)
 			{
 				var deadline = req.CreatedDate.AddDays(_daysToWait);
-				var timeRemaining = deadline - DateTime.UtcNow;
+				var timeRemaining = deadline - DateTime.Now;
 
 				if (timeRemaining.TotalSeconds <= 0)
 				{
@@ -295,7 +295,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = $"You have exceeded the time limit to respond to Test Request #{testRequestId}. {deduction} rating points have been deducted.",
 						Receiver = expert.Id,
 						TestRequestId = testRequestId,
-						ReceivedTime = DateTime.UtcNow,
+						ReceivedTime = DateTime.Now,
 						Type = "Penalty",
 						IsRead = false
 					};
@@ -334,7 +334,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Content = $"You have less than 24 hours remaining to respond to Request #{testRequestId}.",
 					Receiver = expertId,
 					TestRequestId = testRequestId,
-					ReceivedTime = DateTime.UtcNow,
+					ReceivedTime = DateTime.Now,
 					Type = "DeadlineWarning",
 					IsRead = false
 				};
@@ -598,7 +598,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			// 1. Check for expired pending requests
 			foreach (var req in pending)
 			{
-				if ((DateTime.UtcNow - req.CreatedDate).TotalDays > DaysToWait)
+				if ((DateTime.Now - req.CreatedDate).TotalDays > DaysToWait)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 
@@ -627,7 +627,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 								Content = $"You missed the response deadline for Test Request #{testRequest.Id}. 0.2 rating points have been deducted.",
 								Receiver = expert.Id,
 								TestRequestId = testRequest.Id,
-								ReceivedTime = DateTime.UtcNow,
+								ReceivedTime = DateTime.Now,
 								Type = "Penalty",
 								IsRead = false
 							};
