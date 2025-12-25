@@ -13,9 +13,6 @@ namespace PerHue.Application.Models.Dashboard
         public decimal RevenueToday { get; set; }
         public int TotalTests { get; set; }
         public int TestsToday { get; set; }
-        public int TotalPenalties { get; set; }
-        public decimal PenaltyAmountTotal { get; set; }
         public int ExpertActivityCount { get; set; }
-        public DateTime LastUpdated { get; set; }
     }
 }

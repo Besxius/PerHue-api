@@ -61,7 +61,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
-
+builder.Services.AddMemoryCache();
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 				policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
