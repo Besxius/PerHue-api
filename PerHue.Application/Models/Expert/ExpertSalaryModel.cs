@@ -19,9 +19,9 @@ namespace PerHue.Application.Models.Expert
 
 	public class ExpertSalaryDetail
 	{
-		public int TestResponseId { get; set; }
+		public int TestRequestId { get; set; } 
 		public DateTime CompletedDate { get; set; }
-		public int Rating { get; set; }
+		public int? Rating { get; set; } //nullable int since user rating is optional
 		public decimal Amount { get; set; }
 	}
 }

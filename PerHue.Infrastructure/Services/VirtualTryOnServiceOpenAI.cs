@@ -44,7 +44,7 @@ namespace PerHue.Infrastructure.Services
 
 				var response = new VirtualTryOnResponse();
 
-				// ✅ LẤY 3-4 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
+				// ✅ LẤY 3 MÀU ĐỂ TẠO 1 ẢNH DUY NHẤT
 				var colors = request.SuggestedColorHexCodes.ToList();
 				var rng = Random.Shared;
 
@@ -55,7 +55,7 @@ namespace PerHue.Infrastructure.Services
 					(colors[i], colors[j]) = (colors[j], colors[i]);
 				}
 
-				var selectedColors = colors.Take(Math.Min(4, colors.Count)).ToList();
+				var selectedColors = colors.Take(Math.Min(3, colors.Count)).ToList();
 
 
 				_logger.LogInformation("Generating ONE virtual try-on image with {Count} colors",

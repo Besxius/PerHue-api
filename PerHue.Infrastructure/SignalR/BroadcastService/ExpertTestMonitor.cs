@@ -1,21 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PerHue.Application.IServices;
 using PerHue.Application.Models;
-using PerHue.Application.Models.AiTest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Services;
 using PerHue.Infrastructure.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PerHue.Infrastructure.SignalR.BroadcastService
 {
@@ -58,7 +56,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				using (var scope = _scopeFactory.CreateScope())
 				{
 					var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-					var aiAnalysisService = scope.ServiceProvider.GetRequiredService<IAiTestService>();
+					var aiAnalysisService = scope.ServiceProvider.GetRequiredService<IAIImageAnalysisService>();
 					var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
 
 					try
@@ -74,7 +72,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						var reviewingTestRequests = await unitOfWork.TestRequestRepository.FindAsync(t => t.Status == TestRequestStatus.Reviewing.ToString());
 						foreach (var testRequest in reviewingTestRequests)
 						{
-							await HandleReviewRetries(unitOfWork, emailService, testRequest);
+							// Updated to pass aiAnalysisService
+							await HandleReviewRetries(unitOfWork, emailService, aiAnalysisService, testRequest);
 						}
 					}
 					catch (Exception ex)
@@ -94,6 +93,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private async Task HandleReviewRetries(
 			IUnitOfWork unitOfWork,
 			EmailService emailService,
+			IAIImageAnalysisService aiService, // Added Service
 			TestRequest testRequest)
 		{
 			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
@@ -171,6 +171,12 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					_logger.LogWarning($"Review TestRequest {testRequest.Id}: No new experts available for retry.");
 				}
 			}
+			// D. Fallback Logic: If max retries exceeded for reviews, let AI handle it
+			else if (needsNewReviewer && expiredReviewsCount > _maxRetries)
+			{
+				await PerformReviewFallbackAsync(unitOfWork, aiService, testRequest);
+				return; // Exit as the request is finalized
+			}
 
 			if (changesMade)
 			{
@@ -180,7 +186,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 		private async Task HandleRequestRetriesAndFinalization(
 			IUnitOfWork unitOfWork,
-			IAiTestService aiService,
+			IAIImageAnalysisService aiService,
 			EmailService emailService,
 			TestRequest testRequest)
 		{
@@ -345,8 +351,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 		private async Task PerformAiFallbackAsync(
 			IUnitOfWork unitOfWork,
-			//IAIImageAnalysisService aiService,
-			IAiTestService aiService,
+			IAIImageAnalysisService aiService,
 			TestRequest testRequest,
 			int currentResponseCount)
 		{
@@ -375,7 +380,6 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 
 			try
 			{
-				// ✅ 1. PREPARE AI REQUEST
 				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest
 				{
 					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
@@ -385,102 +389,20 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					SkinColor = testRequest.SkinColor
 				};
 
-				_logger.LogInformation($"Starting AI color analysis for TestRequest {testRequest.Id}");
-
-				// ✅ 2. ANALYZE COLORS (WITH RETRY BUILT-IN)
-				var aiResultModel = await aiService.AnalyzeColorsOnlyAsync(aiRequest);
-
-				_logger.LogInformation($"AI color analysis completed for TestRequest {testRequest.Id}: {aiResultModel.ColorType}");
-
+				var aiResultModel = await aiService.AnalyzeColorTypeAsync2(aiRequest);
 				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
 
-				// ✅ 3. GENERATE VIRTUAL TRY-ON IMAGES (WITH RETRY BUILT-IN)
-				VirtualTryOnResponse? virtualTryOnResults = null;
-
-				// Lấy ảnh gốc từ Pictures (không phải AiPictures)
-				var userPicture = testRequest.Pictures?.FirstOrDefault();
-
-				if (userPicture != null && !string.IsNullOrEmpty(userPicture.Source))
-				{
-					try
-					{
-						_logger.LogInformation($"Starting virtual try-on generation for TestRequest {testRequest.Id}");
-
-						// ✅ FIXED: Download và BUFFER ảnh vào memory TRƯỚC retry policy
-						using var httpClient = new HttpClient();
-						var imageBytes = await httpClient.GetByteArrayAsync(userPicture.Source);
-
-						_logger.LogInformation($"Downloaded user image: {imageBytes.Length} bytes");
-
-						// ✅ TẠO VirtualTryOnRequest VỚI BYTE ARRAY (không phải stream)
-						// Retry policy trong GenerateVirtualTryOnAsync sẽ tạo stream mới mỗi lần
-						using var imageStream = new MemoryStream(imageBytes);
-						var formFile = new FormFile(
-							imageStream,
-							0,
-							imageBytes.Length,
-							"image",
-							$"user_image_{testRequest.Id}.jpg")
-						{
-							Headers = new HeaderDictionary(),
-							ContentType = "image/jpeg"
-						};
-
-						var tryOnRequest = new VirtualTryOnRequest
-						{
-							UserImage = formFile,
-							SuggestedColorHexCodes = aiResultModel.SuggestedColorHexCodes
-						};
-
-						// ✅ Gọi service - nó sẽ buffer stream internally và retry
-						virtualTryOnResults = await aiService.GenerateVirtualTryOnAsync(tryOnRequest);
-
-						_logger.LogInformation($"Virtual try-on generation completed for TestRequest {testRequest.Id}: {virtualTryOnResults.GeneratedImages.Count} images");
-
-						// ✅ 4. LƯU ẢNH AI TẠO RA VÀO AIPICTURE TABLE
-						if (virtualTryOnResults.GeneratedImages.Count > 0)
-						{
-							var aiPictures = virtualTryOnResults.GeneratedImages.Select(img => new AiPicture
-							{
-								Source = img.ImageUrl,
-								Note = $"AI Fallback Generated - Colors: {img.ColorHex}",
-								TestRequestId = testRequest.Id
-							}).ToList();
-
-							foreach (var aiPic in aiPictures)
-							{
-								await unitOfWork.AiPictureRepository.CreateAsync(aiPic);
-							}
-
-							_logger.LogInformation($"Saved {aiPictures.Count} AI-generated images to AiPicture table for TestRequest {testRequest.Id}");
-						}
-					}
-					catch (Exception vtoEx)
-					{
-						// Log lỗi nhưng KHÔNG fail toàn bộ process vì color analysis đã thành công
-						_logger.LogError(vtoEx, $"Virtual try-on generation failed for TestRequest {testRequest.Id}, but color analysis succeeded");
-					}
-				}
-				else
-				{
-					_logger.LogWarning($"No user picture found for TestRequest {testRequest.Id}, skipping virtual try-on generation");
-				}
-
-				// ✅ 5. LƯU KẾT QUẢ COLOR ANALYSIS VÀO AITESTRESULT
 				var aiTestResult = new AiTestResult
 				{
 					Id = testRequest.Id,
 					Date = DateTime.Now,
-					Note = $"AI Assistant Analysis (Fallback) - Expert responses: {currentResponseCount}",
+					Note = "AI Assistant Analysis (Fallback)",
 					SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
 					AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
 					ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
 				};
 
 				await unitOfWork.AiTestResultRepository.CreateAsync(aiTestResult);
-
-				_logger.LogInformation($"Saved AI test result for TestRequest {testRequest.Id}");
-
 				await FinalizeTestAsync(unitOfWork, testRequest, "Expert & AI Analysis Completed");
 			}
 			catch (Exception ex)
@@ -489,6 +411,80 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				testRequest.Status = TestRequestStatus.Failed.ToString();
 				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
 				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+		}
+
+		private async Task PerformReviewFallbackAsync(
+			IUnitOfWork unitOfWork,
+			IAIImageAnalysisService aiService,
+			TestRequest testRequest)
+		{
+			_logger.LogInformation($"Review TestRequest {testRequest.Id}: Fallback to AI.");
+
+			try
+			{
+				var aiRequest = new Application.Models.AiTest.GeminiAnalysisRequest
+				{
+					ImageUrls = testRequest.AiPictures.Select(p => p.Source).ToList(),
+					HairColor = testRequest.HairColor,
+					EyesColor = testRequest.EyesColor,
+					LipsColor = testRequest.LipsColor,
+					SkinColor = testRequest.SkinColor
+				};
+
+				var aiResultModel = await aiService.AnalyzeColorTypeAsync2(aiRequest);
+				var colorType = await unitOfWork.ColorTypeRepository.GetByNameAsync(aiResultModel.ColorType);
+
+				// Check if AI result already exists
+				var existingAiResult = await unitOfWork.AiTestResultRepository.GetByIdAsync(testRequest.Id);
+
+				if (existingAiResult == null)
+				{
+					var aiTestResult = new AiTestResult
+					{
+						Id = testRequest.Id,
+						Date = DateTime.Now,
+						Note = "AI Review (Fallback)",
+						SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
+						AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
+						ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId
+					};
+					await unitOfWork.AiTestResultRepository.CreateAsync(aiTestResult);
+				}
+				else
+				{
+					// Update existing AI result
+					existingAiResult.Date = DateTime.Now;
+					existingAiResult.Note += " | AI Review (Fallback)";
+					existingAiResult.SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes);
+					existingAiResult.AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes);
+					existingAiResult.ColorTypeId = colorType?.Id ?? aiResultModel.ColorTypeId;
+
+					await unitOfWork.AiTestResultRepository.UpdateAsync(existingAiResult);
+				}
+
+				// Finalize Review
+				testRequest.Status = TestRequestStatus.Completed.ToString();
+				await unitOfWork.TestRequestRepository.UpdateAsync(testRequest);
+
+				var notification = new Notification
+				{
+					Title = "Review Completed",
+					Content = "Expert review unavailable. AI has reviewed your test.",
+					Receiver = testRequest.UserAccountId,
+					TestRequestId = testRequest.Id,
+					ReceivedTime = DateTime.Now,
+					IsRead = false,
+					Type = "ReviewResult"
+				};
+				await unitOfWork.NotificationRepository.CreateAsync(notification);
+
+				await unitOfWork.SaveChangesWithTransactionAsync();
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"AI Review Fallback failed for TestRequest {testRequest.Id}.");
+				// Optionally update status to Failed or handle gracefully
 			}
 		}
 
