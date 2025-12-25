@@ -47,7 +47,7 @@ jobs:
         shell: powershell
         run: |
           $buildInfo = @{
-            buildTime = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+            buildTime = (Get-Date).ToString("yyyy-MM-ddTHH:mm:sszzz")
             commit    = "${{ github.sha }}"
             branch    = "${{ github.ref_name }}"
             runId     = [int]${{ github.run_number }}
