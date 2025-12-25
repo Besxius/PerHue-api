@@ -342,7 +342,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var checkQuotaAndRateLimit = await _aiTestRepository.CountAsync(
 				tr => tr.Date.HasValue &&
-					  tr.Date.Value.Date == DateTime.UtcNow.Date);
+					  tr.Date.Value.Date == DateTime.Now.Date);
 			if (checkQuotaAndRateLimit >= 20)
 			{
 				_logger.LogWarning("Daily AI test quota exceeded !!!");
