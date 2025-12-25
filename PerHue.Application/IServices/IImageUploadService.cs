@@ -10,6 +10,5 @@ namespace PerHue.Application.IServices
 	public interface IImageUploadService
 	{
 		Task<string> UploadImageAsync(IFormFile file);
-		Task<IFormFile> DownloadImageAsFormFileAsync(string imageUrl);
 	}
 }
