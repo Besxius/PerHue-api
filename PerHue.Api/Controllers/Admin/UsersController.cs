@@ -33,7 +33,7 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="searchModel">Search and pagination parameters</param>
 		/// <returns>Paginated list of users</returns>
 		[HttpGet("user-list")]
-		public async Task<ServiceResponse<	PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
+		public async Task<ServiceResponse<PaginatedResultV2<AdminUserModel>>> GetUsers([FromQuery] AdminUserSearchModel searchModel)
 		{
 			var result = await _adminUserService.GetUsersAsync(searchModel);
 			return ServiceResponse<PaginatedResultV2<AdminUserModel>>.Ok(result, "Users retrieved successfully");
@@ -178,11 +178,11 @@ namespace PerHue.Api.Controllers.Admin
 		/// <param name="reason">Ban reason</param>
 		/// <returns>Success or error response</returns>
 		[HttpPatch("{id}/ban")]
-		public async Task<IActionResult> BanUser(int id)
+		public async Task<IActionResult> BanUser(int id, BanUserRequest data)
 		{
 			try
 			{
-				var result = await _adminUserService.BanUserAsync(id, "");
+				var result = await _adminUserService.BanUserAsync(id, data.Reason);
 				if (!result)
 				{
 					return NotFound(new { message = "User not found" });
@@ -236,6 +236,11 @@ namespace PerHue.Api.Controllers.Admin
 			{
 				return StatusCode(500, new { message = "An error occurred while retrieving roles", error = ex.Message });
 			}
+		}
+
+		public class BanUserRequest
+		{
+			public string? Reason { get; set; }
 		}
 	}
 }
