@@ -15,11 +15,13 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
 		private readonly ILogger<UserSubscriptionService> _logger;
-		public UserSubscriptionService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSubscriptionService> logger)
+		private readonly IDateTimeService _dateTimeService;
+		public UserSubscriptionService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSubscriptionService> logger, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_logger = logger;
+			_dateTimeService = dateTimeService;
 		}
 		public async Task<int> CreateAsync(CreateUserSubscriptionModel model)
 		{
@@ -36,9 +38,9 @@ namespace PerHue.Infrastructure.Services
 				await _unitOfWork.UserSubscriptionRepository.UpdateAsync(findUserSubscription);
 			}
 
-			entity.StartDate = DateTime.Now;
-			entity.EndDate = DateTime.Now.AddMonths(servicePackage.Duration);
-			entity.CreateAt = DateTime.Now;
+			entity.StartDate = _dateTimeService.GetCurrentTime();
+			entity.EndDate = _dateTimeService.GetCurrentTime().AddMonths(servicePackage.Duration);
+			entity.CreateAt = _dateTimeService.GetCurrentTime();
 			entity.Status = model.Status;
 			entity.User = user;
 			entity.ServicePackage = servicePackage;
@@ -313,7 +315,7 @@ namespace PerHue.Infrastructure.Services
 			var subscriptions = await _unitOfWork.UserSubscriptionRepository.GetAllSubscriptionsWithPackageByUserIdAsync(userId);
 
 			var summary = subscriptions
-				.Where(s => s.Status == true && s.EndDate >= DateTime.Now)
+				.Where(s => s.Status == true && s.EndDate >= _dateTimeService.GetCurrentTime())
 				.GroupBy(s => new { s.ServicePackageId, s.ServicePackage.Name })
 				.Select(g => new PackageUsageSummary
 				{

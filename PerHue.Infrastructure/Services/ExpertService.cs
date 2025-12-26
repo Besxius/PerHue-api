@@ -1,14 +1,15 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PerHue.Application.IServices;
 using PerHue.Application.Models.Expert;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
 
 namespace PerHue.Infrastructure.Services
 {
@@ -17,12 +18,14 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
 		private readonly IConfiguration _config;
+		private readonly IDateTimeService _dateTimeService;
 
-		public ExpertService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config)
+		public ExpertService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_config = config;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<ExpertModel> GetByIdAsync(int id)
@@ -113,7 +116,7 @@ namespace PerHue.Infrastructure.Services
 			if (response == null) return 0;
 
 			// 2. Calculate Expert's rating at the time this response was created
-			var ratingAtTime = await CalculateRatingAtSpecificTime(response.ExpertId, response.CreatedDate ?? DateTime.Now);
+			var ratingAtTime = await CalculateRatingAtSpecificTime(response.ExpertId, response.CreatedDate ?? _dateTimeService.GetCurrentTime());
 
 			// 3. Apply Salary Logic
 			// Default salary: 30,000 VND

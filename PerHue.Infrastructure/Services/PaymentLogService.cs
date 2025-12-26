@@ -13,10 +13,12 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
-		public PaymentLogService(IUnitOfWork unitOfWork, IMapper mapper)
+		private readonly IDateTimeService _dateTimeService;
+		public PaymentLogService(IUnitOfWork unitOfWork, IMapper mapper, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_dateTimeService = dateTimeService;
 		}
 		public async Task<bool> DeleteAsync(int id)
 		{
@@ -63,7 +65,7 @@ namespace PerHue.Infrastructure.Services
 				Mesage = model.Mesage,
 				Metadata = model.Metadata,
 				EventType = EventTypeEnum.StatusChanged.ToString(),
-				CreatedAt = DateTime.Now
+				CreatedAt = _dateTimeService.GetCurrentTime()
 			};
 			await _unitOfWork.PaymentLogRepository.CreateAsync(entity);
 			await _unitOfWork.SaveChangesWithTransactionAsync();

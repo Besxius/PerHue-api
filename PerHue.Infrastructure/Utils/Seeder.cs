@@ -3,8 +3,9 @@ using PerHue.Infrastructure.Persistence;
 
 namespace PerHue.Infrastructure.Utils
 {
-	public class Seeder(PerHueDbContext dbContext)
+	public class Seeder(PerHueDbContext dbContext, IDateTimeService dateTimeService)
 	{
+		private readonly IDateTimeService _dateTimeService = dateTimeService;
 		public async Task Seed()
 		{
 			if (await dbContext.Database.CanConnectAsync())
@@ -60,7 +61,7 @@ namespace PerHue.Infrastructure.Utils
 
 		private IEnumerable<ServicePackage> GetPrimaryServicePackages()
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 
 			return new List<ServicePackage>
 			{
@@ -138,7 +139,7 @@ namespace PerHue.Infrastructure.Utils
 
 		private IEnumerable<UserAccount> GetPrimaryUser()
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 
 			var trongExpertProfile = new Expert
 			{

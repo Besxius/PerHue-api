@@ -77,4 +77,24 @@ internal class OtpService : IOtpService
 		}
 		return false;
 	}
+
+	public async Task<string> GenerateRegisterOtpAsync(string email)
+	{
+		var otp = new Random().Next(100000, 999999).ToString();
+
+		// Lưu OTP vào Cache với Key là Email, thời gian sống 5 phút
+		// await _redisHelper.SetAsync($"OTP_{email}", otp, TimeSpan.FromMinutes(5));
+
+		return otp;
+	}
+
+	public async Task<bool> ValidateRegisterOtpAsync(string email, string otpInput)
+	{
+		// Lấy OTP từ cache
+		// var cachedOtp = await _redisHelper.GetAsync($"OTP_{email}");
+
+		// Kiểm tra khớp và chưa hết hạn
+		// return cachedOtp == otpInput;
+		return true; // Code mẫu
+	}
 }

@@ -16,10 +16,12 @@ namespace PerHue.Api.Controllers
 	{
 		private readonly IServicesProvider _servicesProvider;
 		private readonly PayOSPaymentService _payOSPaymentService;
-		public UserSubscriptionsController(IServicesProvider servicesProvider, PayOSPaymentService payOSPaymentService)
+		private readonly IDateTimeService _dateTimeService;
+		public UserSubscriptionsController(IServicesProvider servicesProvider, PayOSPaymentService payOSPaymentService, IDateTimeService dateTimeService)
 		{
 			_servicesProvider = servicesProvider;
 			_payOSPaymentService = payOSPaymentService;
+			_dateTimeService = dateTimeService;
 		}
 		[HttpGet]
 		[Authorize]
@@ -72,7 +74,7 @@ namespace PerHue.Api.Controllers
 			};
 
 			var package = await _servicesProvider.ServicePackageService.GetByIdAsync(packageId);
-			var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{model.UserId}P{model.ServicePackageId}";
+			var description = CreateDateTimeStringNoSeparator(_dateTimeService.GetCurrentTime()) + $"U{model.UserId}P{model.ServicePackageId}";
 
 			var paymentModel = new PayOSRequestModel
 			{
@@ -103,7 +105,7 @@ namespace PerHue.Api.Controllers
 				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
 
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackageId}";
+				var description = CreateDateTimeStringNoSeparator(_dateTimeService.GetCurrentTime()) + $"U{userId}P{servicePackageId}";
 
 				if (!cancel) //neu cancel = true => !cancel = false 
 				{
@@ -133,7 +135,7 @@ namespace PerHue.Api.Controllers
 					{
 						PaymentId = paymentId,
 						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
-						CreatedAt = DateTime.Now,
+						CreatedAt = _dateTimeService.GetCurrentTime(),
 						OldStatus = "Pending",
 						NewStatus = cancel ? "Cancelled" : "Success", // cancel = false => success = true
 						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
@@ -173,7 +175,7 @@ namespace PerHue.Api.Controllers
 					{
 						PaymentId = paymentId,
 						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
-						CreatedAt = DateTime.Now,
+						CreatedAt = _dateTimeService.GetCurrentTime(),
 						OldStatus = "Pending",
 						NewStatus = cancel ? "Cancelled" : "Success", // cancel = false => success = true
 						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"
@@ -210,7 +212,7 @@ namespace PerHue.Api.Controllers
 				var paymentInfo = await _payOSPaymentService.GetPaymentRequestInformationAsync(long.Parse(orderCode));
 
 				var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-				var description = CreateDateTimeStringNoSeparator(DateTime.Now) + $"U{userId}P{servicePackageId}";
+				var description = CreateDateTimeStringNoSeparator(_dateTimeService.GetCurrentTime()) + $"U{userId}P{servicePackageId}";
 
 					// Tạo subscription với status tương ứng
 					var model = new CreateUserSubscriptionModel
@@ -238,7 +240,7 @@ namespace PerHue.Api.Controllers
 					{
 						PaymentId = paymentId,
 						Mesage = cancel ? "Payment cancelled by user." : "Payment completed successfully.",
-						CreatedAt = DateTime.Now,
+						CreatedAt = _dateTimeService.GetCurrentTime(),
 						OldStatus = PaymentStatusEnum.Pending.ToString(),
 						NewStatus = cancel ? PaymentStatusEnum.Cancelled.ToString() : PaymentStatusEnum.Success.ToString(),
 						Metadata = $"UserId: {userId} , OrderCode: {orderCode} , Id: {id} , Code: {code} , Status: {status}"

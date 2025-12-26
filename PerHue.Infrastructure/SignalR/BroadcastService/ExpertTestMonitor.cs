@@ -22,6 +22,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly IServiceScopeFactory _scopeFactory;
 		private readonly ILogger<ExpertTestMonitor> _logger;
 		private readonly IConfiguration _configuration;
+		private readonly IDateTimeService _dateTimeService;
 
 		private readonly int _maxRetries;
 		private readonly int _requiredResponses;
@@ -32,7 +33,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		public ExpertTestMonitor(
 			IServiceScopeFactory scopeFactory,
 			ILogger<ExpertTestMonitor> logger,
-			IConfiguration configuration)
+			IConfiguration configuration,
+			IDateTimeService dateTimeService)
 		{
 			_scopeFactory = scopeFactory;
 			_logger = logger;
@@ -43,6 +45,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			_daysToWait = _configuration.GetValue<int>("ExpertTestSettings:DaysToWait");
 			_ratingDeduction = _configuration.GetValue<decimal>("ExpertTestSettings:RatingDeduction");
 			_ratingWarningThreshold = _configuration.GetValue<decimal>("ExpertTestSettings:RatingWarningThreshold");
+			_dateTimeService = dateTimeService;
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -108,7 +111,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			foreach (var req in pendingReviews)
 			{
 				var deadline = req.CreatedDate.AddDays(_daysToWait);
-				var timeRemaining = deadline - DateTime.Now;
+				var timeRemaining = deadline - _dateTimeService.GetCurrentTime();
 
 				if (timeRemaining.TotalSeconds <= 0)
 				{
@@ -149,7 +152,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						ExpertId = newExpert.Id,
 						TestRequestId = testRequest.Id,
 						Status = ExpertTestRequestStatus.PendingReview.ToString(),
-						CreatedDate = DateTime.Now
+						CreatedDate = _dateTimeService.GetCurrentTime()
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newReviewRequest);
 
@@ -159,7 +162,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = "You have been selected to review a color analysis. Please respond within 2 days.",
 						Receiver = newExpert.Id,
 						TestRequestId = testRequest.Id,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						IsRead = false,
 						Type = "ReviewRequest"
 					};
@@ -202,7 +205,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			foreach (var req in pending)
 			{
 				var deadline = req.CreatedDate.AddDays(_daysToWait);
-				var timeRemaining = deadline - DateTime.Now;
+				var timeRemaining = deadline - _dateTimeService.GetCurrentTime();
 
 				if (timeRemaining.TotalSeconds <= 0)
 				{
@@ -241,7 +244,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						ExpertId = newExpert.Id,
 						TestRequestId = testRequest.Id,
 						Status = ExpertTestRequestStatus.Pending.ToString(),
-						CreatedDate = DateTime.Now
+						CreatedDate = _dateTimeService.GetCurrentTime()
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
 
@@ -251,7 +254,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = "You need to respond within 2 days from the time you receive the request.",
 						Receiver = newExpert.Id,
 						TestRequestId = testRequest.Id,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						IsRead = false,
 						Type = "TestRequest"
 					};
@@ -301,7 +304,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = $"You have exceeded the time limit to respond to Test Request #{testRequestId}. {deduction} rating points have been deducted.",
 						Receiver = expert.Id,
 						TestRequestId = testRequestId,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						Type = "Penalty",
 						IsRead = false
 					};
@@ -340,7 +343,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Content = $"You have less than 24 hours remaining to respond to Request #{testRequestId}.",
 					Receiver = expertId,
 					TestRequestId = testRequestId,
-					ReceivedTime = DateTime.Now,
+					ReceivedTime = _dateTimeService.GetCurrentTime(),
 					Type = "DeadlineWarning",
 					IsRead = false
 				};
@@ -371,7 +374,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Content = "We were unable to match you with experts in time. 1 credit has been refunded.",
 					Receiver = testRequest.UserAccountId,
 					TestRequestId = testRequest.Id,
-					ReceivedTime = DateTime.Now,
+					ReceivedTime = _dateTimeService.GetCurrentTime(),
 					IsRead = false,
 					Type = "Refund"
 				};
@@ -395,7 +398,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				var aiTestResult = new AiTestResult
 				{
 					Id = testRequest.Id,
-					Date = DateTime.Now,
+					Date = _dateTimeService.GetCurrentTime(),
 					Note = "AI Assistant Analysis (Fallback)",
 					SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
 					AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
@@ -443,7 +446,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					var aiTestResult = new AiTestResult
 					{
 						Id = testRequest.Id,
-						Date = DateTime.Now,
+						Date = _dateTimeService.GetCurrentTime(),
 						Note = "AI Review (Fallback)",
 						SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes),
 						AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes),
@@ -454,7 +457,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				else
 				{
 					// Update existing AI result
-					existingAiResult.Date = DateTime.Now;
+					existingAiResult.Date = _dateTimeService.GetCurrentTime();
 					existingAiResult.Note += " | AI Review (Fallback)";
 					existingAiResult.SuggestedColor = string.Join(",", aiResultModel.SuggestedColorHexCodes);
 					existingAiResult.AvoidedColor = string.Join(",", aiResultModel.AvoidedColorHexCodes);
@@ -473,7 +476,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Content = "Expert review unavailable. AI has reviewed your test.",
 					Receiver = testRequest.UserAccountId,
 					TestRequestId = testRequest.Id,
-					ReceivedTime = DateTime.Now,
+					ReceivedTime = _dateTimeService.GetCurrentTime(),
 					IsRead = false,
 					Type = "ReviewResult"
 				};
@@ -498,7 +501,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				Title = "Your Color Analysis is Ready!",
 				Content = message,
 				IsRead = false,
-				ReceivedTime = DateTime.Now,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
 				Type = "TestResult",
 				Receiver = testRequest.UserAccountId,
 				TestRequestId = testRequest.Id
@@ -594,7 +597,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			// 1. Check for expired pending requests
 			foreach (var req in pending)
 			{
-				if ((DateTime.Now - req.CreatedDate).TotalDays > DaysToWait)
+				if ((_dateTimeService.GetCurrentTime() - req.CreatedDate).TotalDays > DaysToWait)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 
@@ -623,7 +626,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 								Content = $"You missed the response deadline for Test Request #{testRequest.Id}. 0.2 rating points have been deducted.",
 								Receiver = expert.Id,
 								TestRequestId = testRequest.Id,
-								ReceivedTime = DateTime.Now,
+								ReceivedTime = _dateTimeService.GetCurrentTime(),
 								Type = "Penalty",
 								IsRead = false
 							};
@@ -673,7 +676,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						ExpertId = newExpert.Id,
 						TestRequestId = testRequest.Id,
 						Status = "Pending",
-						CreatedDate = DateTime.Now
+						CreatedDate = _dateTimeService.GetCurrentTime()
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
 					await unitOfWork.SaveChangesWithTransactionAsync();
@@ -720,7 +723,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
 						Receiver = testRequest.UserAccountId,
 						TestRequestId = testRequest.Id,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						IsRead = false,
 						Type = "Refund"
 					};
@@ -746,7 +749,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					var aiTestResult = new AiTestResult
 					{
 						Id = testRequest.Id,
-						Date = DateTime.Now,
+						Date = _dateTimeService.GetCurrentTime(),
 						Note = "AI Assistant Analysis (Fallback)",
 						SuggestedColor = string.Join(",", aiResultModel.SuggestedColor),
 						AvoidedColor = string.Join(",", aiResultModel.AvoidedColor),
@@ -768,7 +771,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Title = "Test Analysis Failed",
 						Content = "We could not complete your analysis at this time.",
 						IsRead = false,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						Type = "TestFailed",
 						Receiver = testRequest.UserAccountId,
 						TestRequestId = testRequest.Id
@@ -789,7 +792,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				Title = "Your Color Analysis is Ready!",
 				Content = message,
 				IsRead = false,
-				ReceivedTime = DateTime.Now,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
 				Type = "TestResult",
 				Receiver = testRequest.UserAccountId,
 				TestRequestId = testRequest.Id
@@ -883,7 +886,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			// 1. Check for expired pending requests
 			foreach (var req in pending)
 			{
-				if ((DateTime.Now - req.CreatedDate).TotalDays > DaysToWait)
+				if ((_dateTimeService.GetCurrentTime() - req.CreatedDate).TotalDays > DaysToWait)
 				{
 					_logger.LogInformation($"TestRequest {testRequest.Id} for Expert {req.ExpertId} has expired.");
 					req.Status = "Expired";
@@ -911,7 +914,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						ExpertId = newExpert.Id,
 						TestRequestId = testRequest.Id,
 						Status = "Pending",
-						CreatedDate = DateTime.Now
+						CreatedDate = _dateTimeService.GetCurrentTime()
 					};
 					await unitOfWork.ExpertTestRequestRepository.CreateAsync(newExpertRequest);
 					await unitOfWork.SaveChangesWithTransactionAsync();
@@ -960,7 +963,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Content = "We were unable to match you with experts in time. 1 credit has been refunded to your account.",
 						Receiver = testRequest.UserAccountId,
 						TestRequestId = testRequest.Id,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						IsRead = false,
 						Type = "Refund"
 					};
@@ -994,7 +997,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						// Or if it's auto-increment, map TestRequestId. 
 						// Based on your schema: public virtual TestRequest IdNavigation { get; set; } means PK is FK.
 						Id = testRequest.Id,
-						Date = DateTime.Now,
+						Date = _dateTimeService.GetCurrentTime(),
 						Note = "AI Assistant Analysis (Fallback)",
 						SuggestedColor = string.Join(",", aiResultModel.SuggestedColor),
 						AvoidedColor = string.Join(",", aiResultModel.AvoidedColor),
@@ -1021,7 +1024,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Title = "Test Analysis Failed",
 						Content = "We could not complete your analysis at this time.",
 						IsRead = false,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						Type = "TestFailed",
 						Receiver = testRequest.UserAccountId,
 						TestRequestId = testRequest.Id
@@ -1042,7 +1045,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				Title = "Your Color Analysis is Ready!",
 				Content = message,
 				IsRead = false,
-				ReceivedTime = DateTime.Now,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
 				Type = "TestResult",
 				Receiver = testRequest.UserAccountId,
 				TestRequestId = testRequest.Id
