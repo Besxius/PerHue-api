@@ -14,6 +14,7 @@ namespace PerHue.Application.IServices
 		/// <param name="length">Length of the OTP, default is 4.</param>
 		/// <returns>The generated OTP as a string.</returns>
 		string GenerateOTP(int length = 4);
+		Task<string> GenerateRegisterOtpAsync(string email);
 
 		/// <summary>
 		/// Send an OTP to the given email address and store it in Redis.
@@ -21,6 +22,7 @@ namespace PerHue.Application.IServices
 		/// <param name="email">Recipient email.</param>
 		/// <returns>True if sent successfully, otherwise false.</returns>
 		Task<bool> SendOtpToEmailAsync(string email);
+		Task<bool> ValidateRegisterOtpAsync(string email, string otpInput);
 
 		/// <summary>
 		/// Verify if the provided OTP matches the stored one.

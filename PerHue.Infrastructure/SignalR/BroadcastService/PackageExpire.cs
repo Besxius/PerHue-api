@@ -6,6 +6,7 @@ using PerHue.Domain.Entities;
 using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Services;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +19,14 @@ public class PackageExpire : BackgroundService
 {
 	private readonly IHubContext<Hub.ServerHub> _hubContext;
 	private readonly IServiceScopeFactory _scopeFactory;
+	private readonly IDateTimeService _dateTimeService;
 	public PackageExpire(IHubContext<Hub.ServerHub> hubContext,
-		IServiceScopeFactory scopeFactory)
+		IServiceScopeFactory scopeFactory,
+		IDateTimeService dateTimeService)
 	{
 		_hubContext = hubContext;
 		_scopeFactory = scopeFactory;
+		_dateTimeService = dateTimeService;
 	}
 
 	/// <summary>
@@ -50,7 +54,7 @@ public class PackageExpire : BackgroundService
 			{
 				if (item.EndDate.HasValue)
 				{
-					var daysLeft = (item.EndDate.Value.Date - DateTime.Now.Date).TotalDays;
+					var daysLeft = (item.EndDate.Value.Date - _dateTimeService.GetCurrentTime().Date).TotalDays;
 
 					// 1. HANDLE EXPIRED SUBSCRIPTIONS
 					if (daysLeft <= 0 && item.Status == true) // only process if still active
@@ -83,7 +87,7 @@ public class PackageExpire : BackgroundService
 								Title = "Subscription Expired",
 								Content = $"Your subscription has expired. You had {item.RemainingUses} uses remaining left in your package which have now expired.",
 								Receiver = user.Id,
-								ReceivedTime = DateTime.Now,
+								ReceivedTime = _dateTimeService.GetCurrentTime(),
 								IsRead = false,
 								Type = "System",
 								TestRequestId = null // Defaulting to null as it is not linked to a specific TestRequest
@@ -144,7 +148,7 @@ public class PackageExpire : BackgroundService
 				if (!string.IsNullOrEmpty(email))
 				{
 					string subject = "Automated Email Notification";
-					var body = $"Email with GUID: {guid} sent at {DateTime.Now}" +
+					var body = $"Email with GUID: {guid} sent at {_dateTimeService.GetCurrentTime()}" +
 						$"\br" +
 						$"The following Expired User Subcriptions: [{string.Join(", ", expiredSubcriptions)}]" +
 						$"\br" +
@@ -156,7 +160,7 @@ public class PackageExpire : BackgroundService
 			}
 			else
 			{
-				DateTime now = DateTime.Now;
+				DateTime now = _dateTimeService.GetCurrentTime();
 				Console.WriteLine($"Scanning Expired User Subcriptions at: {now}");
 			}
 

@@ -113,6 +113,7 @@ namespace PerHue.Infrastructure.Extensions
 			services.AddHostedService<PackageExpire>();
 
 			services.AddHostedService<ExpertTestMonitor>();
+			services.AddSingleton<IDateTimeService, DateTimeService>();
 			#endregion
 
 
