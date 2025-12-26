@@ -67,15 +67,17 @@ namespace PerHue.Infrastructure.Services
 		{
 			var payment = new Payment
 			{
-				Id = model.PaymentId,
 				UserId = model.UserId,
 				Amount = model.Amount,
 				Description = model.Description,
 				Status = PaymentStatusEnum.Success.ToString(),
 				TransactionId = model.OrderCode,
-				CreatedAt = _dateTimeService.GetCurrentTime()
+				CreatedAt = _dateTimeService.GetCurrentTime(),
+				IdNavigation = await _unitOfWork.UserSubscriptionRepository.GetByIdAsync(model.PaymentId)
+
 			};
-			var numberOfPaymentCreated = await _unitOfWork.PaymentRepository.CreateAsync(payment);
+			await _unitOfWork.PaymentRepository.CreateAsync(payment);
+			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			return payment.Id;
 		}
