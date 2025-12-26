@@ -30,10 +30,11 @@ namespace PerHue.Infrastructure.Services
 		private readonly IVirtualTryOnService _virtualTryOnService; // Renamed from _imageGenerationService for clarity
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IUserService _userService;
+		private readonly IDateTimeService _dateTimeService;
 		private readonly PerHueDbContext _context;
 
 		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService, IVirtualTryOnService virtualTryOnService,
-			IHttpClientFactory httpClientFactory, IUserService userService, PerHueDbContext context)
+			IHttpClientFactory httpClientFactory, IUserService userService, PerHueDbContext context, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
@@ -44,6 +45,7 @@ namespace PerHue.Infrastructure.Services
 			_httpClientFactory = httpClientFactory;
 			_userService = userService;
 			_context = context;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -238,7 +240,7 @@ namespace PerHue.Infrastructure.Services
 			var entity = new TestResult
 			{
 				UserId = model.UserId,
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				ChosenColor = chosenColorString,
 				SuggestedColor = suggestedColorString,
 				ColorTypeId = dominantColorType.ColorTypeId
@@ -323,7 +325,7 @@ namespace PerHue.Infrastructure.Services
 				SkinColor = aiModel.SuggestedColor.FirstOrDefault(),
 				HairColor = aiModel.SuggestedColor.LastOrDefault(),
 				Status = "Pending", // Pending expert review
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				TypeOfTest = "Expert",
 				UserAccountId = userId
 			};
@@ -353,7 +355,7 @@ namespace PerHue.Infrastructure.Services
 					ExpertId = expert.Id,
 					TestRequestId = testRequest.Id,
 					Status = "Pending",
-					CreatedDate = DateTime.Now
+					CreatedDate = _dateTimeService.GetCurrentTime()
 				};
 				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
 			}
@@ -383,7 +385,7 @@ namespace PerHue.Infrastructure.Services
 				EyesColor = parameters.EyesColor,
 				LipsColor = parameters.LipsColor,
 				Status = TestRequestStatus.Pending.ToString(),
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				TypeOfTest = "Expert",
 				UserAccountId = parameters.UserId
 			};
@@ -468,7 +470,7 @@ namespace PerHue.Infrastructure.Services
 					ExpertId = expert.Id,
 					TestRequestId = testRequest.Id,
 					Status = ExpertTestRequestStatus.Pending.ToString(),
-					CreatedDate = DateTime.Now
+					CreatedDate = _dateTimeService.GetCurrentTime()
 				};
 				await _unitOfWork.ExpertTestRequestRepository.CreateAsync(expertRequest);
 
@@ -479,7 +481,7 @@ namespace PerHue.Infrastructure.Services
 					Content = "You need to respond within 2 days from the time you receive the request.",
 					Receiver = expert.Id, // Expert ID corresponds to UserAccountId
 					TestRequestId = testRequest.Id,
-					ReceivedTime = DateTime.Now,
+					ReceivedTime = _dateTimeService.GetCurrentTime(),
 					IsRead = false,
 					Type = "TestRequest"
 				};
@@ -532,7 +534,7 @@ namespace PerHue.Infrastructure.Services
 				ExpertId = selectedExpert.Id,
 				TestRequestId = testRequestId,
 				Status = ExpertTestRequestStatus.PendingReview.ToString(),
-				CreatedDate = DateTime.Now
+				CreatedDate = _dateTimeService.GetCurrentTime()
 			};
 
 			await _unitOfWork.ExpertTestRequestRepository.CreateAsync(newRequest);
@@ -548,7 +550,7 @@ namespace PerHue.Infrastructure.Services
 				Content = "You have been selected to review and vote on a completed test.",
 				Receiver = selectedExpert.Id,
 				TestRequestId = testRequestId,
-				ReceivedTime = DateTime.Now,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
 				IsRead = false,
 				Type = "ReviewRequest"
 			};

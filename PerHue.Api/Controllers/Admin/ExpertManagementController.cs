@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models;
 using PerHue.Application.Models.Expert;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -12,10 +13,12 @@ namespace PerHue.Api.Controllers.Admin
 	public class ExpertManagementController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;
+		private readonly IDateTimeService _dateTimeService;
 
-		public ExpertManagementController(IServicesProvider servicesProvider)
+		public ExpertManagementController(IServicesProvider servicesProvider, IDateTimeService dateTimeService)
 		{
 			_servicesProvider = servicesProvider;
+			_dateTimeService = dateTimeService;
 		}
 
 		/// <summary>
@@ -48,7 +51,7 @@ namespace PerHue.Api.Controllers.Admin
 			{
 				if (startDate == null && endDate == null)
 				{
-					var now = DateTime.Now;
+					var now = _dateTimeService.GetCurrentTime(); ;
 					startDate = new DateTime(now.Year, now.Month, 1);
 					endDate = startDate.Value.AddMonths(1).AddDays(-1);
 				}
