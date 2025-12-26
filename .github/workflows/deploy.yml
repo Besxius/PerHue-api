@@ -42,7 +42,20 @@ jobs:
           Write-Error "Docker engine not available"
           exit 1
 
-      # 3️⃣ Deploy
+      # 3️⃣ Tạo file Build Info
+      - name: Create Build Info 📝
+        shell: powershell
+        run: |
+          $buildInfo = @{
+            buildTime = (Get-Date).ToString("yyyy-MM-ddTHH:mm:sszzz")
+            commit    = "${{ github.sha }}"
+            branch    = "${{ github.ref_name }}"
+            runId     = [int]${{ github.run_number }}
+          } | ConvertTo-Json -Depth 3
+
+          $buildInfo | Out-File -Encoding utf8 buildinfo.json
+      
+      # 4️⃣ Build và Deploy với Docker Compose
       - name: Build & Deploy 🚀
         shell: powershell
         run: |
