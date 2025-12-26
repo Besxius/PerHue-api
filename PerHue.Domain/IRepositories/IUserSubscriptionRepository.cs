@@ -33,7 +33,7 @@ namespace PerHue.Domain.IRepositories
 		Task<bool> DisableSubscriptionAsync(int subscriptionId);
 		Task<int> GetTotalRemainingUsagesByUserIdAsync(int userId);
 
-		Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot(int userId, int packageId);
+		Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot(int userId, string type);
 
 
 		// lấy gói theo user id

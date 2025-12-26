@@ -25,26 +25,24 @@ namespace PerHue.Infrastructure.Services
 		}
 		public async Task<int> CreateAsync(CreateUserSubscriptionModel model)
 		{
-			var entity = _mapper.Map<UserSubscription>(model);
-
 			var user = await _unitOfWork.UserRepository.GetByIdAsync(model.UserId);
 			var servicePackage = await _unitOfWork.ServicePackageRepository.GetByIdAsync(model.ServicePackageId);
 
 			var findUserSubscription = await _unitOfWork.UserSubscriptionRepository
-				.FindSameTypeSubscriptionIsActiveOrNot(user.Id, servicePackage.Id);
+				.FindSameTypeSubscriptionIsActiveOrNot(user.Id, servicePackage.Type);
 			if (findUserSubscription != null)
 			{
 				findUserSubscription.Status = false;
 				await _unitOfWork.UserSubscriptionRepository.UpdateAsync(findUserSubscription);
 			}
-
+			var entity = new UserSubscription();
 			entity.StartDate = _dateTimeService.GetCurrentTime();
 			entity.EndDate = _dateTimeService.GetCurrentTime().AddMonths(servicePackage.Duration);
 			entity.CreateAt = _dateTimeService.GetCurrentTime();
 			entity.Status = model.Status;
-			entity.User = user;
-			entity.ServicePackage = servicePackage;
 			entity.RemainingUses = servicePackage.Uses;
+			entity.ServicePackageId = servicePackage.Id;
+			entity.UserId = user.Id;
 
 			await _unitOfWork.UserSubscriptionRepository.CreateAsync(entity);
 

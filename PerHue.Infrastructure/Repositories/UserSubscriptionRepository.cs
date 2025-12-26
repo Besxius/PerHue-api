@@ -266,10 +266,10 @@ namespace PerHue.Infrastructure.Repositories
 				.SumAsync(us => us.RemainingUses);
 		}
 
-		public async Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot (int userId, int packageId)
+		public async Task<UserSubscription> FindSameTypeSubscriptionIsActiveOrNot (int userId, string type)
 		{
 			return await _context.UserSubscriptions
-				.Where(us => us.UserId == userId && us.ServicePackageId == packageId && us.Status == true)
+				.Where(us => us.UserId == userId && us.Status == true && us.ServicePackage.Type == type)
 				.OrderByDescending(us => us.EndDate)
 				.FirstOrDefaultAsync();
 		}
