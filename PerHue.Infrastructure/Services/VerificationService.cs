@@ -20,13 +20,15 @@ namespace PerHue.Infrastructure.Services
 		private readonly IImageUploadService _imageUploadService;
 		private readonly INotificationService _notificationService;
 		private readonly EmailService _emailService;
+		private readonly IDateTimeService _dateTimeService;
 
-		public VerificationService(IUnitOfWork unitOfWork, IImageUploadService imageUploadService, INotificationService notificationService, EmailService emailService)
+		public VerificationService(IUnitOfWork unitOfWork, IImageUploadService imageUploadService, INotificationService notificationService, EmailService emailService, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_imageUploadService = imageUploadService;
 			_notificationService = notificationService;
 			_emailService = emailService;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<PaginatedResultV2<VerifyRequestModel>> GetAllAsync(VerificationSearchModel searchModel)

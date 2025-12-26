@@ -9,8 +9,10 @@ namespace PerHue.Infrastructure.Repositories
 {
 	public class UserSubscriptionRepository : GenericRepository<UserSubscription>, IUserSubscriptionRepository
 	{
-		public UserSubscriptionRepository(PerHueDbContext context) : base(context)
+		private readonly IDateTimeService _dateTimeService;
+		public UserSubscriptionRepository(PerHueDbContext context, IDateTimeService dateTimeService) : base(context)
 		{
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<IEnumerable<UserSubscription>> GetHistoryUserSubscriptionsByUserIdAsync(int userId)
@@ -31,7 +33,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<UserSubscription?> GetActiveSubscriptionAsync(int userId)
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Include(us => us.User)
@@ -49,7 +51,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId)
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 			return await _context.UserSubscriptions
 				.AnyAsync(us => us.UserId == userId
 					&& us.Status == true
@@ -63,7 +65,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<UserSubscription?> GetLatestActiveSubscriptionByPackageAndTypeAsync(int userId, int packageId, string type)
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Include(us => us.User)
@@ -107,7 +109,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<bool> RefundRemainingUsesAsync(int userId, int packageId, string type)
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 			var subscription = await GetLatestActiveSubscriptionByPackageAndTypeAsync(userId, packageId, type);
 
 			if (subscription == null)
@@ -144,7 +146,7 @@ namespace PerHue.Infrastructure.Repositories
 		{
 			// Find the most recent subscription that hasn't expired by date
 			return await _context.UserSubscriptions
-				.Where(s => s.UserId == userId && s.EndDate > DateTime.Now)
+				.Where(s => s.UserId == userId && s.EndDate > _dateTimeService.GetCurrentTime())
 				.OrderByDescending(s => s.EndDate)
 				.FirstOrDefaultAsync();
 		}
@@ -158,7 +160,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Include(us => us.ServicePackage)
 				.Where(us => us.UserId == userId
 					&& us.Status == true
-					&& us.EndDate >= DateTime.Now)
+					&& us.EndDate >= _dateTimeService.GetCurrentTime())
 				.OrderBy(us => us.EndDate)
 				.ToListAsync();
 		}
@@ -169,7 +171,7 @@ namespace PerHue.Infrastructure.Repositories
 			var result = await _context.UserSubscriptions
 				.Where(us => us.UserId == userId
 					&& us.Status == true
-					&& us.EndDate >= DateTime.Now)
+					&& us.EndDate >= _dateTimeService.GetCurrentTime())
 				.GroupBy(us => us.ServicePackageId)
 				.Select(g => new
 				{
@@ -193,7 +195,7 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<int> AutoExpireSubscriptionsAsync()
 		{
 			var expiredSubscriptions = await _context.UserSubscriptions
-				.Where(us => us.Status == true && us.EndDate < DateTime.Now)
+				.Where(us => us.Status == true && us.EndDate < _dateTimeService.GetCurrentTime())
 				.ToListAsync();
 
 			foreach (var subscription in expiredSubscriptions)
@@ -229,7 +231,7 @@ namespace PerHue.Infrastructure.Repositories
 					us.UserId == userId &&
 					us.ServicePackageId == servicePackageId &&
 					us.Status == true &&
-					us.EndDate >= DateTime.Now);
+					us.EndDate >= _dateTimeService.GetCurrentTime());
 		}
 
 		//public async Task<List<UserSubscription>> GetAllActiveSubscriptionsByUserIdAsync(int userId)
@@ -239,7 +241,7 @@ namespace PerHue.Infrastructure.Repositories
 		//		.Where(us =>
 		//			us.UserId == userId &&
 		//			us.Status == true &&
-		//			us.EndDate >= DateTime.Now)
+		//			us.EndDate >= _dateTimeService.GetCurrentTime())
 		//		.ToListAsync();
 		//}
 
@@ -260,7 +262,7 @@ namespace PerHue.Infrastructure.Repositories
 				.Where(us =>
 					us.UserId == userId &&
 					us.Status == true &&
-					us.EndDate >= DateTime.Now)
+					us.EndDate >= _dateTimeService.GetCurrentTime())
 				.SumAsync(us => us.RemainingUses);
 		}
 
@@ -280,7 +282,7 @@ namespace PerHue.Infrastructure.Repositories
 		/// </summary>
 		public async Task<List<UserSubscription>> GetCurrentlyActiveSubscriptionsByUserIdAsync(int userId)
 		{
-			var now = DateTime.Now;
+			var now = _dateTimeService.GetCurrentTime();
 			return await _context.UserSubscriptions
 				.Include(us => us.ServicePackage)
 				.Where(us => us.UserId == userId

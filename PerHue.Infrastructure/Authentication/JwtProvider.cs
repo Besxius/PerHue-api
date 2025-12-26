@@ -2,16 +2,18 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PerHue.Domain.Entities;
+using PerHue.Infrastructure.Utils;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace PerHue.Infrastructure.Authentication
 {
-	public class JwtProvider(IOptionsMonitor<JwtSetting> optionsMonitor)
+	public class JwtProvider(IOptionsMonitor<JwtSetting> optionsMonitor, IDateTimeService dateTimeService)
 	{
 		private readonly JwtSetting _jwtSetting = optionsMonitor.CurrentValue;
+		private readonly IDateTimeService _dateTimeService = dateTimeService;
 
 		public string GenerateToken(UserAccount user)
 		{
@@ -34,7 +36,7 @@ namespace PerHue.Infrastructure.Authentication
 			var tokenDescription = new SecurityTokenDescriptor
 			{
 				Subject = claimsIdentity,
-				Expires = DateTime.Now.AddMinutes(_jwtSetting.DurationInMinutes),
+				Expires = _dateTimeService.GetCurrentTime().AddMinutes(_jwtSetting.DurationInMinutes),
 				Issuer = _jwtSetting.Issuer,
 				Audience = _jwtSetting.Audience,
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256)
