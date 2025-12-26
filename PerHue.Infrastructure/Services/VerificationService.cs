@@ -183,6 +183,9 @@ namespace PerHue.Infrastructure.Services
 				Bio = model.Bio,
 				YearsOfExperience = model.YearsOfExperience,
 				Languages = model.Languages,
+				FacebookAccount = model.FacebookAccount,
+				LinkedInAccount = model.LinkedInAccount,
+				InstagramAccount = model.InstagramAccount,
 				Status = VerificationStatus.Pending.ToString()
 			};
 
