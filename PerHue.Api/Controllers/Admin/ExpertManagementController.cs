@@ -103,26 +103,26 @@ namespace PerHue.Api.Controllers.Admin
 		//	}
 		//}
 
-		///// <summary>
-		///// Update expert
-		///// </summary>
-		//[HttpPut("experts/{id}")]
-		//public async Task<ActionResult> UpdateExpert(int id, [FromBody] UpdateExpertModel model)
-		//{
-		//	try
-		//	{
-		//		var result = await _servicesProvider.ExpertService.UpdateAsync(id, model);
-		//		if (!result)
-		//		{
-		//			return NotFound(new { message = "Expert not found" });
-		//		}
-		//		return Ok(new { message = "Expert updated successfully" });
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		return BadRequest(new { message = ex.Message });
-		//	}
-		//}
+		/// <summary>
+		/// Update expert
+		/// </summary>
+		[HttpPut("experts/{id}")]
+		public async Task<ActionResult> UpdateExpert(int id, [FromBody] UpdateExpertModel model)
+		{
+			try
+			{
+				var result = await _servicesProvider.ExpertService.UpdateAsync(id, model);
+				if (!result)
+				{
+					return NotFound(new { message = "Expert not found" });
+				}
+				return Ok(new { message = "Expert updated successfully" });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 
 		///// <summary>
 		///// Delete expert

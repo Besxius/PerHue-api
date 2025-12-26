@@ -262,32 +262,39 @@ namespace PerHue.Infrastructure.Services
 				}
 			}
 
-			//send in-app notification
-			var notiModel = new CreateNotificationModel
-			{
-				Title = "Verification Approved",
-				Content = "Your identity verification has been approved. You can now access all verified-user features.",
-				Receiver = verifyInfo.Id
-			};
-			await _notificationService.CreateAsync(notiModel);
-
 			//send email
 			var emailModel = new EmailServiceRequestModel
 			{
 				ToEmail = verifyInfo.Email,
 				Subject = "[PerHue] Your verification is approved",
-				Body =
-@"Hi " + verifyInfo.Nickname + @",
+				Body = $@"
+				<html>
+				<body style='font-family: Arial, Helvetica, sans-serif; line-height:1.6; color:#333;'>
+					<p>Hi <strong>{verifyInfo.Nickname}</strong>,</p>
 
-Good news! Your identity verification has been approved.
+					<p>
+						<strong>Good news!</strong> Your identity verification has been
+						<strong>approved</strong>.
+					</p>
 
-You can now access all features that require a verified account.
+					<p>
+						You can now access all features that require a
+						<strong>verified account</strong>.
+					</p>
 
-If you have any questions, reply to this email or contact our Support Center.
+					<p>
+						If you have any questions, feel free to reply to this email
+						or contact our Support Center.
+					</p>
 
-Best regards,
-PerHue Team"
+					<p style='margin-top:24px;'>
+						Best regards,<br/>
+						<strong>PerHue Team</strong>
+					</p>
+				</body>
+				</html>"
 			};
+
 			await _emailService.SendEmailAsync(emailModel.ToEmail, emailModel.Subject, emailModel.Body);
 
 			await _unitOfWork.VerificationRepository.DeleteVerificationRequestAsync(id, true);
@@ -297,43 +304,62 @@ PerHue Team"
 
 		public async Task<bool> DenyVerificationAsync(int id, string reason)
 		{
-			var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id);
-			if (verifyInfo == null)
-			{
-				throw new InvalidOperationException("Verification request not found.");
-			}
+			var verifyInfo = await _unitOfWork.VerificationRepository.GetVerificationRequestByIdAsync(id) ?? throw new InvalidOperationException("Verification request not found.");
 
-			var notification = new Notification
-			{
-				Receiver = id,
-				Title = "Verification Denied",
-				Content = $"Your verification request has been denied. Reason: {reason}",
-				ReceivedTime = _dateTimeService.GetCurrentTime(),
-				IsRead = false
-			};
+			var reasonHtml = string.IsNullOrWhiteSpace(reason)
+				? string.Empty
+				: $@"
+				<p><strong>Reason:</strong></p>
+				<div style='
+					background-color:#f8f9fa;
+					border-left:4px solid #dc3545;
+					padding:12px;
+					margin:12px 0;
+				'>
+					{System.Net.WebUtility.HtmlEncode(reason)}
+				</div>";
 
-			await _unitOfWork.NotificationRepository.CreateAsync(notification);
-
-			//send email
 			var emailModel = new EmailServiceRequestModel
 			{
 				ToEmail = verifyInfo.Email,
 				Subject = "[PerHue] Your verification is denied",
-				Body =
-			@"Hi " + verifyInfo.Nickname + @",
+				Body = $@"
+				<html>
+				<body style='font-family: Arial, Helvetica, sans-serif; line-height:1.6; color:#333;'>
+					<p>Hi <strong>{verifyInfo.Nickname}</strong>,</p>
 
-Thank you for submitting your verification request.
+					<p>
+						Thank you for submitting your verification request.
+					</p>
 
-After reviewing your information, we’re unable to approve your verification at this time.
+					<p>
+						After carefully reviewing your information, we’re unable to approve
+						your verification at this time.
+					</p>
 
-Please update and resubmit your verification.
+					{reasonHtml}
 
-You can resubmit your verification directly in the PerHue app anytime.
+					<p>
+						Please update your information according to the reason above and
+						resubmit your verification.
+					</p>
 
-If you need help, reply to this email or contact our Support Center.
+					<p>
+						You can resubmit your verification directly in the
+						<strong>PerHue</strong> app at any time.
+					</p>
 
-Best regards,
-PerHue Team"
+					<p>
+						If you need further assistance, feel free to reply to this email
+						or contact our Support Center.
+					</p>
+
+					<p style='margin-top:24px;'>
+						Best regards,<br/>
+						<strong>PerHue Team</strong>
+					</p>
+				</body>
+				</html>"
 			};
 			await _emailService.SendEmailAsync(emailModel.ToEmail, emailModel.Subject, emailModel.Body);
 

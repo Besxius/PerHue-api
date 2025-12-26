@@ -47,13 +47,13 @@ namespace PerHue.Infrastructure.Services
 				return false;
 
 			// Update expert properties
-			expert.Nickname = model.Nickname;
-			expert.Specialization = model.Specialization;
-			expert.Bio = model.Bio;
-			expert.YearsOfExperience = model.YearsOfExperience;
-			expert.Languages = model.Languages;
-			expert.Certification = model.Certification;
-			expert.Introduction = model.Introduction;
+			//expert.Nickname = model.Nickname;
+			//expert.Specialization = model.Specialization;
+			expert.Bio = model.Bio ?? "";
+			//expert.YearsOfExperience = model.YearsOfExperience;
+			//expert.Languages = model.Languages;
+			expert.Certification = model.Certification ?? "";
+			//expert.Introduction = model.Introduction;
 			expert.FacebookAccount = model.FacebookAccount;
 			expert.LinkedInAccount = model.LinkedInAccount;
 			expert.InstagramAccount = model.InstagramAccount;
