@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PerHue.Application.Models;
 using PerHue.Infrastructure.Services;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,11 +16,14 @@ public class AutoEmail:BackgroundService
 {
 	private readonly IHubContext<Hub.ServerHub> _hubContext;
 	private readonly IServiceScopeFactory _scopeFactory;
+	private readonly IDateTimeService _dateTimeService;
 	public AutoEmail(IHubContext<Hub.ServerHub> hubContext,
-		IServiceScopeFactory scopeFactory)
+		IServiceScopeFactory scopeFactory,
+		IDateTimeService dateTimeService)
 	{
 		_hubContext = hubContext;
 		_scopeFactory = scopeFactory;
+		_dateTimeService = dateTimeService;
 	}
 	/// <summary>
 	/// Executes the background task asynchronously, performing periodic operations until the task is canceled.
@@ -42,11 +46,11 @@ public class AutoEmail:BackgroundService
 			//string guid = Guid.NewGuid().ToString();
 			//string email = ""; 
 			//string subject = "Automated Email Notification";
-			//var body = $"Email with GUID: {guid} sent at {DateTime.Now}";
+			//var body = $"Email with GUID: {guid} sent at {_dateTimeService.GetCurrentTime()}";
 			//await _emailService.SendEmailAsync(email, subject, body);
 			//await _hubContext.Clients.All.SendAsync("ReceiveEmail", body, cancellationToken: stoppingToken);
 			//Console.WriteLine(body);
-			DateTime now = DateTime.Now;
+			DateTime now = _dateTimeService.GetCurrentTime();
 			Console.WriteLine($"AutoEmail Scanning at : {now}");
 			await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 		}

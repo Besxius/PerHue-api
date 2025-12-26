@@ -3,6 +3,7 @@ using PerHue.Application.IServices;
 using PerHue.Application.Models.Notification;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,14 +14,16 @@ namespace PerHue.Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+		private readonly IDateTimeService _dateTimeService;
 
-        public NotificationService(IUnitOfWork unitOfWork, IMapper mapper)
-        {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-        }
+		public NotificationService(IUnitOfWork unitOfWork, IMapper mapper, IDateTimeService dateTimeService)
+		{
+			_unitOfWork = unitOfWork;
+			_mapper = mapper;
+			_dateTimeService = dateTimeService;
+		}
 
-        public async Task<NotificationModel> GetByIdAsync(int id)
+		public async Task<NotificationModel> GetByIdAsync(int id)
         {
             var notification = await _unitOfWork.NotificationRepository.GetByIdAsync(id);
             return _mapper.Map<NotificationModel>(notification);
@@ -51,7 +54,7 @@ namespace PerHue.Infrastructure.Services
                 Title = model.Title,
                 Content = model.Content,
                 Receiver = model.Receiver,
-                ReceivedTime = DateTime.Now,
+                ReceivedTime = _dateTimeService.GetCurrentTime(),
                 IsRead = false
             };
 
