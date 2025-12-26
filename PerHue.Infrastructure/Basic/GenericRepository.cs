@@ -43,7 +43,7 @@ namespace PerHue.Infrastructure.Basic
 			_context.SaveChanges();
 		}
 
-		public async Task<int> UpdateAsync(T entity)
+		public virtual async Task<int> UpdateAsync(T entity)
 		{
 			_context.ChangeTracker.Clear();
 			var tracker = _context.Attach(entity);
