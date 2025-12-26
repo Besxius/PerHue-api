@@ -104,7 +104,7 @@ namespace PerHue.Api.Controllers
 			}
 			await _servicesProvider.UserService.CreateAsync(user);
 
-			return Ok("Register successful! Please check your email to activate your account.");
+			return Ok("Register successful");
 		}
 
 		[HttpPost("google")]
