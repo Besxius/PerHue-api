@@ -1,6 +1,7 @@
 ﻿using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Authentication;
 using PerHue.Application.Models.User;
@@ -21,31 +22,6 @@ namespace PerHue.Api.Controllers
 			_configuration = configuration;
 		}
 
-		/*[HttpPost("login")]
-		public async Task<IActionResult> Login(LoginRequestModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
-			if (account is null) return NotFound("Tên đăng nhập hoặc mật khẩu không đúng.");
-			if (account.Isactive == false) return Accepted("Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
-
-			var token = await _servicesProvider.UserService.ValidateUserAsync(model);
-			if (string.IsNullOrEmpty(token))
-			{
-				return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
-			}
-
-			return Ok(new
-			{
-				accessToken = token,
-				tokenType = "Bearer",
-				expiresIn = 120,
-				// refresh_token = "..." // (Tùy chọn) Nếu bạn dùng refresh token
-			});
-		}*/
 		[HttpPost("login")]
 		public async Task<IActionResult> Login(LoginRequestModel model)
 		{
@@ -54,28 +30,24 @@ namespace PerHue.Api.Controllers
 				return BadRequest(ModelState);
 			}
 
-			// 1. Get user and check active status
 			var account = await _servicesProvider.UserService.GetByEmailAsync(model.Email);
 			if (account is null)
 			{
-				return NotFound("Tài khoản không tồn tại");
+				return NotFound("The account does not exist.");
 			}
 
 			if (account.Isactive == false)
 			{
-				return StatusCode(403, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
+				return StatusCode(403, "The account is either not activated or has been locked.");
 			}
 
 			try
 			{
-				// 2. Validate user and get tokens
 				var loginResponse = await _servicesProvider.UserService.ValidateUserAsync(model);
 
-				// 3. Get expiration time from config (e.g., 30) and convert to seconds (e.g., 1800)
 				var expiresInMinutes = _configuration.GetValue<int>("Jwt:DurationInMinutes");
 				//var expiresInSeconds = expiresInMinutes * 60;
 
-				// 4. Return the new object with all fields
 				return Ok(new
 				{
 					accessToken = loginResponse.AccessToken,
@@ -92,11 +64,13 @@ namespace PerHue.Api.Controllers
 
 		[HttpPost("register")]
 		public async Task<IActionResult> Register(CreateUserRequestModel user)
-		{ 
+		{
+			if (!ModelState.IsValid) return BadRequest(ModelState);
+
 			var account = await _servicesProvider.UserService.GetByEmailAsync(user.Email);
 			if (account is not null)
 			{
-				return Unauthorized("Email have used in an account!");
+				return Unauthorized("Email has used in an account!");
 			}
 			if (!ModelState.IsValid)
 				{
@@ -104,7 +78,17 @@ namespace PerHue.Api.Controllers
 			}
 			await _servicesProvider.UserService.CreateAsync(user);
 
-			return Ok("Register successful");
+			return Ok("Register successful! Please check your email to activate your account.");
+		}
+
+		[HttpPost("verify-otp")]
+		public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestModel model)
+		{
+			var result = await _servicesProvider.UserService.VerifyUserOtpAsync(model.Email, model.Otp);
+
+			if (!result.Success) return BadRequest(result);
+
+			return Ok(result);
 		}
 
 		[HttpPost("google")]

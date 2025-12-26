@@ -17,16 +17,18 @@ namespace PerHue.Infrastructure.Services
 		private readonly IMapper _mapper;
 		private readonly IUserSubscriptionService _subscriptionService;
 		private readonly IServicePackageService _packageService;
+		private readonly IDateTimeService _dateTimeService;
 
 		public PaymentService(IUnitOfWork unitOfWork, PayOSPaymentService payOSPaymentService, IMapper mapper,
 			IUserSubscriptionService subscriptionService, IServicePackageService packageService
-			)
+, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_payOSPaymentService = payOSPaymentService;
 			_mapper = mapper;
 			_subscriptionService = subscriptionService;
 			_packageService = packageService;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<string> CreateAsync(PayOSRequestModel model)
@@ -71,7 +73,7 @@ namespace PerHue.Infrastructure.Services
 				Description = model.Description,
 				Status = PaymentStatusEnum.Success.ToString(),
 				TransactionId = model.OrderCode,
-				CreatedAt = DateTime.Now
+				CreatedAt = _dateTimeService.GetCurrentTime()
 			};
 			var numberOfPaymentCreated = await _unitOfWork.PaymentRepository.CreateAsync(payment);
 

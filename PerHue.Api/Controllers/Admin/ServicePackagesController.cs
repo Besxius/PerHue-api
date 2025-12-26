@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.ServicePackage;
+using PerHue.Infrastructure.Utils;
 
 namespace PerHue.Api.Controllers.Admin
 {
@@ -11,10 +12,12 @@ namespace PerHue.Api.Controllers.Admin
 	public class ServicePackagesController : ControllerBase
 	{
 		private readonly IServicesProvider _servicesProvider;
+		private readonly IDateTimeService _dateTimeService;
 
-		public ServicePackagesController(IServicesProvider servicesProvider)
+		public ServicePackagesController(IServicesProvider servicesProvider, IDateTimeService dateTimeService)
 		{
 			_servicesProvider = servicesProvider;
+			_dateTimeService = dateTimeService;
 		}
 
 		[HttpGet]
@@ -33,8 +36,8 @@ namespace PerHue.Api.Controllers.Admin
 		[HttpPost]
 		public async Task Post([FromBody] ServicePackageModel model)
 		{
-			model.CreatedDate = DateTime.Now;
-			model.UpdatedDate = DateTime.Now;
+			model.CreatedDate = _dateTimeService.GetCurrentTime();
+			model.UpdatedDate = _dateTimeService.GetCurrentTime();
 			await _servicesProvider.ServicePackageService.CreateAsync(model);
 		}
 
@@ -47,7 +50,7 @@ namespace PerHue.Api.Controllers.Admin
 				NotFound();
 			}
 			model.CreatedDate = packageService.CreatedDate;
-			model.UpdatedDate = DateTime.Now;
+			model.UpdatedDate = _dateTimeService.GetCurrentTime();
 			await _servicesProvider.ServicePackageService.UpdateAsync(id, model);
 			Ok();
 		}

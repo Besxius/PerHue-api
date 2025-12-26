@@ -19,13 +19,17 @@ namespace PerHue.Infrastructure.Services
 		private readonly IMapper _mapper;
 		private readonly JwtProvider _jwtProvider;
 		private readonly IOtpService _otpService;
+		private readonly EmailService _emailService;
+		private readonly IDateTimeService _dateTimeService;
 
-		public UserService(IUnitOfWork unitOfWork, IMapper mapper, JwtProvider jwtProvider, IOtpService otpService)
+		public UserService(IUnitOfWork unitOfWork, IMapper mapper, JwtProvider jwtProvider, IOtpService otpService, EmailService emailService, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_jwtProvider = jwtProvider;
 			_otpService = otpService;
+			_emailService = emailService;
+			_dateTimeService = dateTimeService;
 		}
 		public async Task<bool> ChangePasswordAsync(ChangePasswordModel model)
 		{
@@ -69,12 +73,34 @@ namespace PerHue.Infrastructure.Services
 			var entity = _mapper.Map<UserAccount>(model);
 			entity.Username = GenerateUserName(model.Email);
 			entity.Password = HashPassWithSHA256.HashWithSHA256(model.Password);
-			entity.IsActive = true;
+			entity.IsActive = false;
 			entity.RoleId = 2;
-			entity.CreatedDate = DateTime.Now;
+			entity.CreatedDate = _dateTimeService.GetCurrentTime();
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
 		}
+
+		public async Task<ServiceResponse<string>> VerifyUserOtpAsync(string email, string otp)
+		{
+			var isValid = await _otpService.ValidateRegisterOtpAsync(email, otp);
+			if (!isValid)
+			{
+				return new ServiceResponse<string> { Success = false, Message = "The OTP code is incorrect or has expired." };
+			}
+
+			var user = await _unitOfWork.UserRepository.GetByEmailAsync(email);
+			if (user == null) return new ServiceResponse<string> { Success = false, Message = "User not found." };
+
+			user.IsActive = true;
+			await _unitOfWork.UserRepository.UpdateAsync(user);
+
+			return new ServiceResponse<string>
+			{
+				Success = true,
+				Message = "Verification successful. You can log in now."
+			};
+		}
+
 		public async Task CreateAsync(CreateUserByEmailModel model)
 		{
 			var entity = _mapper.Map<UserAccount>(model);
@@ -85,6 +111,31 @@ namespace PerHue.Infrastructure.Services
 			entity.RoleId = 2;
 
 			await _unitOfWork.UserRepository.CreateAsync(entity);
+		}
+
+		public async Task<ServiceResponse<string>> CreateWithOtpAsync(CreateUserRequestModel model)
+		{
+			var entity = _mapper.Map<UserAccount>(model);
+			entity.Username = GenerateUserName(model.Email);
+			entity.Password = HashPassWithSHA256.HashWithSHA256(model.Password);
+			entity.IsActive = false;
+			entity.RoleId = 2;
+			entity.CreatedDate = _dateTimeService.GetCurrentTime();
+
+			await _unitOfWork.UserRepository.CreateAsync(entity);
+
+			var otp = await _otpService.GenerateRegisterOtpAsync(entity.Email);
+
+			string subject = "Verify your PerHue account.";
+			string body = $"Your OTP code is: <b>{otp}</b>. The OTP code is valid for 5 minutes.";
+
+			await _emailService.SendEmailAsync(entity.Email, subject, body);
+
+			return new ServiceResponse<string>
+			{
+				Success = true,
+				Message = "Registration successful. Please check your email for the OTP verification code."
+			};
 		}
 
 		public async Task<bool> DeleteAsync(string email)
@@ -173,7 +224,7 @@ namespace PerHue.Infrastructure.Services
 			var refreshTokenEntity = new RefreshToken
 			{
 				Token = refreshToken,
-				ExpireDate = DateTime.Now.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				ExpireDate = _dateTimeService.GetCurrentTime().AddDays(7), // Set refresh token expiry (e.g., 7 days)
 				UserAccountId = entity.Id
 			};
 
@@ -190,13 +241,15 @@ namespace PerHue.Infrastructure.Services
 		public async Task<LoginResponseModel> ValidateUserAsync(string email)
 		{
 			var entity = await _unitOfWork.UserRepository.GetByEmailAsync(email);
+			if (entity.IsActive is false)
+				throw new SecurityTokenException("Your account is unactive for this time");
 
 			var accessToken = _jwtProvider.GenerateToken(entity);
 			var refreshToken = _jwtProvider.GenerateRefreshToken();
 			var refreshTokenEntity = new RefreshToken
 			{
 				Token = refreshToken,
-				ExpireDate = DateTime.Now.AddDays(7), // Set refresh token expiry (e.g., 7 days)
+				ExpireDate = _dateTimeService.GetCurrentTime().AddDays(7), // Set refresh token expiry (e.g., 7 days)
 				UserAccountId = entity.Id
 			};
 
@@ -233,7 +286,7 @@ namespace PerHue.Infrastructure.Services
 				Gender = false,
 				ProfilePicture = picture,
 				IsActive = true,
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				RoleId = 2,
 			};
 
@@ -259,7 +312,7 @@ namespace PerHue.Infrastructure.Services
 			if (storedRefreshToken.UserAccountId != userId)
 				throw new SecurityTokenException("Refresh token mismatch");
 
-			if (storedRefreshToken.ExpireDate <= DateTime.Now)
+			if (storedRefreshToken.ExpireDate <= _dateTimeService.GetCurrentTime())
 				throw new SecurityTokenException("Refresh token expired");
 
 			// All checks passed. Generate new tokens.
@@ -269,7 +322,7 @@ namespace PerHue.Infrastructure.Services
 
 			// Rotate the refresh token: update the old one with the new value and expiry
 			storedRefreshToken.Token = newRefreshToken;
-			storedRefreshToken.ExpireDate = DateTime.Now.AddDays(7);
+			storedRefreshToken.ExpireDate = _dateTimeService.GetCurrentTime().AddDays(7);
 			await _unitOfWork.RefreshTokenRepository.UpdateAsync(storedRefreshToken);
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 

@@ -15,11 +15,13 @@ namespace PerHue.Infrastructure.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
+		private readonly IDateTimeService _dateTimeService;
 
-		public AdminUserService(IUnitOfWork unitOfWork, IMapper mapper)
+		public AdminUserService(IUnitOfWork unitOfWork, IMapper mapper, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<PaginatedResultV2<AdminUserModel>> GetUsersAsync(AdminUserSearchModel searchModel)
@@ -106,7 +108,7 @@ namespace PerHue.Infrastructure.Services
 					Profilepicture = u.ProfilePicture,
 					RoleId = u.RoleId,
 					RoleName = u.Role.Name,
-					CreatedDate = DateTime.Now, // You might need to add this field to UserAccount entity
+					CreatedDate = _dateTimeService.GetCurrentTime(), // You might need to add this field to UserAccount entity
 					UpdatedDate = null,
 					ExpertProfile = u.Expert != null ? new ExpertModel
 					{
@@ -154,7 +156,7 @@ namespace PerHue.Infrastructure.Services
 				Profilepicture = user.ProfilePicture,
 				RoleId = user.RoleId,
 				RoleName = user.Role.Name,
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				UpdatedDate = null
 			};
 		}

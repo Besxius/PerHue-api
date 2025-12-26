@@ -21,12 +21,14 @@ namespace PerHue.Infrastructure.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
 		private readonly IConfiguration _configuration;
+		private readonly IDateTimeService _dateTimeService;
 
-		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
+		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IDateTimeService dateTimeService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_configuration = configuration;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId)
@@ -75,7 +77,7 @@ namespace PerHue.Infrastructure.Services
 			// 2. Save Response
 			var testResponse = _mapper.Map<TestResponse>(model);
 			testResponse.ExpertId = expertId;
-			testResponse.CreatedDate = DateTime.Now;
+			testResponse.CreatedDate = _dateTimeService.GetCurrentTime();
 			testResponse.Type = ResponseTypeEnum.Normal.ToString();
 
 			await _unitOfWork.TestResponseRepository.CreateAsync(testResponse);
@@ -110,7 +112,7 @@ namespace PerHue.Infrastructure.Services
 						Content = "Expert Analysis Completed",
 						Receiver = testRequest.UserAccountId,
 						TestRequestId = testRequest.Id,
-						ReceivedTime = DateTime.Now,
+						ReceivedTime = _dateTimeService.GetCurrentTime(),
 						IsRead = false,
 						Type = "TestResult"
 					};
@@ -759,7 +761,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = model.TestRequestId,
 				ExpertId = expertId,
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				Type = ResponseTypeEnum.Review.ToString(),
 				BestColor = votedResponse.BestColor,
 				WorstColor = votedResponse.WorstColor,
@@ -788,7 +790,7 @@ namespace PerHue.Infrastructure.Services
 					Content = "The expert review you requested has been completed.",
 					Receiver = mainRequest.UserAccountId,
 					TestRequestId = model.TestRequestId,
-					ReceivedTime = DateTime.Now,
+					ReceivedTime = _dateTimeService.GetCurrentTime(),
 					IsRead = false,
 					Type = "ReviewResult"
 				};

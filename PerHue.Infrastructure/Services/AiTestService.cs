@@ -43,6 +43,7 @@ namespace PerHue.Infrastructure.Services
 		private readonly ICapsulePaletteService _capsulePaletteService;
 		private readonly AsyncRetryPolicy _retryPolicy;
 		private readonly PerHueDbContext _context;
+		private readonly IDateTimeService _dateTimeService;
 
 		public AiTestService(
 			IAiTestResultRepository aiTestRepository,
@@ -55,6 +56,7 @@ namespace PerHue.Infrastructure.Services
 			IUserSubscriptionService subscriptionService,
 			IUserService userService, IMapper mapper,
 			ICapsulePaletteService capsulePaletteService,
+			IDateTimeService dateTimeService,
 			PerHueDbContext context
 			)
 		{
@@ -72,6 +74,7 @@ namespace PerHue.Infrastructure.Services
 			// Khởi tạo retry policy với 3 lần thử
 			_retryPolicy = RetryPolicies.CreateAiServiceRetryPolicy(logger, maxRetryAttempts: 3);
 			_context = context;
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<AiTestModel.AiTestResponseModel?> GetAiTestResultAsync(int testRequestId, int userId)
@@ -92,7 +95,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = testRequest.Id,
 				Status = testRequest.Status ?? "Unknown",
-				CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+				CreatedDate = testRequest.CreatedDate ?? _dateTimeService.GetCurrentTime(),
 				UserAccountId = testRequest.UserAccountId,
 				Fullname = user.Fullname,
 				TypeOfTest = testRequest.TypeOfTest,
@@ -130,7 +133,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = item.TestRequest.Id,
 				Status = item.TestRequest.Status ?? "Unknown",
-				CreatedDate = item.TestRequest.CreatedDate ?? DateTime.Now,
+				CreatedDate = item.TestRequest.CreatedDate ?? _dateTimeService.GetCurrentTime(),
 				UserAccountId = item.TestRequest.UserAccountId,
 				Fullname = user.Fullname,
 				TypeOfTest = item.TestRequest.TypeOfTest,
@@ -163,7 +166,7 @@ namespace PerHue.Infrastructure.Services
 				.Select(testRequest => new NewTestRequestReponseModel
 				{
 					Id = testRequest.Id,
-					CreatedDate = testRequest.CreatedDate ?? DateTime.Now,
+					CreatedDate = testRequest.CreatedDate ?? _dateTimeService.GetCurrentTime(),
 					ImageUrl = testRequest.Pictures?.FirstOrDefault()?.Source,
 					ColorTypeId = testRequest.AiTestResult?.ColorTypeId ?? 0,
 					ColorTypeName = testRequest.AiTestResult?.ColorType?.Name ?? string.Empty
@@ -302,7 +305,7 @@ namespace PerHue.Infrastructure.Services
 			{
 				TestRequestId = t.Id,
 				Status = t.Status ?? "Unknown",
-				CreatedDate = t.CreatedDate ?? DateTime.Now,
+				CreatedDate = t.CreatedDate ?? _dateTimeService.GetCurrentTime(),
 				Fullname = t.UserAccount.Fullname,
 				UserAccountId = t.UserAccount.Id,
 				TypeOfTest = t.TypeOfTest,
@@ -342,7 +345,7 @@ namespace PerHue.Infrastructure.Services
 		{
 			var checkQuotaAndRateLimit = await _aiTestRepository.CountAsync(
 				tr => tr.Date.HasValue &&
-					  tr.Date.Value.Date == DateTime.Now.Date);
+					  tr.Date.Value.Date == _dateTimeService.GetCurrentTime().Date);
 			if (checkQuotaAndRateLimit >= 20)
 			{
 				_logger.LogWarning("Daily AI test quota exceeded !!!");
@@ -442,7 +445,7 @@ namespace PerHue.Infrastructure.Services
 				LipsColor = request.LipsColor,
 				SkinColor = request.SkinColor,
 				Status = TestStatus.Processing.ToString(),
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				TypeOfTest = "AI Test",
 				UserAccountId = userId
 			};
@@ -600,7 +603,7 @@ namespace PerHue.Infrastructure.Services
 			// Lưu kết quả test vào AiTestResult
 			var aiTestResult = new AiTestResult
 			{
-				Date = DateTime.Now,
+				Date = _dateTimeService.GetCurrentTime(),
 				ColorTypeId = colorAnalysis.ColorTypeId,
 				SuggestedColor = string.Join(", ", colorAnalysis.SuggestedColorHexCodes),
 				AvoidedColor = string.Join(", ", colorAnalysis.AvoidedColorHexCodes),

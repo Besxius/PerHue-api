@@ -15,8 +15,10 @@ namespace PerHue.Infrastructure.Repositories
 {
 	internal class TestRequestRepository : GenericRepository<TestRequest>, ITestRequestRepository
 	{
-		public TestRequestRepository(PerHueDbContext context) : base(context)
+		private readonly IDateTimeService _dateTimeService;
+		public TestRequestRepository(PerHueDbContext context, IDateTimeService dateTimeService) : base(context)
 		{
+			_dateTimeService = dateTimeService;
 		}
 
 		public async Task<TestRequest> GetByIdWithDetailsAsync(int id)
@@ -63,7 +65,7 @@ namespace PerHue.Infrastructure.Repositories
 			{
 				UserAccountId = userAccountId,
 				TypeOfTest = typeOfTest,
-				CreatedDate = DateTime.Now,
+				CreatedDate = _dateTimeService.GetCurrentTime(),
 				Status = "Pending"
 			};
 
@@ -102,7 +104,7 @@ namespace PerHue.Infrastructure.Repositories
 				AvoidedColor = avoidedColor,
 				ColorTypeId = colorTypeId,
 				Note = note,
-				Date = DateTime.Now
+				Date = _dateTimeService.GetCurrentTime()
 			};
 
 			_context.AiTestResults.Add(aiTestResult);
