@@ -11,6 +11,7 @@ using PerHue.Application.Models;
 using PerHue.Application.Models.ExpertTestResult;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
+using PerHue.Infrastructure.FCM;
 using PerHue.Infrastructure.UnitOfWorks;
 using PerHue.Infrastructure.Utils;
 
@@ -22,13 +23,15 @@ namespace PerHue.Infrastructure.Services
 		private readonly IMapper _mapper;
 		private readonly IConfiguration _configuration;
 		private readonly IDateTimeService _dateTimeService;
+		private readonly IFcmService _fcmService;
 
-		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IDateTimeService dateTimeService)
+		public ExpertTestService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration, IDateTimeService dateTimeService, IFcmService fcmService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
 			_configuration = configuration;
 			_dateTimeService = dateTimeService;
+			_fcmService = fcmService;
 		}
 
 		public async Task<IEnumerable<TestRequestModel>> GetPendingRequestsAsync(int expertId)
@@ -117,6 +120,28 @@ namespace PerHue.Infrastructure.Services
 						Type = "TestResult"
 					};
 					await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+					try
+					{
+						var userReceiver = await _unitOfWork.UserRepository.GetByIdAsync(testRequest.UserAccountId);
+						if (userReceiver != null && !string.IsNullOrEmpty(userReceiver.FcmToken))
+						{
+							await _fcmService.SendNotificationAsync(
+								userReceiver.FcmToken,
+								notification.Title,
+								notification.Content,
+								new Dictionary<string, string>
+								{
+									{ "type", "TEST_RESULT" },
+									{ "testRequestId", testRequest.Id.ToString() }
+								}
+							);
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine($"Failed to send FCM notification: {ex.Message}");
+					}
 
 					// Save finalization changes
 					await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -316,7 +341,7 @@ namespace PerHue.Infrastructure.Services
 			return new ExpertTestResultModel
 			{
 				TestRequest = _mapper.Map<TestRequestModel>(testRequest),
-				Responses = responseModels, 
+				Responses = responseModels,
 
 				// Logic: Expert can edit if the main Test Request is NOT yet Completed
 				CanEdit = testRequest.Status != TestRequestStatus.Completed.ToString()
@@ -359,6 +384,38 @@ namespace PerHue.Infrastructure.Services
 			response.Note = model.Note;
 
 			await _unitOfWork.TestResponseRepository.UpdateAsync(response);
+
+			var notification = new Notification
+			{
+				Title = "Result Updated",
+				Content = $"Expert has updated their advice for your test request #{testRequestId}.",
+				Receiver = testRequest.UserAccountId,
+				TestRequestId = testRequestId,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
+				IsRead = false,
+				Type = "ResultUpdate"
+			};
+			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			try
+			{
+				var user = await _unitOfWork.UserRepository.GetByIdAsync(testRequest.UserAccountId);
+				if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+				{
+					await _fcmService.SendNotificationAsync(
+						user.FcmToken,
+						notification.Title,
+						notification.Content,
+						new Dictionary<string, string>
+						{
+					{ "type", "RESULT_UPDATE" },
+					{ "testRequestId", testRequestId.ToString() }
+						}
+					);
+				}
+			}
+			catch (Exception ex) { Console.WriteLine($"FCM Error: {ex.Message}"); }
+
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
 			// 6. Return mapped model
@@ -561,6 +618,38 @@ namespace PerHue.Infrastructure.Services
 
 			expert.Rating = finalRating;
 			await _unitOfWork.ExpertRepository.UpdateAsync(expert);
+
+			var notification = new Notification
+			{
+				Title = "New Rating Received",
+				Content = $"A user has rated your response for Test #{testRequest.Id} with {model.Rating} stars.",
+				Receiver = expert.Id, 
+				TestRequestId = testRequest.Id,
+				ReceivedTime = _dateTimeService.GetCurrentTime(),
+				IsRead = false,
+				Type = "RatingReceived"
+			};
+			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			try
+			{
+				var expertUser = await _unitOfWork.UserRepository.GetByIdAsync(expert.Id);
+				if (expertUser != null && !string.IsNullOrEmpty(expertUser.FcmToken))
+				{
+					await _fcmService.SendNotificationAsync(
+						expertUser.FcmToken,
+						notification.Title,
+						notification.Content,
+						new Dictionary<string, string>
+						{
+					{ "type", "RATING_RECEIVED" },
+					{ "rating", model.Rating.ToString() },
+					{ "testRequestId", testRequest.Id.ToString() }
+						}
+					);
+				}
+			}
+			catch (Exception ex) { Console.WriteLine($"FCM Error: {ex.Message}"); }
 
 			// 6. Save all changes in one transaction
 			await _unitOfWork.SaveChangesWithTransactionAsync();
@@ -795,6 +884,28 @@ namespace PerHue.Infrastructure.Services
 					Type = "ReviewResult"
 				};
 				await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+				try
+				{
+					var userReceiver = await _unitOfWork.UserRepository.GetByIdAsync(mainRequest.UserAccountId);
+					if (userReceiver != null && !string.IsNullOrEmpty(userReceiver.FcmToken))
+					{
+						await _fcmService.SendNotificationAsync(
+							userReceiver.FcmToken,
+							notification.Title,
+							notification.Content,
+							new Dictionary<string, string>
+							{
+								{ "type", "REVIEW_RESULT" },
+								{ "testRequestId", model.TestRequestId.ToString() }
+							}
+						);
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"FCM Notification Error: {ex.Message}");
+				}
 			}
 
 			await _unitOfWork.SaveChangesWithTransactionAsync();

@@ -374,5 +374,15 @@ namespace PerHue.Infrastructure.Services
 				RoleName = user.Role.Name
 			};
 		}
+
+		public async Task UpdateFcmTokenAsync(int userId, string token)
+		{
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+			if (user != null)
+			{
+				user.FcmToken = token;
+				await _unitOfWork.UserRepository.UpdateAsync(user);
+			}
+		}
 	}
 }

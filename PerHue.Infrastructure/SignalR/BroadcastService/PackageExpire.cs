@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PerHue.Domain.Entities;
+using PerHue.Infrastructure.FCM;
 using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Services;
@@ -20,13 +21,16 @@ public class PackageExpire : BackgroundService
 	private readonly IHubContext<Hub.ServerHub> _hubContext;
 	private readonly IServiceScopeFactory _scopeFactory;
 	private readonly IDateTimeService _dateTimeService;
+	private readonly IFcmService _fcmService;
 	public PackageExpire(IHubContext<Hub.ServerHub> hubContext,
 		IServiceScopeFactory scopeFactory,
-		IDateTimeService dateTimeService)
+		IDateTimeService dateTimeService,
+		IFcmService fcmService)
 	{
 		_hubContext = hubContext;
 		_scopeFactory = scopeFactory;
 		_dateTimeService = dateTimeService;
+		_fcmService = fcmService;
 	}
 
 	/// <summary>
@@ -93,6 +97,23 @@ public class PackageExpire : BackgroundService
 								TestRequestId = null // Defaulting to null as it is not linked to a specific TestRequest
 							};
 							_context.Notifications.Add(notification);
+
+							try
+							{
+								if (!string.IsNullOrEmpty(user.FcmToken))
+								{
+									await _fcmService.SendNotificationAsync(
+										user.FcmToken,
+										notification.Title,
+										notification.Content,
+										new Dictionary<string, string> { { "type", "SUBSCRIPTION_EXPIRED" } }
+									);
+								}
+							}
+							catch
+							{
+								Console.WriteLine($"Failed to send FCM notification to user {user.Id}");
+							}
 						}
 
 						// Mark subscription as expired
@@ -120,6 +141,32 @@ public class PackageExpire : BackgroundService
 
 							// Send reminder email
 							await _emailService.SendEmailAsync(user.Email, reminderSubject, reminderBody);
+
+							var notification = new Notification
+							{
+								Title = "Your subscription is ending soon",
+								Content = $"Your subscription will expire on {item.EndDate.Value:dd/MM/yyyy}.",
+								Receiver = user.Id,
+								ReceivedTime = _dateTimeService.GetCurrentTime(),
+								IsRead = false,
+								Type = "System",
+								TestRequestId = null // Defaulting to null as it is not linked to a specific TestRequest
+							};
+							_context.Notifications.Add(notification);
+
+							try
+							{
+								if (!string.IsNullOrEmpty(user.FcmToken))
+								{
+									await _fcmService.SendNotificationAsync(
+										user.FcmToken,
+										reminderSubject, // Hoặc "Subscription Reminder"
+										"Your subscription is ending soon! Check your email for details.",
+										new Dictionary<string, string> { { "type", "SUBSCRIPTION_REMINDER" } }
+									);
+								}
+							}
+							catch { }
 
 							// Optional: notify via SignalR
 							await _hubContext.Clients.User(user.Id.ToString())

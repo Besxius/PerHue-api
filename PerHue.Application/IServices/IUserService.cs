@@ -29,5 +29,6 @@ namespace PerHue.Application.IServices
 		Task<LoginResponseModel> RefreshTokenAsync(RefreshTokenRequestModel model);
 		Task<ServiceResponse<string>> VerifyUserOtpAsync(string email, string otp);
 		Task<ServiceResponse<string>> CreateWithOtpAsync(CreateUserRequestModel model);
+		Task UpdateFcmTokenAsync(int userId, string token);
 	}
 }

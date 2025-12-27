@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,8 +7,15 @@ using PerHue.Application.Models;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.FCM;
 using PerHue.Infrastructure.Services;
+using PerHue.Infrastructure.UnitOfWorks;
 using PerHue.Infrastructure.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PerHue.Infrastructure.SignalR.BroadcastService
 {
@@ -23,7 +25,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private readonly ILogger<ExpertTestMonitor> _logger;
 		private readonly IConfiguration _configuration;
 		private readonly IDateTimeService _dateTimeService;
-
+		private readonly IFcmService _fcmService;
 		private readonly int _maxRetries;
 		private readonly int _requiredResponses;
 		private readonly int _daysToWait;
@@ -34,7 +36,8 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			IServiceScopeFactory scopeFactory,
 			ILogger<ExpertTestMonitor> logger,
 			IConfiguration configuration,
-			IDateTimeService dateTimeService)
+			IDateTimeService dateTimeService,
+			IFcmService fcmService)
 		{
 			_scopeFactory = scopeFactory;
 			_logger = logger;
@@ -46,6 +49,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 			_ratingDeduction = _configuration.GetValue<decimal>("ExpertTestSettings:RatingDeduction");
 			_ratingWarningThreshold = _configuration.GetValue<decimal>("ExpertTestSettings:RatingWarningThreshold");
 			_dateTimeService = dateTimeService;
+			_fcmService = fcmService;
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -96,7 +100,7 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 		private async Task HandleReviewRetries(
 			IUnitOfWork unitOfWork,
 			EmailService emailService,
-			IAIImageAnalysisService aiService, // Added Service
+			IAIImageAnalysisService aiService,
 			TestRequest testRequest)
 		{
 			var expertRequests = await unitOfWork.ExpertTestRequestRepository.GetRequestsByTestIdAsync(testRequest.Id);
@@ -167,6 +171,29 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 						Type = "ReviewRequest"
 					};
 					await unitOfWork.NotificationRepository.CreateAsync(notification);
+
+					try
+					{
+						var expertUser = await unitOfWork.UserRepository.GetByIdAsync(newExpert.Id);
+						if (expertUser != null && !string.IsNullOrEmpty(expertUser.FcmToken))
+						{
+							await _fcmService.SendNotificationAsync(
+								expertUser.FcmToken,
+								notification.Title,
+								notification.Content,
+								new Dictionary<string, string>
+								{
+									{ "type", "REVIEW_REQUEST" },
+									{ "testRequestId", testRequest.Id.ToString() }
+								}
+							);
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(ex, $"Failed to send FCM notification to Expert {newExpert.Id} for Review Request on Test {testRequest.Id}");
+					}
+
 					changesMade = true;
 				}
 				else
@@ -260,6 +287,25 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					};
 					await unitOfWork.NotificationRepository.CreateAsync(notification);
 
+					try
+					{
+						var expertUser = await unitOfWork.UserRepository.GetByIdAsync(newExpert.Id);
+						if (expertUser != null && !string.IsNullOrEmpty(expertUser.FcmToken))
+						{
+							await _fcmService.SendNotificationAsync(
+								expertUser.FcmToken,
+								notification.Title,
+								notification.Content,
+								new Dictionary<string, string>
+								{
+									{ "type", "NEW_TEST_REQUEST" },
+									{ "testRequestId", testRequest.Id.ToString() }
+								}
+							);
+						}
+					}
+					catch (Exception ex) { _logger.LogError(ex, "Failed to send FCM."); }
+
 					await unitOfWork.SaveChangesWithTransactionAsync();
 					return;
 				}
@@ -310,6 +356,19 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					};
 					await unitOfWork.NotificationRepository.CreateAsync(penaltyNotification);
 
+					try
+					{
+						if (!string.IsNullOrEmpty(expertUser.FcmToken))
+						{
+							await _fcmService.SendNotificationAsync(expertUser.FcmToken, penaltyNotification.Title, penaltyNotification.Content,
+								new Dictionary<string, string> { { "type", "PENALTY" } });
+						}
+					}
+					catch
+					{
+						Console.WriteLine($"FCM Error: Could not send penalty notification to Expert {expertId}");
+					}
+
 					if (expert.Rating < _ratingWarningThreshold)
 					{
 						var emailSubject = "Action Required: Low Expert Rating Warning";
@@ -348,7 +407,22 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					IsRead = false
 				};
 				await unitOfWork.NotificationRepository.CreateAsync(warningNotification);
-				await unitOfWork.SaveChangesWithTransactionAsync(); // Save immediately for warnings
+
+				try
+				{
+					var user = await unitOfWork.UserRepository.GetByIdAsync(expertId);
+					if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+					{
+						await _fcmService.SendNotificationAsync(user.FcmToken, warningNotification.Title, warningNotification.Content,
+							new Dictionary<string, string> { { "type", "DEADLINE_WARNING" }, { "testRequestId", testRequestId.ToString() } });
+					}
+				}
+				catch
+				{
+					Console.WriteLine($"FCM Error: Could not send deadline warning to Expert {expertId}");
+				}
+
+				await unitOfWork.SaveChangesWithTransactionAsync();
 			}
 		}
 
@@ -379,6 +453,19 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 					Type = "Refund"
 				};
 				await unitOfWork.NotificationRepository.CreateAsync(refundNotification);
+
+				try
+				{
+					var user = await unitOfWork.UserRepository.GetByIdAsync(testRequest.UserAccountId);
+					if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+					{
+						await _fcmService.SendNotificationAsync(user.FcmToken, refundNotification.Title, refundNotification.Content, new Dictionary<string, string> { { "type", "REFUND" } });
+					}
+				}
+				catch
+				{
+					Console.WriteLine($"FCM Error: Could not send refund notification to User {testRequest.UserAccountId}");
+				}
 			}
 
 			try
@@ -482,12 +569,24 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				};
 				await unitOfWork.NotificationRepository.CreateAsync(notification);
 
+				try
+				{
+					var user = await unitOfWork.UserRepository.GetByIdAsync(testRequest.UserAccountId);
+					if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+					{
+						await _fcmService.SendNotificationAsync(user.FcmToken, notification.Title, notification.Content, new Dictionary<string, string> { { "type", "REVIEW_RESULT" }, { "testRequestId", testRequest.Id.ToString() } });
+					}
+				}
+				catch
+				{
+					Console.WriteLine($"FCM Error: Could not send review fallback notification to User {testRequest.UserAccountId}");
+				}
+
 				await unitOfWork.SaveChangesWithTransactionAsync();
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, $"AI Review Fallback failed for TestRequest {testRequest.Id}.");
-				// Optionally update status to Failed or handle gracefully
 			}
 		}
 
@@ -507,6 +606,21 @@ namespace PerHue.Infrastructure.SignalR.BroadcastService
 				TestRequestId = testRequest.Id
 			};
 			await unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			try
+			{
+				var user = await unitOfWork.UserRepository.GetByIdAsync(testRequest.UserAccountId);
+				if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+				{
+					await _fcmService.SendNotificationAsync(user.FcmToken, notification.Title, notification.Content,
+						new Dictionary<string, string> { { "type", "TEST_RESULT" }, { "testRequestId", testRequest.Id.ToString() } });
+				}
+			}
+			catch
+			{
+				Console.WriteLine($"FCM Error: Could not send test result notification to User {testRequest.UserAccountId}");
+			}
+
 			await unitOfWork.SaveChangesWithTransactionAsync();
 		}
 	}
