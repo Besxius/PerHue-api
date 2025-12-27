@@ -12,6 +12,7 @@
 		<PackageReference Include="DlibDotNet" Version="19.16.0.20190313" />
 		<PackageReference Include="dotenv.net" Version="4.0.0" />
 		<PackageReference Include="FaceRecognitionDotNet" Version="1.2.3.8" />
+		<PackageReference Include="FirebaseAdmin" Version="3.4.0" />
 		<PackageReference Include="Google_GenerativeAI" Version="3.4.1" />
 		<PackageReference Include="MailKit" Version="4.13.0" />
 		
