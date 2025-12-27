@@ -649,8 +649,22 @@ namespace PerHue.Infrastructure.Services
 			_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
 				relatedPalettesList.Count);
 
+			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(result.Id);
+			var aiPictures = testRequest?.AiPictures ?? new List<AiPicture>();
+
+			_logger.LogInformation("Loaded {Count} AI-generated images for TestRequestId {TestRequestId}",
+				aiPictures.Count, result.Id);
+
 			var response = _mapper.Map<AiTestResultResponseModel>(result);
 			response.ColorTypeName = result.ColorType.Name;
+
+			response.GeneratedImagesList = aiPictures
+				.Select(img => new AiGeneratedImages
+				{
+					AiImageId = img.Id,
+					AiImageLink = img.Source
+				})
+				.ToList();
 
 			response.SuggestedColorsBySystem = matchedSuggestedColors
 				.Where(c => c.MatchedColor != null)
