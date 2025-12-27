@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PerHue.Application.Models.VerifyInformation;
 
@@ -41,6 +42,18 @@ public class VerifyRequestModel
 
 	public string? InstagramAccount { get; set; }
 
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public List<IFormFile> Photo { get; set; }
+
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public List<string> PhotoType { get; set; }
+
+	public List<PhotoModel> Photos { get; set; } = new List<PhotoModel>();
+}
+
+public class PhotoModel
+{
+	public int Id { get; set; }
+	public string PhotoUrl { get; set; } = string.Empty;
+	public string? Type { get; set; }
 }
