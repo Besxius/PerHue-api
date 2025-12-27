@@ -201,19 +201,19 @@ namespace PerHue.Infrastructure.Services
 		- Lips Color: {request.LipsColor ?? "Not specified"}
 		- Skin Color: {request.SkinColor ?? "Not specified"}
 
-		Based on the images and information provided, determine:
-		1. The seasonal color type (Spring Warm, Summer Cool, Autumn Warm, Winter Cool, Soft Neutral,Deep Neutral)
-		2. The corresponding ColorTypeId (1=Spring Warm, 2=SummSummer Cooler, 3=Autumn Warm, 4=Winter Cool, 5=Soft Neutral, 6=Deep Neutral)
-		3. A list of 5-7 HEX color codes that complement this color type (e.g., #FF5733, #C70039)
-		4. A list of 5-7 HEX color codes to avoid
+Based on the images and information provided, determine:
+1. The seasonal color type (Cool Winter, Deep Winter, Clear Winter, Cool Summer, Soft Summer, Light Summer, Warm Autumn, Soft Autumn, Deep Autumn, Warm Spring, Light Spring, Clear Spring)
+2. The corresponding ColorTypeId (1=Cool Winter, 2=Deep Winter, 3=Clear Winter, 4=Cool Summer, 5=Soft Summer, 6=Light Summer, 7=Warm Autumn, 8=Soft Autumn, 9=Deep Autumn, 10=Warm Spring, 11=Light Spring, 12=Clear Spring)
+3. A list of 5-7 HEX color codes that complement this color type (e.g., #FF5733, #C70039)
+4. A list of 5-7 HEX color codes to avoid
 
-		Return ONLY a valid JSON object with this exact structure (no additional text):
-		{{
-		  ""ColorType"": ""Spring Warm/Summer Cool/Autumn Warm/Winter Cool/Soft Neutral/Deep Neutral"",
-		  ""ColorTypeId"": 1-6,
-		  ""SuggestedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...],
-		  ""AvoidedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...]
-		}}
+Return ONLY a valid JSON object with this exact structure (no additional text):
+{{
+  ""ColorType"": ""Cool Winter/Deep Winter/Clear Winter/Cool Summer/Soft Summer/Light Summer/Warm Autumn/Soft Autumn/Deep Autumn/Warm Spring/Light Spring/Clear Spring"",
+  ""ColorTypeId"": 1-12,
+  ""SuggestedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...],
+  ""AvoidedColorHexCodes"": [""#hexcode1"", ""#hexcode2"", ...]
+}}
 		";
 		}
 
