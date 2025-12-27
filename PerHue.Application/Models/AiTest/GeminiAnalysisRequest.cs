@@ -144,7 +144,7 @@ namespace PerHue.Application.Models.AiTest
 
 	public class AiGeneratedImages
 	{
-		public int AiImageId;
-		public string AiImageLink;
+		public int AiImageId { get; set; }
+		public string AiImageLink { get; set; } = string.Empty;
 	}
 }
