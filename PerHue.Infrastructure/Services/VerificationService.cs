@@ -36,7 +36,8 @@ namespace PerHue.Infrastructure.Services
 			var baseQuery = _unitOfWork
 					.VerificationRepository
 					.GetQueryable()
-					.Include(v => v.IdNavigation);
+					.Include(v => v.IdNavigation)
+					.Include(v => v.Photos);
 
 			IQueryable<VerifyInformation> query = baseQuery;
 
@@ -119,7 +120,13 @@ namespace PerHue.Infrastructure.Services
 					Languages = v.Languages,
 					LinkedInAccount = v.LinkedInAccount,
 					FacebookAccount = v.FacebookAccount,
-					InstagramAccount = v.InstagramAccount
+					InstagramAccount = v.InstagramAccount,
+					Photos = v.Photos.Select(p => new PhotoModel
+					{
+						Id = p.Id,
+						PhotoUrl = p.PhotoUrl,
+						Type = p.Type
+					}).ToList()
 				})
 				.ToListAsync();
 
@@ -390,6 +397,12 @@ namespace PerHue.Infrastructure.Services
 				FacebookAccount = verifyInformation.FacebookAccount,
 				LinkedInAccount = verifyInformation.LinkedInAccount,
 				InstagramAccount = verifyInformation.InstagramAccount,
+				Photos = verifyInformation.Photos?.Select(p => new PhotoModel
+				{
+					Id = p.Id,
+					PhotoUrl = p.PhotoUrl,
+					Type = p.Type
+				}).ToList() ?? new List<PhotoModel>()
 			};
 		}
 
