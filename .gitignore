@@ -60,6 +60,3 @@ node_modules/
 
 # Docker files
 docker-compose.override.yml
-
-#Files containing sensitive information
-**/service-account-file.json
