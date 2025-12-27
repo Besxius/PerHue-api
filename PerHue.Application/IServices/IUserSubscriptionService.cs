@@ -12,7 +12,7 @@ namespace PerHue.Application.IServices
 		Task<IEnumerable<UserSubscriptionModel>> GetHistoryUserSubscriptionsByUserIdAsync(int userId);
 		Task UpdateStatusUserSubscriptionAsync(int id, string status);
 
-		Task<bool> HasRemainingUsageAsync(int userId);
+		Task<bool> HasRemainingUsageAsync(int userId, string? type = null);
 		Task<int> GetRemainingUsageAsync(int userId);
 		Task<bool> DeductUsageAsync(int userId, int packageId, string type);
 		Task<bool> RefundUsageAsync(int userId, int packageId, string type);

@@ -101,19 +101,19 @@ namespace PerHue.Infrastructure.Services
 		/// <summary>
 		/// Kiểm tra xem user có còn lượt sử dụng không
 		/// </summary>
-		public async Task<bool> HasRemainingUsageAsync(int userId)
+		public async Task<bool> HasRemainingUsageAsync(int userId, string? type = null)
 		{
 			try
 			{
 				var hasActive = await _unitOfWork.UserSubscriptionRepository
-					.HasActiveSubscriptionWithRemainingUsesAsync(userId);
+					.HasActiveSubscriptionWithRemainingUsesAsync(userId, type);
 
-				_logger.LogInformation($"User {userId} has remaining usage: {hasActive}");
+				_logger.LogInformation($"User {userId} has remaining usage (type: {type ?? "ALL"}): {hasActive}");
 				return hasActive;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, $"Error checking remaining usage for user {userId}");
+				_logger.LogError(ex, $"Error checking remaining usage for user {userId}, type {type}");
 				return false;
 			}
 		}

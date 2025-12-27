@@ -15,7 +15,7 @@ namespace PerHue.Domain.IRepositories
 
 		Task<UserSubscription?> GetActiveSubscriptionAsync(int userId);
 		Task<UserSubscription?> GetActiveSubscriptionByTypeAsync(int userId, string type);
-		Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId);
+		Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId, string? type = null);
 		Task<UserSubscription?> GetLatestActiveSubscriptionByPackageAndTypeAsync(int userId, int packageId, string type);
 		Task<bool> DeductRemainingUsesAsync(int userId, int packageId, string type);
 		Task<bool> RefundRemainingUsesAsync(int userId, int packageId, string type);

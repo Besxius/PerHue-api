@@ -220,8 +220,9 @@ namespace PerHue.Infrastructure.Services
 					.Split(", ", StringSplitOptions.RemoveEmptyEntries)
 					.ToList();
 
+				var allColors = await _colorMatchingService.GetAllColorsForMatchingAsync();
 				var matchedSuggestedColors = await _colorMatchingService
-					.MatchColorsFromHexCodesAsync(suggestedHexCodes);
+					.MatchColorsFromHexCodesAsync(suggestedHexCodes, allColors);
 
 				// GET SYSTEM HEX CODES FOR PALETTE MATCHING
 				var uniqueSystemColors = matchedSuggestedColors
@@ -364,13 +365,19 @@ namespace PerHue.Infrastructure.Services
 			_logger.LogInformation("Starting AI Test creation for UserId: {UserId}", userId);
 
 			// Kiểm tra và trừ lượt sử dụng
-			var userSubscription = await _subscriptionService.GetCurrentUserSubscriptionByUserIdAsync(userId);
-			var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId);
+			var hasRemaining = await _subscriptionService.HasRemainingUsageAsync(userId, "AI");
 			if (!hasRemaining)
 			{
 				var remaining = await _subscriptionService.GetRemainingUsageAsync(userId);
 				_logger.LogWarning($"User {userId} has insufficient remaining usage. Current: {remaining}");
 				throw new InvalidOperationException($"You have no remaining AI test usage (Current: {remaining}). Please upgrade your subscription.");
+			}
+
+			var userSubscription = await _subscriptionService.GetCurrentUserSubscriptionByUserIdAsync(userId);
+			if (userSubscription == null)
+			{
+				_logger.LogError($"User {userId} has no active AI subscription");
+				throw new InvalidOperationException("No active AI subscription found. Please subscribe first.");
 			}
 
 			var packageId = userSubscription.ServicePackageId;
@@ -494,9 +501,9 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		private async Task<AiTestResultResponseModel> ProcessAiAnalysisAsync(
-			TestRequest testRequest,
-			string imageUrl,
-			AiTestCompleteRequest request)
+	TestRequest testRequest,
+	string imageUrl,
+	AiTestCompleteRequest request)
 		{
 			// Analyze colors với Gemini
 			var analysisRequest = new Application.Models.AiTest.GeminiAnalysisRequest
@@ -511,17 +518,15 @@ namespace PerHue.Infrastructure.Services
 			var colorAnalysis = await _geminiService.AnalyzeColorTypeAsync2(analysisRequest);
 			_logger.LogInformation("Color analysis completed: {ColorType}", colorAnalysis.ColorType);
 
-			// Match colors và Generate virtual try-on song song
-			var matchTask = MatchColorsAsync(colorAnalysis);
-			var virtualTryOnTask = GenerateVirtualTryOnAsync(testRequest, request.FaceImages, colorAnalysis.SuggestedColorHexCodes);
-
-			await Task.WhenAll(matchTask, virtualTryOnTask);
-
-			var (matchedSuggestedColors, matchedAvoidedColors) = await matchTask;
-			var virtualTryOnResults = await virtualTryOnTask;
-
+			// ✅ CHẠY TUẦN TỰ thay vì song song
+			// Step 1: Match colors
+			var (matchedSuggestedColors, matchedAvoidedColors) = await MatchColorsAsync(colorAnalysis);
 			_logger.LogInformation("Color matching completed. Suggested: {Count1}, Avoided: {Count2}",
 				matchedSuggestedColors.Count, matchedAvoidedColors.Count);
+
+			// Step 2: Generate virtual try-on (chạy sau khi match colors xong)
+			var virtualTryOnResults = await GenerateVirtualTryOnAsync(testRequest, request.FaceImages, colorAnalysis.SuggestedColorHexCodes);
+			_logger.LogInformation("Virtual try-on completed: {Count} images", virtualTryOnResults?.GeneratedImages.Count ?? 0);
 
 			// Lưu ảnh AI tạo ra vào bảng AiPicture
 			if (virtualTryOnResults != null && virtualTryOnResults.GeneratedImages.Count > 0)
@@ -539,14 +544,23 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		private async Task<(List<ColorMatchResult> suggested, List<ColorMatchResult> avoided)> MatchColorsAsync(
-			GeminiColorAnalysisResponse colorAnalysis)
+	GeminiColorAnalysisResponse colorAnalysis)
 		{
-			var suggestedTask = _colorMatchingService.MatchColorsFromHexCodesAsync(colorAnalysis.SuggestedColorHexCodes);
-			var avoidedTask = _colorMatchingService.MatchColorsFromHexCodesAsync(colorAnalysis.AvoidedColorHexCodes);
+			// LOAD COLORS CHỈ MỘT LẦN
+			var allColors = await _colorMatchingService.GetAllColorsForMatchingAsync();
 
-			await Task.WhenAll(suggestedTask, avoidedTask);
+			_logger.LogInformation("Loaded {Count} colors for matching", allColors.Count);
 
-			return (await suggestedTask, await avoidedTask);
+			// CHẠY TUẦN TỰ với pre-loaded colors
+			var suggested = await _colorMatchingService.MatchColorsFromHexCodesAsync(
+				colorAnalysis.SuggestedColorHexCodes,
+				allColors);
+
+			var avoided = await _colorMatchingService.MatchColorsFromHexCodesAsync(
+				colorAnalysis.AvoidedColorHexCodes,
+				allColors);
+
+			return (suggested, avoided);
 		}
 
 		private async Task<VirtualTryOnResponse?> GenerateVirtualTryOnAsync(
@@ -630,8 +644,8 @@ namespace PerHue.Infrastructure.Services
 		}
 
 		private async Task<AiTestResultResponseModel> BuildResponseAsync(
-			AiTestResult result,
-			List<ColorMatchResult> matchedSuggestedColors)
+	AiTestResult result,
+	List<ColorMatchResult> matchedSuggestedColors)
 		{
 			var suggestedHexCodes = matchedSuggestedColors
 				.Where(c => c.MatchedColor != null)
@@ -641,13 +655,64 @@ namespace PerHue.Infrastructure.Services
 			_logger.LogInformation("Finding related palettes for {Count} suggested colors: {Colors}",
 				suggestedHexCodes.Count, string.Join(", ", suggestedHexCodes));
 
+			// ✅ STEP 1: Get palettes that match the suggested colors
 			var relatedPalettesByColors = await _capsulePaletteService
 				.GetRelativeCapsulePalettes(suggestedHexCodes);
 
-			var relatedPalettesList = relatedPalettesByColors.ToList();
+			// ✅ STEP 2: Get ALL palettes from the detected ColorType
+			var palettesByColorType = await _capsulePaletteService
+				.GetByColorTypeIdAsync(result.ColorTypeId);
 
-			_logger.LogInformation("Found {Count} related capsule palettes matching suggested colors",
-				relatedPalettesList.Count);
+			// ✅ STEP 3: Score and combine palettes with weighted scoring
+			var relatedPaletteIds = relatedPalettesByColors.Select(p => p.Id).ToHashSet();
+
+			var scoredPalettes = relatedPalettesByColors
+				.Concat(palettesByColorType)
+				.DistinctBy(p => p.Id)
+				.Select(palette => new
+				{
+					Palette = palette,
+					// ✅ Calculate compatibility metrics
+					ColorMatchScore = CalculatePaletteScore(palette, suggestedHexCodes),
+					ColorDistanceScore = CalculateColorProximityScore(palette, suggestedHexCodes),
+					IsInBothSets = relatedPaletteIds.Contains(palette.Id), // Bonus if in both sets
+																		   // ✅ Weighted total score
+					TotalScore = CalculateWeightedScore(
+						palette,
+						suggestedHexCodes,
+						relatedPaletteIds.Contains(palette.Id))
+				})
+				.Where(x => x.TotalScore > 0) // ✅ Only palettes with some relevance
+				.OrderByDescending(x => x.TotalScore)
+				.ThenByDescending(x => x.IsInBothSets) // Prioritize palettes in both sets
+				.ThenByDescending(x => x.ColorMatchScore)
+				.ToList();
+
+			_logger.LogInformation(
+				"Found {ColorMatchCount} color-matched palettes and {TypeMatchCount} ColorType palettes. " +
+				"After scoring: {TotalCount} relevant palettes, {BothSetsCount} in both sets",
+				relatedPalettesByColors.Count(),
+				palettesByColorType.Count(),
+				scoredPalettes.Count,
+				scoredPalettes.Count(x => x.IsInBothSets));
+
+			// ✅ Log top scored palettes for debugging
+			var topPalettes = scoredPalettes.Take(5).ToList();
+			foreach (var item in topPalettes)
+			{
+				_logger.LogInformation(
+					"Palette ID {Id}: Score={Score:F2}, ColorMatch={ColorMatch}, Distance={Distance:F2}, InBoth={InBoth}",
+					item.Palette.Id,
+					item.TotalScore,
+					item.ColorMatchScore,
+					item.ColorDistanceScore,
+					item.IsInBothSets);
+			}
+
+			var combinedPalettes = scoredPalettes
+				.Select(x => x.Palette)
+				.Take(10) // Limit to top 10
+				.ToList();
 
 			var testRequest = await _aiTestRepository.GetTestRequestByIdAsync(result.Id);
 			var aiPictures = testRequest?.AiPictures ?? new List<AiPicture>();
@@ -676,9 +741,95 @@ namespace PerHue.Infrastructure.Services
 				})
 				.ToList();
 
-			response.SuggestedCapsulePalleteBySystem = relatedPalettesList.FirstOrDefault() ?? new CapsulePaletteModel();
+			response.SuggestedCapsulePalleteBySystem = combinedPalettes;
+
+			_logger.LogInformation(
+				"Response built with {ImageCount} images, {ColorCount} colors, {PaletteCount} palettes",
+				response.GeneratedImagesList.Count,
+				response.SuggestedColorsBySystem.Count,
+				response.SuggestedCapsulePalleteBySystem.Count);
 
 			return response;
+		}
+
+		// ✅ Calculate exact hex code matches
+		private int CalculatePaletteScore(CapsulePaletteModel palette, List<string> suggestedHexCodes)
+		{
+			if (palette.Colors == null || !palette.Colors.Any())
+				return 0;
+
+			return palette.Colors.Count(c =>
+				suggestedHexCodes.Contains(c.HexCode, StringComparer.OrdinalIgnoreCase));
+		}
+
+		// ✅ Calculate color proximity using Euclidean distance
+		private double CalculateColorProximityScore(CapsulePaletteModel palette, List<string> suggestedHexCodes)
+		{
+			if (palette.Colors == null || !palette.Colors.Any())
+				return 0;
+
+			const double distanceThreshold = 50.0;
+			var proximityMatches = 0;
+
+			foreach (var paletteColor in palette.Colors)
+			{
+				var minDistance = suggestedHexCodes
+					.Select(hex => CalculateColorDistance(paletteColor.HexCode, hex))
+					.Min();
+
+				if (minDistance <= distanceThreshold)
+					proximityMatches++;
+			}
+
+			return (double)proximityMatches / palette.Colors.Count * 100;
+		}
+
+		// ✅ Calculate Euclidean distance between two hex colors
+		private double CalculateColorDistance(string hexCode1, string hexCode2)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(hexCode1) || string.IsNullOrEmpty(hexCode2))
+					return double.MaxValue;
+
+				if (!hexCode1.StartsWith("#") || hexCode1.Length != 7 ||
+					!hexCode2.StartsWith("#") || hexCode2.Length != 7)
+					return double.MaxValue;
+
+				var r1 = Convert.ToInt32(hexCode1.Substring(1, 2), 16);
+				var g1 = Convert.ToInt32(hexCode1.Substring(3, 2), 16);
+				var b1 = Convert.ToInt32(hexCode1.Substring(5, 2), 16);
+
+				var r2 = Convert.ToInt32(hexCode2.Substring(1, 2), 16);
+				var g2 = Convert.ToInt32(hexCode2.Substring(3, 2), 16);
+				var b2 = Convert.ToInt32(hexCode2.Substring(5, 2), 16);
+
+				return Math.Sqrt(
+					Math.Pow(r2 - r1, 2) +
+					Math.Pow(g2 - g1, 2) +
+					Math.Pow(b2 - b1, 2));
+			}
+			catch
+			{
+				return double.MaxValue;
+			}
+		}
+
+		// ✅ Calculate weighted total score
+		private double CalculateWeightedScore(
+			CapsulePaletteModel palette,
+			List<string> suggestedHexCodes,
+			bool isInBothSets)
+		{
+			const double exactMatchWeight = 10.0;      // High weight for exact matches
+			const double proximityWeight = 5.0;         // Medium weight for similar colors
+			const double bothSetsBonus = 15.0;          // Bonus if in both sets
+
+			var exactMatchScore = CalculatePaletteScore(palette, suggestedHexCodes) * exactMatchWeight;
+			var proximityScore = CalculateColorProximityScore(palette, suggestedHexCodes) * proximityWeight;
+			var bonus = isInBothSets ? bothSetsBonus : 0;
+
+			return exactMatchScore + proximityScore + bonus;
 		}
 		#endregion
 		#endregion
