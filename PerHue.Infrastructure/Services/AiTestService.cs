@@ -166,7 +166,7 @@ namespace PerHue.Infrastructure.Services
 				.Select(testRequest => new NewTestRequestReponseModel
 				{
 					Id = testRequest.Id,
-					CreatedDate = testRequest.CreatedDate ?? _dateTimeService.GetCurrentTime(),
+					CreatedDate = testRequest.CreatedDate,
 					ImageUrl = testRequest.Pictures?.FirstOrDefault()?.Source,
 					ColorTypeId = testRequest.AiTestResult?.ColorTypeId ?? 0,
 					ColorTypeName = testRequest.AiTestResult?.ColorType?.Name ?? string.Empty
@@ -194,8 +194,6 @@ namespace PerHue.Infrastructure.Services
 				throw new UnauthorizedAccessException("This test request does not belong to the specified user");
 			}
 
-			var pictureUrl = testRequest.Pictures?.FirstOrDefault()?.Source;
-
 			var response = new NewTestRequestReponseModel
 			{
 				Id = testRequest.Id,
@@ -207,7 +205,9 @@ namespace PerHue.Infrastructure.Services
 				CreatedDate = testRequest.CreatedDate,
 				TypeOfTest = testRequest.TypeOfTest,
 				Fullname = userAccount.Fullname,
-				ImageUrl = pictureUrl
+				ImageUrl = testRequest.Pictures?.FirstOrDefault()?.Source,
+				ColorTypeId = testRequest.AiTestResult?.ColorTypeId ?? 0,
+				ColorTypeName = testRequest.AiTestResult?.ColorType?.Name ?? string.Empty
 			};
 
 			if (testRequest.AiTestResult != null)
@@ -258,10 +258,19 @@ namespace PerHue.Infrastructure.Services
 					response.ColorTypeName = aiTestResult.ColorType.Name;
 				}
 
+				var generatedImagesList = (testRequest.AiPictures ?? new List<AiPicture>())
+						.Select(image => new AiGeneratedImages
+						{
+							AiImageId = image.Id,
+							AiImageLink = image.Source
+						})
+						.ToList();
+
 				// BUILD COMPLETE AI TEST RESULT MODEL
 				response.newAiTestResultResponseModel = new NewAiTestResultResponseModel
 				{
 					Id = aiTestResult.Id,
+					GeneratedImagesList = generatedImagesList,
 					Note = aiTestResult.Note,
 					ColorTypeId = aiTestResult.ColorTypeId,
 					SuggestedColor = aiTestResult.SuggestedColor,
