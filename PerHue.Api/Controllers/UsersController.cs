@@ -166,5 +166,20 @@ namespace PerHue.Api.Controllers
 			return Ok(new { Message = "Token updated successfully" });
 		}
 
+		[HttpDelete("device-token")]
+		[Authorize]
+		public async Task<IActionResult> DeleteDeviceToken()
+		{
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+			if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+			{
+				return Unauthorized(new { Message = "Invalid User ID in Token" });
+			}
+
+			await _servicesProvider.UserService.RemoveFcmTokenAsync(userId);
+
+			return NoContent();
+		}
 	}
 }

@@ -384,5 +384,16 @@ namespace PerHue.Infrastructure.Services
 				await _unitOfWork.UserRepository.UpdateAsync(user);
 			}
 		}
+
+		public async Task RemoveFcmTokenAsync(int userId)
+		{
+			var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+			if (user != null)
+			{
+				user.FcmToken = null;
+
+				await _unitOfWork.UserRepository.UpdateAsync(user);
+			}
+		}
 	}
 }
