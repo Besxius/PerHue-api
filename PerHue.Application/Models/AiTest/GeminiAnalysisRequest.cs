@@ -122,7 +122,7 @@ namespace PerHue.Application.Models.AiTest
 	{
 		public int Id { get; set; }
 
-		public List<AiGeneratedImages> generatedImagesList { get; set; } = new();
+		public List<AiGeneratedImages> GeneratedImagesList { get; set; } = new List<AiGeneratedImages>();
 
 		public string? Note { get; set; }
 
