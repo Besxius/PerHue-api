@@ -265,6 +265,7 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<List<Color>> GetAllColorsAsync()
 		{
 			return await _context.Colors
+				.AsNoTracking()
 				.ToListAsync();
 		}
 
@@ -273,6 +274,7 @@ namespace PerHue.Infrastructure.Repositories
 			hexCode = NormalizeHexCode(hexCode);
 			return await _dbSet
 				//.Include(c => c.ColorType)
+				.AsNoTracking()
 				.FirstOrDefaultAsync(c => c.HexCode.ToLower() == hexCode.ToLower());
 		}
 
@@ -287,7 +289,11 @@ namespace PerHue.Infrastructure.Repositories
 		public async Task<Color?> FindClosestColorByHexAsync(string hexCode)
 		{
 			hexCode = NormalizeHexCode(hexCode);
-			var allColors = await GetAllAsync();
+
+			// ✅ Load all colors with AsNoTracking
+			var allColors = await _dbSet
+				.AsNoTracking()
+				.ToListAsync();
 
 			if (!allColors.Any())
 				return null;

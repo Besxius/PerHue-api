@@ -49,15 +49,25 @@ namespace PerHue.Infrastructure.Repositories
 		/// <summary>
 		/// Kiểm tra xem user có subscription active với lượt sử dụng còn lại không
 		/// </summary>
-		public async Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId)
+		public async Task<bool> HasActiveSubscriptionWithRemainingUsesAsync(int userId, string? type = null)
 		{
 			var now = _dateTimeService.GetCurrentTime();
-			return await _context.UserSubscriptions
-				.AnyAsync(us => us.UserId == userId
+
+			var query = _context.UserSubscriptions
+				.Include(us => us.ServicePackage)
+				.Where(us => us.UserId == userId
 					&& us.Status == true
 					&& us.StartDate <= now
 					&& us.EndDate >= now
 					&& us.RemainingUses > 0);
+
+			// ✅ Apply type filter if provided
+			if (!string.IsNullOrWhiteSpace(type))
+			{
+				query = query.Where(us => us.ServicePackage.Type == type);
+			}
+
+			return await query.AnyAsync();
 		}
 
 		/// <summary>

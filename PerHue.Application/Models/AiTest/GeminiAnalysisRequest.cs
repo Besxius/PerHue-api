@@ -136,7 +136,7 @@ namespace PerHue.Application.Models.AiTest
 
 		public List<ColorModel> SuggestedColorsBySystem { get; set; } = new List<ColorModel>();
 
-		public CapsulePaletteModel SuggestedCapsulePalleteBySystem { get; set; } = new CapsulePaletteModel();
+		public List<CapsulePaletteModel> SuggestedCapsulePalleteBySystem { get; set; } = new List<CapsulePaletteModel>();
 		//dựa vào SuggestedColor, tìm các capsule palette có colorTypeId trùng kết quả AI trả về có độ tương thích cao
 		// ví dụ ColorTypeId có Clean Winter thì trả về danh sách các capsule palette tương ứng của SuggestedColor với color type id = kết quả ai trả về
 
