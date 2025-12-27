@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +12,7 @@ using PerHue.Domain.IRepositories;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
 using PerHue.Infrastructure.Authentication;
+using PerHue.Infrastructure.FCM;
 using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Repositories;
 using PerHue.Infrastructure.Services;
@@ -114,6 +117,7 @@ namespace PerHue.Infrastructure.Extensions
 
 			services.AddHostedService<ExpertTestMonitor>();
 			services.AddSingleton<IDateTimeService, DateTimeService>();
+			services.AddSingleton<IFcmService, FcmService>();
 			#endregion
 
 
@@ -154,6 +158,22 @@ namespace PerHue.Infrastructure.Extensions
 			services.Configure<JwtSetting>(configuration.GetSection("Jwt"));
 			#endregion
 
+			var credentialPath = configuration["Firebase:CredentialPath"] ?? "service-account-file.json";
+			var fullPath = Path.Combine(Directory.GetCurrentDirectory(), credentialPath);
+			if (FirebaseApp.DefaultInstance == null)
+			{
+				if (File.Exists(fullPath))
+				{
+					FirebaseApp.Create(new AppOptions()
+					{
+						Credential = GoogleCredential.FromFile(fullPath)
+					});
+				}
+				else
+				{
+					Console.WriteLine($"[WARNING] Firebase credential file not found at: {fullPath}");
+				}
+			}
 		}
 	}
 }
