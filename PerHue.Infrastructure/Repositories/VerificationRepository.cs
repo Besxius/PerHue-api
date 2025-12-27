@@ -17,6 +17,7 @@ public class VerificationRepository : GenericRepository<VerifyInformation>, IVer
     {
         return await _context.VerifyInformations
             .Include(v => v.IdNavigation)
+			.Include(v => v.Photos)
             .ToListAsync();
     }
 
@@ -24,7 +25,8 @@ public class VerificationRepository : GenericRepository<VerifyInformation>, IVer
     {
         return await _context.VerifyInformations
             .Include(v => v.IdNavigation)
-            .FirstOrDefaultAsync(v => v.Id == id);
+			.Include(v => v.Photos)
+			.FirstOrDefaultAsync(v => v.Id == id);
     }
 
     public async Task<VerifyInformation> CreateVerificationRequestAsync(VerifyInformation verifyInformation)

@@ -51,6 +51,8 @@ namespace PerHue.Application.Models.AiTest
 	{
 		public int Id { get; set; }
 
+		public List<AiGeneratedImages> GeneratedImagesList { get; set; } = new List<AiGeneratedImages>();
+
 		public string? Note { get; set; }
 
 		public string SuggestedColor { get; set; } = null!;

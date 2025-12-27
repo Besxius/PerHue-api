@@ -122,6 +122,8 @@ namespace PerHue.Application.Models.AiTest
 	{
 		public int Id { get; set; }
 
+		public List<AiGeneratedImages> GeneratedImagesList { get; set; } = new List<AiGeneratedImages>();
+
 		public string? Note { get; set; }
 
 		public DateTime? Date { get; set; }
@@ -138,5 +140,11 @@ namespace PerHue.Application.Models.AiTest
 		//dựa vào SuggestedColor, tìm các capsule palette có colorTypeId trùng kết quả AI trả về có độ tương thích cao
 		// ví dụ ColorTypeId có Clean Winter thì trả về danh sách các capsule palette tương ứng của SuggestedColor với color type id = kết quả ai trả về
 
+	}
+
+	public class AiGeneratedImages
+	{
+		public int AiImageId { get; set; }
+		public string AiImageLink { get; set; } = string.Empty;
 	}
 }
