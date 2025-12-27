@@ -60,3 +60,6 @@ node_modules/
 
 # Docker files
 docker-compose.override.yml
+
+#Files containing sensitive information
+firebase-service-account.json

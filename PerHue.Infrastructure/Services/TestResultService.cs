@@ -13,6 +13,7 @@ using PerHue.Application.Models.TestRequest;
 using PerHue.Domain.Entities;
 using PerHue.Domain.UnitOfWork;
 using PerHue.Infrastructure.AI;
+using PerHue.Infrastructure.FCM;
 using PerHue.Infrastructure.Persistence;
 using PerHue.Infrastructure.Utils;
 using System;
@@ -31,10 +32,11 @@ namespace PerHue.Infrastructure.Services
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IUserService _userService;
 		private readonly IDateTimeService _dateTimeService;
+		private readonly IFcmService _fcmService;
 		private readonly PerHueDbContext _context;
 
 		public TestResultService(IUnitOfWork unitOfWork, IMapper mapper, GeminiService gemini, ILogger<TestResultService> logger, IImageUploadService imageUploadService, IVirtualTryOnService virtualTryOnService,
-			IHttpClientFactory httpClientFactory, IUserService userService, PerHueDbContext context, IDateTimeService dateTimeService)
+			IHttpClientFactory httpClientFactory, IUserService userService, PerHueDbContext context, IDateTimeService dateTimeService, IFcmService fcmService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
@@ -46,6 +48,7 @@ namespace PerHue.Infrastructure.Services
 			_userService = userService;
 			_context = context;
 			_dateTimeService = dateTimeService;
+			_fcmService = fcmService;
 		}
 
 		public async Task<bool> DeleteAsync(int id)
@@ -486,6 +489,32 @@ namespace PerHue.Infrastructure.Services
 					Type = "TestRequest"
 				};
 				await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+				try
+				{
+					// Lấy thông tin User để lấy Token (Dựa trên ExpertId)
+					var expertUser = await _unitOfWork.UserRepository.GetByIdAsync(expert.Id);
+
+					if (expertUser != null && !string.IsNullOrEmpty(expertUser.FcmToken))
+					{
+						var dataPayload = new Dictionary<string, string>
+						{
+							{ "type", "NEW_TEST_REQUEST" },
+							{ "testRequestId", testRequest.Id.ToString() }
+						};
+
+						await _fcmService.SendNotificationAsync(
+							expertUser.FcmToken,
+							notification.Title,
+							notification.Content,
+							dataPayload
+						);
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(ex, $"Failed to send FCM to expert {expert.Id}");
+				}
 			}
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 
@@ -555,6 +584,28 @@ namespace PerHue.Infrastructure.Services
 				Type = "ReviewRequest"
 			};
 			await _unitOfWork.NotificationRepository.CreateAsync(notification);
+
+			try
+			{
+				var expertUser = await _unitOfWork.UserRepository.GetByIdAsync(selectedExpert.Id);
+				if (expertUser != null && !string.IsNullOrEmpty(expertUser.FcmToken))
+				{
+					await _fcmService.SendNotificationAsync(
+						expertUser.FcmToken,
+						notification.Title,
+						notification.Content,
+						new Dictionary<string, string>
+						{
+							{ "type", "REVIEW_REQUEST" },
+							{ "testRequestId", testRequestId.ToString() }
+						}
+					);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, $"Failed to send FCM to expert {selectedExpert.Id}");
+			}
 
 			await _unitOfWork.SaveChangesWithTransactionAsync();
 		}
