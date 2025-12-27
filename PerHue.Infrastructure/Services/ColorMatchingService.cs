@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+ï»¿using Microsoft.Extensions.Logging;
 using PerHue.Domain.IRepositories;
 using PerHue.Application.IServices;
 using PerHue.Application.Models.AiTest;
@@ -20,72 +20,101 @@ namespace PerHue.Infrastructure.Services
 			_logger = logger;
 		}
 
-		public async Task<List<ColorMatchResult>> MatchColorsFromHexCodesAsync(List<string> hexCodes)
+		public async Task<List<ColorMatchResult>> MatchColorsFromHexCodesAsync(List<string> hexCodes, List<Domain.Entities.Color> allColors)
 		{
 			var results = new List<ColorMatchResult>();
+			var colorLookup = allColors.ToDictionary(c => c.HexCode.ToLower(), StringComparer.OrdinalIgnoreCase);
 
 			foreach (var hexCode in hexCodes)
 			{
-				var result = await FindClosestColorAsync(hexCode);
-				results.Add(result);
+				try
+				{
+					var normalizedHex = NormalizeHexCode(hexCode);
+
+					// Try exact match first
+					if (colorLookup.TryGetValue(normalizedHex.ToLower(), out var exactMatch))
+					{
+						results.Add(new ColorMatchResult
+						{
+							HexCode = hexCode,
+							MatchedColor = exactMatch,
+							IsExactMatch = true,
+							SimilarityScore = 1.0
+						});
+						continue;
+					}
+
+					// Find closest color in memory
+					var closestColor = FindClosestColorInMemory(normalizedHex, allColors);
+					if (closestColor != null)
+					{
+						var similarity = CalculateSimilarity(normalizedHex, closestColor.HexCode);
+						results.Add(new ColorMatchResult
+						{
+							HexCode = hexCode,
+							MatchedColor = closestColor,
+							IsExactMatch = false,
+							SimilarityScore = similarity
+						});
+					}
+					else
+					{
+						results.Add(new ColorMatchResult
+						{
+							HexCode = hexCode,
+							MatchedColor = null,
+							IsExactMatch = false,
+							SimilarityScore = 0
+						});
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(ex, "Error matching color: {HexCode}", hexCode);
+					results.Add(new ColorMatchResult
+					{
+						HexCode = hexCode,
+						MatchedColor = null,
+						IsExactMatch = false,
+						SimilarityScore = 0
+					});
+				}
 			}
 
-			return results;
+			return await Task.FromResult(results);
 		}
 
-		public async Task<ColorMatchResult> FindClosestColorAsync(string hexCode)
+		// Find closest color in memory (no DB query)
+		private Domain.Entities.Color? FindClosestColorInMemory(string hexCode, List<Domain.Entities.Color> allColors)
 		{
-			try
+			var targetRgb = HexToRgb(hexCode);
+			if (targetRgb == null)
+				return null;
+
+			Domain.Entities.Color? closestColor = null;
+			double minDistance = double.MaxValue;
+
+			foreach (var color in allColors)
 			{
-				hexCode = NormalizeHexCode(hexCode);
+				var colorRgb = HexToRgb(color.HexCode);
+				if (colorRgb == null)
+					continue;
 
-				// Th? tìm exact match tr??c
-				var exactMatch = await _colorRepository.GetColorByHexCodeAsync(hexCode);
-				if (exactMatch != null)
+				// TÃ­nh khoáº£ng cÃ¡ch Euclidean
+				double distance = Math.Sqrt(
+					Math.Pow(colorRgb.Value.R - targetRgb.Value.R, 2) +
+					Math.Pow(colorRgb.Value.G - targetRgb.Value.G, 2) +
+					Math.Pow(colorRgb.Value.B - targetRgb.Value.B, 2)
+				);
+
+				if (distance < minDistance)
 				{
-					return new ColorMatchResult
-					{
-						HexCode = hexCode,
-						MatchedColor = exactMatch,
-						IsExactMatch = true,
-						SimilarityScore = 1.0
-					};
+					minDistance = distance;
+					closestColor = color;
 				}
-
-				// N?u không có exact match, tìm màu g?n nh?t
-				var closestColor = await _colorRepository.FindClosestColorByHexAsync(hexCode);
-				if (closestColor != null)
-				{
-					var similarity = CalculateSimilarity(hexCode, closestColor.HexCode);
-					return new ColorMatchResult
-					{
-						HexCode = hexCode,
-						MatchedColor = closestColor,
-						IsExactMatch = false,
-						SimilarityScore = similarity
-					};
-				}
-
-				// Không tìm th?y màu nào
-				return new ColorMatchResult
-				{
-					HexCode = hexCode,
-					MatchedColor = null,
-					IsExactMatch = false,
-					SimilarityScore = 0
-				};
 			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Error matching color: {HexCode}", hexCode);
-				return new ColorMatchResult
-				{
-					HexCode = hexCode,
-					MatchedColor = null,
-					IsExactMatch = false,
-					SimilarityScore = 0
-				};
-			}
+
+			return closestColor;
 		}
 
 		private string NormalizeHexCode(string hexCode)
@@ -106,15 +135,14 @@ namespace PerHue.Infrastructure.Services
 			if (rgb1 == null || rgb2 == null)
 				return 0;
 
-			// Tính kho?ng cách Euclidean
+			// TÃ­nh khoáº£ng cÃ¡ch Euclidean
 			double distance = Math.Sqrt(
 				Math.Pow(rgb1.Value.R - rgb2.Value.R, 2) +
 				Math.Pow(rgb1.Value.G - rgb2.Value.G, 2) +
 				Math.Pow(rgb1.Value.B - rgb2.Value.B, 2)
 			);
 
-			// Chuy?n ??i kho?ng cách thành ?i?m t??ng ??ng (0-1)
-			// Kho?ng cách max trong RGB là sqrt(255^2 * 3) ? 441.67
+			// Chuyá»ƒn Ä‘á»•i khoáº£ng cÃ¡ch thÃ nh Ä‘iá»ƒm tÆ°Æ¡ng Ä‘á»“ng (0-1)
 			double maxDistance = 441.67;
 			return Math.Max(0, 1 - (distance / maxDistance));
 		}
@@ -137,6 +165,52 @@ namespace PerHue.Infrastructure.Services
 			{
 				return null;
 			}
+		}
+
+		public async Task<List<Domain.Entities.Color>> GetAllColorsForMatchingAsync()
+		{
+			return await _colorRepository.GetAllColorsAsync();
+		}
+
+		public async Task<ColorMatchResult> FindClosestColorAsync(string hexCode)
+		{
+			var allColors = await _colorRepository.GetAllColorsAsync();
+			var normalizedHex = NormalizeHexCode(hexCode);
+
+			// Try exact match first
+			var exactMatch = allColors.FirstOrDefault(c => string.Equals(NormalizeHexCode(c.HexCode), normalizedHex, StringComparison.OrdinalIgnoreCase));
+			if (exactMatch != null)
+			{
+				return new ColorMatchResult
+				{
+					HexCode = hexCode,
+					MatchedColor = exactMatch,
+					IsExactMatch = true,
+					SimilarityScore = 1.0
+				};
+			}
+
+			// Find closest color in memory
+			var closestColor = FindClosestColorInMemory(normalizedHex, allColors);
+			if (closestColor != null)
+			{
+				var similarity = CalculateSimilarity(normalizedHex, closestColor.HexCode);
+				return new ColorMatchResult
+				{
+					HexCode = hexCode,
+					MatchedColor = closestColor,
+					IsExactMatch = false,
+					SimilarityScore = similarity
+				};
+			}
+
+			return new ColorMatchResult
+			{
+				HexCode = hexCode,
+				MatchedColor = null,
+				IsExactMatch = false,
+				SimilarityScore = 0
+			};
 		}
 	}
 }
