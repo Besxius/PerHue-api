@@ -17,6 +17,7 @@ public class VerificationRepository : GenericRepository<VerifyInformation>, IVer
     {
         return await _context.VerifyInformations
             .Include(v => v.IdNavigation)
+			.Include(v => v.Photos)
             .ToListAsync();
     }
 
