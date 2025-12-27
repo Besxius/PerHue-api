@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PerHue.Application.IServices;
 using PerHue.Application.IServicesProvider;
 using PerHue.Application.Models.Authentication;
+using PerHue.Application.Models.Notification;
 using PerHue.Application.Models.User;
 using System.Security.Claims;
 
@@ -147,6 +148,22 @@ namespace PerHue.Api.Controllers
 			{
 				return StatusCode(500, $"Internal server error: {ex.Message}");
 			}
+		}
+
+		[HttpPost("device-token")]
+		[Authorize]
+		public async Task<IActionResult> UpdateDeviceToken([FromBody] DeviceTokenRequestModel model)
+		{
+			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+			if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+			{
+				return Unauthorized(new { Message = "Invalid User ID in Token" });
+			}
+
+			await _servicesProvider.UserService.UpdateFcmTokenAsync(userId, model.FcmToken);
+
+			return Ok(new { Message = "Token updated successfully" });
 		}
 
 	}

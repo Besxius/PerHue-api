@@ -27,6 +27,8 @@ public partial class UserAccount
 
     public DateTime CreatedDate { get; set; }
 
+    public string? FcmToken { get; set; }
+
     public int RoleId { get; set; }
 
     public virtual Expert? Expert { get; set; }
