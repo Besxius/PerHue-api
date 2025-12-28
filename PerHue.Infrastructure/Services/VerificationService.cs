@@ -36,8 +36,10 @@ namespace PerHue.Infrastructure.Services
 			var baseQuery = _unitOfWork
 					.VerificationRepository
 					.GetQueryable()
+					.AsNoTracking()
 					.Include(v => v.IdNavigation)
-					.Include(v => v.Photos);
+					.Include(v => v.Photos)
+					.Where(x => x.Status != VerificationStatus.Approved.ToString() && x.Status != VerificationStatus.Denied.ToString());
 
 			IQueryable<VerifyInformation> query = baseQuery;
 
@@ -126,7 +128,7 @@ namespace PerHue.Infrastructure.Services
 						Id = p.Id,
 						PhotoUrl = p.PhotoUrl,
 						Type = p.Type
-					}).ToList()
+					}).ToList(),
 				})
 				.ToListAsync();
 
