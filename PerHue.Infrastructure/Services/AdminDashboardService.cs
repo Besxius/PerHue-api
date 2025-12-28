@@ -348,6 +348,7 @@ namespace PerHue.Infrastructure.Services
 			var items = await query
 				.Skip((searchModel.PageIndex - 1) * searchModel.PageSize)
 				.Take(searchModel.PageSize)
+				.OrderByDescending(u => u.Expert.Rating ?? 0)
 				.Select(u => new ExpertActivityModel
 				{
 					ExpertId = u.Id,
